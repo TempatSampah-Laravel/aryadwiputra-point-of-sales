@@ -15,6 +15,9 @@ import {
     IconShoppingCart,
     IconChartBar,
     IconClock,
+    IconAlertTriangle,
+    IconPackageOff,
+    IconTarget,
 } from "@tabler/icons-react";
 
 const formatCurrency = (value = 0) =>
@@ -62,6 +65,52 @@ function StatCard({ title, value, subtitle, icon: Icon, gradient, trend }) {
                         {subtitle}
                     </p>
                 )}
+            </div>
+        </div>
+    );
+}
+
+// Target Progress Card Component
+function TargetCard({ title, current, target, icon: Icon }) {
+    const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+    const isAchieved = percentage >= 100;
+
+    return (
+        <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-lg">
+            {/* Background Pattern */}
+            <div className="absolute top-0 right-0 w-32 h-32 opacity-20">
+                <Icon
+                    size={128}
+                    strokeWidth={0.5}
+                    className="transform translate-x-8 -translate-y-8"
+                />
+            </div>
+
+            <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 rounded-xl bg-white/20">
+                        <Icon size={20} strokeWidth={1.5} />
+                    </div>
+                    <span className="text-sm font-medium opacity-90">
+                        {title}
+                    </span>
+                </div>
+
+                <p className="text-2xl font-bold">{percentage.toFixed(0)}%</p>
+
+                {/* Progress Bar */}
+                <div className="mt-3 w-full h-2 bg-white/30 rounded-full overflow-hidden">
+                    <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                            isAchieved ? "bg-green-400" : "bg-white"
+                        }`}
+                        style={{ width: `${percentage}%` }}
+                    />
+                </div>
+
+                <p className="mt-2 text-xs opacity-80">
+                    {formatCurrency(current)} / {formatCurrency(target)}
+                </p>
             </div>
         </div>
     );
@@ -143,7 +192,13 @@ export default function Dashboard({
     totalProfit,
     averageOrder,
     todayTransactions,
+    todaySales = 0,
+    todayProfit = 0,
+    monthlyTarget = 0,
+    currentMonthSales = 0,
     topProducts = [],
+    lowStockProducts = [],
+    slowMovingProducts = [],
     recentTransactions = [],
     topCustomers = [],
 }) {
@@ -266,29 +321,28 @@ export default function Dashboard({
                     </Link>
                 </div>
 
-                {/* Main Stat Cards */}
+                {/* Main Stat Cards - Reorganized */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard
-                        title="Total Pendapatan"
-                        value={formatCurrency(totalRevenue)}
-                        subtitle="Akumulasi semua transaksi"
+                        title="Penjualan Hari Ini"
+                        value={formatCurrency(todaySales)}
+                        subtitle="Total penjualan hari ini"
                         icon={IconCoin}
                         gradient="from-primary-500 to-primary-700"
                     />
                     <StatCard
-                        title="Total Profit"
-                        value={formatCurrency(totalProfit)}
-                        subtitle="Profit bersih"
+                        title="Profit Hari Ini"
+                        value={formatCurrency(todayProfit)}
+                        subtitle="Profit bersih hari ini"
                         icon={IconTrendingUp}
                         gradient="from-success-500 to-success-700"
                         trend="up"
                     />
-                    <StatCard
-                        title="Rata-Rata Order"
-                        value={formatCurrency(averageOrder)}
-                        subtitle="Per transaksi"
-                        icon={IconReceipt}
-                        gradient="from-accent-500 to-accent-700"
+                    <TargetCard
+                        title="Target Bulan Ini"
+                        current={currentMonthSales}
+                        target={monthlyTarget}
+                        icon={IconTarget}
                     />
                     <StatCard
                         title="Transaksi Hari Ini"
@@ -323,131 +377,171 @@ export default function Dashboard({
                     />
                 </div>
 
-                {/* Charts and Lists Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Revenue Chart */}
-                    <ListCard
-                        title="Tren Pendapatan"
-                        subtitle="12 data terakhir"
-                        icon={IconChartBar}
-                        emptyMessage="Belum ada data pendapatan"
-                    >
-                        {chartData.length > 0 && (
-                            <div className="h-64">
-                                <canvas ref={chartRef} />
-                            </div>
-                        )}
-                    </ListCard>
+                {/* Revenue Chart - Full Width */}
+                <ListCard
+                    title="Tren Pendapatan"
+                    subtitle="12 data terakhir"
+                    icon={IconChartBar}
+                    emptyMessage="Belum ada data pendapatan"
+                >
+                    {chartData.length > 0 && (
+                        <div className="h-72">
+                            <canvas ref={chartRef} />
+                        </div>
+                    )}
+                </ListCard>
 
+                {/* 4-Column Bottom Widgets */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Top Products */}
                     <ListCard
                         title="Produk Terlaris"
-                        subtitle="Berdasarkan penjualan"
+                        subtitle="Best seller"
                         icon={IconBox}
-                        emptyMessage="Belum ada data produk"
+                        emptyMessage="Belum ada data"
                     >
                         {topProducts.length > 0 && (
                             <ul className="space-y-3">
-                                {topProducts.map((product, index) => (
+                                {topProducts
+                                    .slice(0, 5)
+                                    .map((product, index) => (
+                                        <li
+                                            key={index}
+                                            className="flex items-center justify-between"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 text-xs font-bold flex items-center justify-center">
+                                                    {index + 1}
+                                                </span>
+                                                <span className="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[100px]">
+                                                    {product.name}
+                                                </span>
+                                            </div>
+                                            <span className="text-xs text-slate-500">
+                                                {product.qty}x
+                                            </span>
+                                        </li>
+                                    ))}
+                            </ul>
+                        )}
+                    </ListCard>
+
+                    {/* Low Stock */}
+                    <ListCard
+                        title="Stok Menipis"
+                        subtitle="Stok < 10"
+                        icon={IconAlertTriangle}
+                        emptyMessage="Semua stok aman"
+                    >
+                        {lowStockProducts.length > 0 && (
+                            <ul className="space-y-3">
+                                {lowStockProducts.map((product, index) => (
                                     <li
                                         key={index}
-                                        className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                        className="flex items-center justify-between"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <span className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 text-xs font-bold flex items-center justify-center">
-                                                {index + 1}
-                                            </span>
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                                                    {product.name}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    {product.qty} terjual
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                                            {formatCurrency(product.total)}
-                                        </p>
+                                        <span className="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[120px]">
+                                            {product.name}
+                                        </span>
+                                        <span className="text-xs font-semibold text-danger-500">
+                                            {product.stock} pcs
+                                        </span>
                                     </li>
                                 ))}
                             </ul>
                         )}
                     </ListCard>
-                </div>
 
-                {/* Bottom Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Recent Transactions */}
+                    {/* Slow Moving Products */}
                     <ListCard
-                        title="Transaksi Terbaru"
-                        subtitle="5 transaksi terakhir"
-                        icon={IconReceipt}
-                        emptyMessage="Belum ada transaksi"
+                        title="Slow Moving"
+                        subtitle="Tidak terjual 30 hari"
+                        icon={IconPackageOff}
+                        emptyMessage="Semua produk laku"
                     >
-                        {recentTransactions.length > 0 && (
-                            <div className="space-y-3">
-                                {recentTransactions.map((trx, index) => (
-                                    <div
+                        {slowMovingProducts.length > 0 && (
+                            <ul className="space-y-3">
+                                {slowMovingProducts.map((product, index) => (
+                                    <li
                                         key={index}
-                                        className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50"
+                                        className="flex items-center justify-between"
                                     >
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                                                {trx.invoice}
-                                            </p>
-                                            <p className="text-xs text-slate-500 mt-0.5">
-                                                {trx.date} • {trx.customer}
-                                            </p>
-                                            <p className="text-xs text-slate-400">
-                                                Kasir: {trx.cashier}
-                                            </p>
-                                        </div>
-                                        <p className="text-sm font-bold text-primary-600 dark:text-primary-400">
-                                            {formatCurrency(trx.total)}
-                                        </p>
-                                    </div>
+                                        <span className="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[120px]">
+                                            {product.name}
+                                        </span>
+                                        <span className="text-xs text-warning-500">
+                                            {product.stock} pcs
+                                        </span>
+                                    </li>
                                 ))}
-                            </div>
+                            </ul>
                         )}
                     </ListCard>
 
                     {/* Top Customers */}
                     <ListCard
                         title="Pelanggan Terbaik"
-                        subtitle="Berdasarkan nilai pembelian"
+                        subtitle="Top spender"
                         icon={IconUsers}
-                        emptyMessage="Belum ada data pelanggan"
+                        emptyMessage="Belum ada data"
                     >
                         {topCustomers.length > 0 && (
                             <ul className="space-y-3">
-                                {topCustomers.map((customer, index) => (
-                                    <li
-                                        key={index}
-                                        className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center text-white text-sm font-bold">
-                                                {customer.name.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                                {topCustomers
+                                    .slice(0, 5)
+                                    .map((customer, index) => (
+                                        <li
+                                            key={index}
+                                            className="flex items-center justify-between"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center text-white text-xs font-bold">
+                                                    {customer.name.charAt(0)}
+                                                </div>
+                                                <span className="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[80px]">
                                                     {customer.name}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    {customer.orders} transaksi
-                                                </p>
+                                                </span>
                                             </div>
-                                        </div>
-                                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                                            {formatCurrency(customer.total)}
-                                        </p>
-                                    </li>
-                                ))}
+                                            <span className="text-xs text-slate-500">
+                                                {customer.orders}x
+                                            </span>
+                                        </li>
+                                    ))}
                             </ul>
                         )}
                     </ListCard>
                 </div>
+
+                {/* Recent Transactions */}
+                <ListCard
+                    title="Transaksi Terbaru"
+                    subtitle="5 transaksi terakhir"
+                    icon={IconReceipt}
+                    emptyMessage="Belum ada transaksi"
+                >
+                    {recentTransactions.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {recentTransactions.map((trx, index) => (
+                                <div
+                                    key={index}
+                                    className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50"
+                                >
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                            {trx.invoice}
+                                        </p>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            {trx.date} • {trx.customer}
+                                        </p>
+                                    </div>
+                                    <p className="text-sm font-bold text-primary-600 dark:text-primary-400">
+                                        {formatCurrency(trx.total)}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </ListCard>
             </div>
         </>
     );

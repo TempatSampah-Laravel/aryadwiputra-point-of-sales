@@ -12,11 +12,14 @@ import {
     IconPhoto,
     IconPackage,
     IconSearch,
+    IconBarcode,
+    IconPrinter,
 } from "@tabler/icons-react";
 import Search from "@/Components/Dashboard/Search";
 import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
 import { getProductImageUrl } from "@/Utils/imageUrl";
+import BarcodePrintModal from "@/Components/Barcode/BarcodePrintModal";
 
 const formatCurrency = (value = 0) =>
     new Intl.NumberFormat("id-ID", {
@@ -26,15 +29,37 @@ const formatCurrency = (value = 0) =>
     }).format(value);
 
 // Product Card for Grid View
-function ProductCard({ product, index, currentPage, perPage }) {
+function ProductCard({
+    product,
+    index,
+    currentPage,
+    perPage,
+    isSelected,
+    onToggle,
+}) {
     const rowNumber = index + 1 + (currentPage - 1) * perPage;
     const lowStock = product.stock > 0 && product.stock <= 5;
     const outOfStock = product.stock === 0;
 
     return (
-        <div className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200">
+        <div
+            className={`group bg-white dark:bg-slate-900 rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-200 ${
+                isSelected
+                    ? "border-primary-500 ring-2 ring-primary-500/20"
+                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+            }`}
+        >
             {/* Product Image */}
             <div className="relative aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                {/* Checkbox */}
+                <div className="absolute top-2 left-2 z-10">
+                    <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => onToggle(product)}
+                        className="w-5 h-5 rounded border-2 border-white bg-white/80 text-primary-500 focus:ring-primary-500 cursor-pointer shadow-sm"
+                    />
+                </div>
                 {product.image ? (
                     <img
                         src={getProductImageUrl(product.image)}
@@ -127,6 +152,49 @@ function ProductCard({ product, index, currentPage, perPage }) {
 export default function Index({ products }) {
     const { roles, permissions, errors } = usePage().props;
     const [viewMode, setViewMode] = useState("grid"); // 'grid' | 'list'
+    const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+    const [singleProductBarcode, setSingleProductBarcode] = useState(null);
+    const [selectedProducts, setSelectedProducts] = useState([]);
+
+    const handlePrintSingleBarcode = (product) => {
+        setSingleProductBarcode(product);
+        setSelectedProducts([]);
+        setShowBarcodeModal(true);
+    };
+
+    const handlePrintAllBarcodes = () => {
+        setSingleProductBarcode(null);
+        setSelectedProducts(products.data);
+        setShowBarcodeModal(true);
+    };
+
+    const handlePrintSelected = () => {
+        if (selectedProducts.length === 0) return;
+        setSingleProductBarcode(null);
+        setShowBarcodeModal(true);
+    };
+
+    const toggleProductSelection = (product) => {
+        setSelectedProducts((prev) => {
+            const isSelected = prev.some((p) => p.id === product.id);
+            if (isSelected) {
+                return prev.filter((p) => p.id !== product.id);
+            } else {
+                return [...prev, product];
+            }
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedProducts.length === products.data.length) {
+            setSelectedProducts([]);
+        } else {
+            setSelectedProducts([...products.data]);
+        }
+    };
+
+    const isProductSelected = (productId) =>
+        selectedProducts.some((p) => p.id === productId);
 
     return (
         <>
@@ -143,27 +211,66 @@ export default function Index({ products }) {
                             {products.total} produk terdaftar
                         </p>
                     </div>
-                    <Button
-                        type={"link"}
-                        icon={<IconCirclePlus size={18} strokeWidth={1.5} />}
-                        className={
-                            "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
-                        }
-                        label={"Tambah Produk"}
-                        href={route("products.create")}
-                    />
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handlePrintAllBarcodes}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            <IconBarcode size={18} />
+                            Cetak All Barcode
+                        </button>
+                        <Button
+                            type={"link"}
+                            icon={
+                                <IconCirclePlus size={18} strokeWidth={1.5} />
+                            }
+                            className={
+                                "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
+                            }
+                            label={"Tambah Produk"}
+                            href={route("products.create")}
+                        />
+                    </div>
                 </div>
             </div>
 
             {/* Toolbar */}
             <div className="mb-4 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-                <div className="w-full sm:w-80">
-                    <Search
-                        url={route("products.index")}
-                        placeholder="Cari produk..."
-                    />
+                <div className="flex items-center gap-3">
+                    <div className="w-full sm:w-80">
+                        <Search
+                            url={route("products.index")}
+                            placeholder="Cari produk..."
+                        />
+                    </div>
+                    {/* Select All Checkbox */}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={
+                                selectedProducts.length ===
+                                    products.data.length &&
+                                products.data.length > 0
+                            }
+                            onChange={toggleSelectAll}
+                            className="w-4 h-4 rounded border-slate-300 text-primary-500 focus:ring-primary-500"
+                        />
+                        <span className="text-sm text-slate-600 dark:text-slate-400 hidden sm:inline">
+                            Pilih Semua
+                        </span>
+                    </label>
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* Show selection count and print selected button */}
+                    {selectedProducts.length > 0 && (
+                        <button
+                            onClick={handlePrintSelected}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors"
+                        >
+                            <IconPrinter size={18} />
+                            Cetak Terpilih ({selectedProducts.length})
+                        </button>
+                    )}
                     <button
                         onClick={() => setViewMode("grid")}
                         className={`p-2.5 rounded-lg transition-colors ${
@@ -201,6 +308,8 @@ export default function Index({ products }) {
                                 index={i}
                                 currentPage={products.current_page}
                                 perPage={products.per_page}
+                                isSelected={isProductSelected(product.id)}
+                                onToggle={toggleProductSelection}
                             />
                         ))}
                     </div>
@@ -353,6 +462,17 @@ export default function Index({ products }) {
             )}
 
             {products.last_page !== 1 && <Pagination links={products.links} />}
+
+            {/* Barcode Print Modal */}
+            <BarcodePrintModal
+                isOpen={showBarcodeModal}
+                onClose={() => {
+                    setShowBarcodeModal(false);
+                    setSingleProductBarcode(null);
+                }}
+                products={selectedProducts}
+                singleProduct={singleProductBarcode}
+            />
         </>
     );
 }

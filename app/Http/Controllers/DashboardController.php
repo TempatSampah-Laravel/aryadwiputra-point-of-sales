@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
+use App\Models\Setting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -24,6 +25,16 @@ class DashboardController extends Controller
         $totalProfit       = Profit::sum('total');
         $averageOrder      = Transaction::avg('grand_total') ?? 0;
         $todayTransactions = Transaction::whereDate('created_at', Carbon::today())->count();
+
+        // New: Today's Sales and Profit
+        $todaySales = Transaction::whereDate('created_at', Carbon::today())->sum('grand_total');
+        $todayProfit = Profit::whereDate('created_at', Carbon::today())->sum('total');
+
+        // New: Monthly Target (from settings)
+        $monthlyTarget = Setting::where('key', 'monthly_sales_target')->first()?->value ?? 0;
+        $currentMonthSales = Transaction::whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum('grand_total');
 
         $revenueTrend      = Transaction::selectRaw('DATE(created_at) as date, SUM(grand_total) as total')
             ->groupBy('date')
@@ -51,6 +62,37 @@ class DashboardController extends Controller
                     'name'  => $detail->product?->title ?? 'Produk terhapus',
                     'qty'   => (int) $detail->qty,
                     'total' => (int) $detail->total,
+                ];
+            });
+
+        // New: Low Stock Products (stock < 10)
+        $lowStockProducts = Product::where('stock', '<', 10)
+            ->orderBy('stock', 'asc')
+            ->take(5)
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'name'  => $product->title,
+                    'stock' => (int) $product->stock,
+                    'image' => $product->image,
+                ];
+            });
+
+        // New: Slow Moving Products (no sales in 30 days)
+        $thirtyDaysAgo = Carbon::now()->subDays(30);
+        $recentlySoldProductIds = TransactionDetail::where('created_at', '>=', $thirtyDaysAgo)
+            ->distinct()
+            ->pluck('product_id');
+
+        $slowMovingProducts = Product::whereNotIn('id', $recentlySoldProductIds)
+            ->where('stock', '>', 0)
+            ->take(5)
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'name'  => $product->title,
+                    'stock' => (int) $product->stock,
+                    'image' => $product->image,
                 ];
             });
 
@@ -84,18 +126,24 @@ class DashboardController extends Controller
             });
 
         return Inertia::render('Dashboard/Index', [
-            'totalCategories'   => $totalCategories,
-            'totalProducts'     => $totalProducts,
-            'totalTransactions' => $totalTransactions,
-            'totalUsers'        => $totalUsers,
-            'revenueTrend'      => $revenueTrend,
-            'totalRevenue'      => (int) $totalRevenue,
-            'totalProfit'       => (int) $totalProfit,
-            'averageOrder'      => (int) round($averageOrder),
-            'todayTransactions' => (int) $todayTransactions,
-            'topProducts'       => $topProducts,
-            'recentTransactions'=> $recentTransactions,
-            'topCustomers'      => $topCustomers,
+            'totalCategories'     => $totalCategories,
+            'totalProducts'       => $totalProducts,
+            'totalTransactions'   => $totalTransactions,
+            'totalUsers'          => $totalUsers,
+            'revenueTrend'        => $revenueTrend,
+            'totalRevenue'        => (int) $totalRevenue,
+            'totalProfit'         => (int) $totalProfit,
+            'averageOrder'        => (int) round($averageOrder),
+            'todayTransactions'   => (int) $todayTransactions,
+            'todaySales'          => (int) $todaySales,
+            'todayProfit'         => (int) $todayProfit,
+            'monthlyTarget'       => (int) $monthlyTarget,
+            'currentMonthSales'   => (int) $currentMonthSales,
+            'topProducts'         => $topProducts,
+            'lowStockProducts'    => $lowStockProducts,
+            'slowMovingProducts'  => $slowMovingProducts,
+            'recentTransactions'  => $recentTransactions,
+            'topCustomers'        => $topCustomers,
         ]);
     }
 }

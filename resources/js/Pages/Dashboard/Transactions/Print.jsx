@@ -6,10 +6,12 @@ import {
     IconExternalLink,
     IconReceipt,
     IconFileInvoice,
+    IconTruck,
 } from "@tabler/icons-react";
 import ThermalReceipt, {
     ThermalReceipt58mm,
 } from "@/Components/Receipt/ThermalReceipt";
+import ShippingLabel from "@/Components/Receipt/ShippingLabel";
 
 export default function Print({ transaction }) {
     const [printMode, setPrintMode] = useState("invoice"); // 'invoice' | 'thermal80' | 'thermal58'
@@ -132,6 +134,20 @@ export default function Print({ transaction }) {
                                     />
                                     Struk 58mm
                                 </button>
+                                <button
+                                    onClick={() => setPrintMode("shipping")}
+                                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                                        printMode === "shipping"
+                                            ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow"
+                                            : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
+                                    }`}
+                                >
+                                    <IconTruck
+                                        size={16}
+                                        className="inline mr-1"
+                                    />
+                                    Resi
+                                </button>
                             </div>
 
                             {showPaymentLink && (
@@ -176,6 +192,15 @@ export default function Print({ transaction }) {
                                         storePhone="08123456789"
                                     />
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Shipping Label Preview */}
+                    {printMode === "shipping" && (
+                        <div className="flex justify-center print:block">
+                            <div className="bg-white rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl p-6 print:shadow-none print:border-0 print:p-0 print:rounded-none">
+                                <ShippingLabel transaction={transaction} />
                             </div>
                         </div>
                     )}

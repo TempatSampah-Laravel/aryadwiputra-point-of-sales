@@ -132,24 +132,11 @@ export default function POSLayout({ children }) {
                         )}
                     </button>
 
-                    {/* User Info */}
-                    <div className="flex items-center gap-3 pl-2 lg:pl-3 border-l border-slate-200 dark:border-slate-700">
-                        <div className="hidden sm:block text-right">
-                            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                                {auth.user.name}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Kasir
-                            </p>
-                        </div>
-                        <img
-                            src={
-                                auth.user.avatar ||
-                                `https://ui-avatars.com/api/?name=${auth.user.name}&background=6366f1&color=fff`
-                            }
-                            alt={auth.user.name}
-                            className="w-9 h-9 rounded-full ring-2 ring-slate-200 dark:ring-slate-700"
-                        />
+                    {/* User Info - Simplified */}
+                    <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200 dark:border-slate-700">
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                            {auth.user.name}
+                        </p>
                     </div>
 
                     {/* Logout */}

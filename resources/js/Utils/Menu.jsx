@@ -82,7 +82,10 @@ export default function Menu() {
                 {
                     title: "Riwayat Transaksi",
                     href: route("transactions.history"),
-                    active: url === "/dashboard/transactions/history" ? true : false,
+                    active:
+                        url === "/dashboard/transactions/history"
+                            ? true
+                            : false,
                     icon: <IconClockHour6 size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["transactions-access"]),
                 },
@@ -163,6 +166,13 @@ export default function Menu() {
                     active: url === "/dashboard/settings/payments",
                     icon: <IconCreditCard size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["payment-settings-access"]),
+                },
+                {
+                    title: "Target Penjualan",
+                    href: route("settings.target"),
+                    active: url === "/dashboard/settings/target",
+                    icon: <IconChartInfographic size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["dashboard-access"]),
                 },
             ],
         },
