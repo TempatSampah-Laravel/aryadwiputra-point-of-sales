@@ -60,6 +60,7 @@ export default function Index({
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [discountInput, setDiscountInput] = useState("");
     const [cashInput, setCashInput] = useState("");
+    const [shippingInput, setShippingInput] = useState("");
     const [paymentMethod, setPaymentMethod] = useState(
         defaultPaymentGateway ?? "cash"
     );
@@ -108,10 +109,14 @@ export default function Index({
         () => Math.max(0, Number(discountInput) || 0),
         [discountInput]
     );
+    const shipping = useMemo(
+        () => Math.max(0, Number(shippingInput) || 0),
+        [shippingInput]
+    );
     const subtotal = useMemo(() => carts_total ?? 0, [carts_total]);
     const payable = useMemo(
-        () => Math.max(subtotal - discount, 0),
-        [subtotal, discount]
+        () => Math.max(subtotal - discount + shipping, 0),
+        [subtotal, discount, shipping]
     );
     const isCashPayment = paymentMethod === "cash";
     const cash = useMemo(
@@ -327,6 +332,7 @@ export default function Index({
             {
                 customer_id: selectedCustomer.id,
                 discount,
+                shipping_cost: shipping,
                 grand_total: payable,
                 cash: isCashPayment ? cash : payable,
                 change: isCashPayment ? Math.max(cash - payable, 0) : 0,
@@ -339,6 +345,7 @@ export default function Index({
                 onSuccess: () => {
                     setDiscountInput("");
                     setCashInput("");
+                    setShippingInput("");
                     setSelectedCustomer(null);
                     setSelectedBankAccount(null);
                     setPaymentMethod(defaultPaymentGateway ?? "cash");
@@ -739,6 +746,52 @@ export default function Index({
                                         placeholder="0"
                                         className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
                                     />
+                                </div>
+                            </div>
+
+                            {/* Shipping Cost Input */}
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
+                                    Ongkos Kirim (Rp)
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                                        Rp
+                                    </span>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={shippingInput}
+                                        onChange={(e) =>
+                                            setShippingInput(
+                                                e.target.value.replace(
+                                                    /[^\d]/g,
+                                                    ""
+                                                )
+                                            )
+                                        }
+                                        placeholder="0"
+                                        className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                                    />
+                                </div>
+                                {/* Quick Shipping Amounts */}
+                                <div className="grid grid-cols-4 gap-2 mt-2">
+                                    {[10000, 15000, 20000, 25000].map((amt) => (
+                                        <button
+                                            key={amt}
+                                            type="button"
+                                            onClick={() =>
+                                                setShippingInput(String(amt))
+                                            }
+                                            className={`py-1.5 px-1 rounded-lg text-xs font-medium transition-all ${
+                                                Number(shippingInput) === amt
+                                                    ? "bg-primary-500 text-white"
+                                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                                            }`}
+                                        >
+                                            {formatPrice(amt)}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 

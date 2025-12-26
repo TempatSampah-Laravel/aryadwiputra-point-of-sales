@@ -22,6 +22,7 @@ class Transaction extends Model
         'cash',
         'change',
         'discount',
+        'shipping_cost',
         'grand_total',
         'payment_method',
         'payment_status',

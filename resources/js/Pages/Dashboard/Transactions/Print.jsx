@@ -388,7 +388,10 @@ export default function Print({ transaction }) {
                                         <span>
                                             {formatPrice(
                                                 transaction.grand_total +
-                                                    (transaction.discount || 0)
+                                                    (transaction.discount ||
+                                                        0) -
+                                                    (transaction.shipping_cost ||
+                                                        0)
                                             )}
                                         </span>
                                     </div>
@@ -399,6 +402,17 @@ export default function Print({ transaction }) {
                                             {formatPrice(transaction.discount)}
                                         </span>
                                     </div>
+                                    {transaction.shipping_cost > 0 && (
+                                        <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                                            <span>Ongkos Kirim</span>
+                                            <span>
+                                                +{" "}
+                                                {formatPrice(
+                                                    transaction.shipping_cost
+                                                )}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-lg font-bold text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
                                         <span>Total</span>
                                         <span>

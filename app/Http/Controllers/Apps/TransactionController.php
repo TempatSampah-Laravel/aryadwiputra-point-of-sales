@@ -432,6 +432,7 @@ class TransactionController extends Controller
                 'cash'            => $cashAmount,
                 'change'          => $changeAmount,
                 'discount'        => $request->discount,
+                'shipping_cost'   => $request->shipping_cost ?? 0,
                 'grand_total'     => $request->grand_total,
                 'payment_method'  => $paymentGateway ?: 'cash',
                 'payment_status'  => $isCashPayment ? 'paid' : 'pending',
