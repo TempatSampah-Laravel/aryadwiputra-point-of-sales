@@ -370,13 +370,15 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button
-                                    onClick={handlePrint}
+                                <a
+                                    href={route("pdf.receivables.show", receivable.id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold"
                                 >
                                     <IconPrinter size={16} />
-                                    Cetak / PDF
-                                </button>
+                                    PDF / Cetak
+                                </a>
                                 <button
                                     onClick={() => setShowPreview(false)}
                                     className="text-sm px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"

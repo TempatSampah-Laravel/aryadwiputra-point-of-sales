@@ -224,14 +224,44 @@ export default function Print({ transaction }) {
                                     </button>
                                 )}
 
-                            <button
-                                type="button"
-                                onClick={handlePrint}
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-sm font-semibold text-white shadow-lg shadow-primary-500/30 transition-colors w-full sm:w-auto"
-                            >
-                                <IconPrinter size={18} />
-                                Cetak
-                            </button>
+                            {printMode === "invoice" && (
+                                <a
+                                    href={route("pdf.transactions.invoice", transaction.invoice)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-sm font-semibold text-white shadow-lg shadow-primary-500/30 transition-colors w-full sm:w-auto"
+                                >
+                                    <IconPrinter size={18} />
+                                    PDF Invoice
+                                </a>
+                            )}
+
+                            {(printMode === "thermal80" || printMode === "thermal58") && (
+                                <a
+                                    href={route("pdf.transactions.receipt", {
+                                        invoice: transaction.invoice,
+                                        size: printMode === "thermal58" ? "58" : "80",
+                                    })}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-sm font-semibold text-white transition-colors w-full sm:w-auto"
+                                >
+                                    <IconPrinter size={18} />
+                                    PDF Struk
+                                </a>
+                            )}
+
+                            {printMode === "shipping" && (
+                                <a
+                                    href={route("pdf.transactions.shipping", transaction.invoice)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-sm font-semibold text-white transition-colors w-full sm:w-auto"
+                                >
+                                    <IconPrinter size={18} />
+                                    PDF Resi
+                                </a>
+                            )}
                         </div>
                     </div>
 
