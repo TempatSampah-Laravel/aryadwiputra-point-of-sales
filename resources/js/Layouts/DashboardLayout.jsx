@@ -7,19 +7,47 @@ import { useTheme } from "@/Context/ThemeSwitcherContext";
 export default function AppLayout({ children }) {
     const { darkMode, themeSwitcher } = useTheme();
 
-    const [sidebarOpen, setSidebarOpen] = useState(
-        localStorage.getItem("sidebarOpen") === "true"
+    const getInitialSidebarState = () => {
+        if (typeof window === "undefined") return false;
+        const stored = localStorage.getItem("sidebarOpen");
+        if (stored !== null) return stored === "true";
+        return window.innerWidth >= 768;
+    };
+
+    const [sidebarOpen, setSidebarOpen] = useState(getInitialSidebarState);
+    const [isMobile, setIsMobile] = useState(
+        typeof window !== "undefined" ? window.innerWidth < 768 : false
     );
 
     useEffect(() => {
         localStorage.setItem("sidebarOpen", sidebarOpen);
     }, [sidebarOpen]);
 
+    useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            if (mobile) {
+                setSidebarOpen(false);
+            }
+        };
+
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     return (
         <div className="min-h-screen flex bg-slate-100 dark:bg-slate-950 transition-colors duration-200">
             <Sidebar sidebarOpen={sidebarOpen} />
+            {/* Mobile overlay */}
+            <div
+                className={`fixed inset-0 bg-slate-900/40 md:hidden transition-opacity duration-300 ${
+                    sidebarOpen ? "opacity-100 pointer-events-auto z-30" : "opacity-0 pointer-events-none"
+                }`}
+                onClick={() => setSidebarOpen(false)}
+            />
             <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
                 <Navbar
                     toggleSidebar={toggleSidebar}

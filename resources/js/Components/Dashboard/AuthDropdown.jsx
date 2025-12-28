@@ -99,10 +99,7 @@ export default function AuthDropdown({ auth, isMobile }) {
                 </Menu>
             ) : (
                 <div ref={dropdownRef}>
-                    <button
-                        className="flex items-center group"
-                        onClick={() => setIsToggle(!isToggle)}
-                    >
+                    <div className="flex items-center">
                         <img
                             src={
                                 auth.user.avatar
@@ -113,85 +110,6 @@ export default function AuthDropdown({ auth, isMobile }) {
                             alt={auth.user.name}
                             className="w-10 h-10 rounded-full"
                         />
-                    </button>
-                    <div
-                        className={`${
-                            isToggle
-                                ? "translate-x-0 opacity-100"
-                                : "-translate-x-full"
-                        } fixed top-0 left-0 z-50 w-[300px] h-full transition-all duration-300 transform border-r bg-white dark:bg-gray-950 dark:border-gray-900`}
-                    >
-                        <div className="flex justify-center items-center px-6 py-2 h-16">
-                            <div className="text-2xl font-bold text-center leading-loose tracking-wider text-gray-900 dark:text-gray-200">
-                                KASIR
-                            </div>
-                        </div>
-                        <div className="w-full p-3 flex justify-center border-b border-t dark:bg-gray-950/50 dark:border-gray-900">
-                            <img
-                                src={
-                                    auth.user.avatar
-                                        ? auth.user.avatar
-                                        : "https://ui-avatars.com/api/?name=" +
-                                          auth.user.name
-                                }
-                                className="w-12 h-12 rounded-full"
-                                alt="User"
-                            />
-                        </div>
-                        <div className="w-full flex flex-col overflow-y-auto">
-                            {menuNavigation.map(
-                                (item, index) =>
-                                    item.details.some(
-                                        (detail) => detail.permissions === true
-                                    ) && (
-                                        <div key={index}>
-                                            <div className="text-gray-500 text-xs py-3 px-4 font-bold uppercase">
-                                                {item.title}
-                                            </div>
-                                            {item.details.map(
-                                                (detail, indexDetail) =>
-                                                    detail.hasOwnProperty(
-                                                        "subdetails"
-                                                    ) ? (
-                                                        <LinkItemDropdown
-                                                            key={indexDetail}
-                                                            title={detail.title}
-                                                            icon={detail.icon}
-                                                            data={
-                                                                detail.subdetails
-                                                            }
-                                                            access={
-                                                                detail.permissions
-                                                            }
-                                                            sidebarOpen={true}
-                                                            onClick={() =>
-                                                                setIsToggle(
-                                                                    !isToggle
-                                                                )
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <LinkItem
-                                                            key={indexDetail}
-                                                            title={detail.title}
-                                                            icon={detail.icon}
-                                                            href={detail.href}
-                                                            access={
-                                                                detail.permissions
-                                                            }
-                                                            sidebarOpen={true}
-                                                            onClick={() =>
-                                                                setIsToggle(
-                                                                    !isToggle
-                                                                )
-                                                            }
-                                                        />
-                                                    )
-                                            )}
-                                        </div>
-                                    )
-                            )}
-                        </div>
                     </div>
                 </div>
             )}
