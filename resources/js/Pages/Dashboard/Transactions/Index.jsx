@@ -406,7 +406,7 @@ export default function Index({
                         <IconReceipt size={18} />
                         <span>Keranjang</span>
                         {cartCount > 0 && (
-                            <span className="absolute top-2 right-1/4 w-5 h-5 flex items-center justify-center text-xs font-bold bg-primary-500 text-white rounded-full">
+                            <span className="absolute top-2 right-1/4 w-5 h-5 flex items-center justify-center text-[11px] font-bold bg-primary-500 text-white rounded-full">
                                 {cartCount}
                             </span>
                         )}
@@ -437,7 +437,7 @@ export default function Index({
 
                 {/* Right Panel - Cart & Payment */}
                 <div
-                    className={`w-full lg:w-[420px] xl:w-[480px] flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 ${
+                    className={`w-full lg:w-[420px] xl:w-[480px] flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 min-h-0 overflow-hidden ${
                         mobileView !== "cart" ? "hidden lg:flex" : "flex"
                     }`}
                     style={{ height: "calc(100vh - 4rem)" }}
@@ -482,7 +482,7 @@ export default function Index({
                                     Keranjang
                                 </h3>
                                 {carts.length > 0 && (
-                                    <span className="px-2 py-0.5 text-xs font-bold bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300 rounded-full">
+                                    <span className="px-2.5 py-0.5 text-xs font-bold bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300 rounded-full whitespace-nowrap">
                                         {cartCount} item
                                     </span>
                                 )}
