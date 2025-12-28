@@ -18,7 +18,9 @@
     <div class="header">
         <div class="store">
             <div class="logo">
-                @if($store['logo'])
+                @if($store['logo_data'] ?? false)
+                    <img src="{{ $store['logo_data'] }}" alt="{{ $store['name'] }}">
+                @elseif($store['logo'])
                     <img src="{{ $store['logo'] }}" alt="{{ $store['name'] }}">
                 @else
                     <strong>{{ substr($store['name'],0,2) }}</strong>

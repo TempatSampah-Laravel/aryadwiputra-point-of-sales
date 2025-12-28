@@ -14,7 +14,11 @@
     </style>
 </head>
 <body>
-    @if($store['logo'])
+    @if($store['logo_data'] ?? false)
+        <div class="center">
+            <img src="{{ $store['logo_data'] }}" alt="{{ $store['name'] }}" style="height:28px; margin-bottom:4px;">
+        </div>
+    @elseif(!empty($store['logo']))
         <div class="center">
             <img src="{{ $store['logo'] }}" alt="{{ $store['name'] }}" style="height:28px; margin-bottom:4px;">
         </div>
