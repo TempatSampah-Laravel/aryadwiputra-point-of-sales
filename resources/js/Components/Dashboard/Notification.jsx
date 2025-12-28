@@ -5,26 +5,66 @@ import {
     IconDots,
     IconCircleCheck,
     IconPackage,
+    IconReceipt,
+    IconCurrencyDollar,
 } from "@tabler/icons-react";
 import { usePage, router } from "@inertiajs/react";
 
 export default function Notification() {
-    const { lowStockNotifications = [] } = usePage().props;
+    const {
+        lowStockNotifications = [],
+        receivableNotifications = [],
+        payableNotifications = [],
+    } = usePage().props;
 
     const mapItems = (items) =>
         items.map((item) => ({
-            id: item.id,
-            title: `Stok habis: ${item.title}`,
-            subtitle: `Stok: ${item.stock}`,
-            time: item.time,
-            icon: (
-                <span className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
-                    <IconPackage size={18} />
-                </span>
-            ),
+            ...item,
+            type: item.type || "stock",
+            icon:
+                item.type === "receivable" ? (
+                    <span className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                        <IconReceipt size={18} />
+                    </span>
+                ) : item.type === "payable" ? (
+                    <span className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                        <IconCurrencyDollar size={18} />
+                    </span>
+                ) : (
+                    <span className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+                        <IconPackage size={18} />
+                    </span>
+                ),
         }));
 
-    const [data, setData] = useState(mapItems(lowStockNotifications));
+    const mergeData = () => [
+        ...mapItems(
+            lowStockNotifications.map((n) => ({
+                ...n,
+                id: `stock-${n.id}`,
+                originalId: n.id,
+                title: `Stok habis: ${n.title}`,
+                subtitle: `Stok: ${n.stock}`,
+                type: "stock",
+            }))
+        ),
+        ...mapItems(
+            receivableNotifications.map((n) => ({
+                ...n,
+                id: `recv-${n.id}`,
+                type: "receivable",
+            }))
+        ),
+        ...mapItems(
+            payableNotifications.map((n) => ({
+                ...n,
+                id: `pay-${n.id}`,
+                type: "payable",
+            }))
+        ),
+    ];
+
+    const [data, setData] = useState(mergeData());
 
     const [isMobile, setIsMobile] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
@@ -53,16 +93,19 @@ export default function Notification() {
 
     // Sync when low stock changes (e.g., restocked items disappear)
     useEffect(() => {
-        setData(mapItems(lowStockNotifications));
-    }, [lowStockNotifications]);
+        setData(mergeData());
+    }, [lowStockNotifications, receivableNotifications, payableNotifications]);
 
     const handleMarkRead = (id) => {
         setData((prev) => prev.filter((item) => item.id !== id));
-        router.post(
-            route("notifications.stock.read"),
-            { product_id: id },
-            { preserveScroll: true, preserveState: true }
-        );
+        const item = data.find((d) => d.id === id);
+        if (item?.type === "stock") {
+            router.post(
+                route("notifications.stock.read"),
+                { product_id: item.originalId || id },
+                { preserveScroll: true, preserveState: true }
+            );
+        }
     };
 
     const handleMarkAllRead = () => {

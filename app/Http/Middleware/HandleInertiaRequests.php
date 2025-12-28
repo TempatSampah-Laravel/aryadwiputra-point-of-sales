@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\Product;
+use App\Models\Receivable;
+use App\Models\Payable;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -30,7 +32,9 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $lowStockNotifications = [];
+        $lowStockNotifications    = [];
+        $receivableNotifications  = [];
+        $payableNotifications     = [];
 
         if ($request->user()) {
             $userId = $request->user()->id;
@@ -52,6 +56,40 @@ class HandleInertiaRequests extends Middleware
                         'title' => $product->title,
                         'stock' => (int) $product->stock,
                         'time'  => optional($product->updated_at)->diffForHumans(),
+                    ];
+                });
+
+            $receivableNotifications = Receivable::whereNot('status', 'paid')
+                ->whereNotNull('due_date')
+                ->whereDate('due_date', '<=', now()->addDays(3))
+                ->orderBy('due_date')
+                ->limit(5)
+                ->get(['id', 'invoice', 'customer_id', 'due_date', 'total', 'paid', 'status'])
+                ->map(function ($item) {
+                    $remaining = max(0, ($item->total ?? 0) - ($item->paid ?? 0));
+                    return [
+                        'id'       => $item->id,
+                        'title'    => "Piutang: {$item->invoice}",
+                        'subtitle' => 'Sisa ' . number_format($remaining, 0, ',', '.'),
+                        'time'     => optional($item->due_date)->diffForHumans(),
+                        'status'   => $item->status,
+                    ];
+                });
+
+            $payableNotifications = Payable::whereNot('status', 'paid')
+                ->whereNotNull('due_date')
+                ->whereDate('due_date', '<=', now()->addDays(3))
+                ->orderBy('due_date')
+                ->limit(5)
+                ->get(['id', 'document_number', 'due_date', 'total', 'paid', 'status'])
+                ->map(function ($item) {
+                    $remaining = max(0, ($item->total ?? 0) - ($item->paid ?? 0));
+                    return [
+                        'id'       => $item->id,
+                        'title'    => "Hutang: {$item->document_number}",
+                        'subtitle' => 'Sisa ' . number_format($remaining, 0, ',', '.'),
+                        'time'     => optional($item->due_date)->diffForHumans(),
+                        'status'   => $item->status,
                     ];
                 });
         }
@@ -78,8 +116,10 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => $request->user() ? $request->user()->getPermissions() : [],
                 'super' => $request->user() ? $request->user()->isSuperAdmin() : false,
             ],
-            'lowStockNotifications' => $lowStockNotifications,
-            'storeProfile'          => $storeProfile,
+            'lowStockNotifications'   => $lowStockNotifications,
+            'receivableNotifications' => $receivableNotifications,
+            'payableNotifications'    => $payableNotifications,
+            'storeProfile'            => $storeProfile,
         ];
     }
 }
