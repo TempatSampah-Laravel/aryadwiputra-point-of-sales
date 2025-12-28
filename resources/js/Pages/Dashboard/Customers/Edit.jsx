@@ -52,16 +52,31 @@ export default function Edit({ customer }) {
     };
 
     useEffect(() => {
-        if (data.province_id && regencyList.length === 0) {
-            fetchRegencies(data.province_id);
-        }
-        if (data.regency_id && districtList.length === 0) {
-            fetchDistricts(data.regency_id);
-        }
-        if (data.district_id && villageList.length === 0) {
-            fetchVillages(data.district_id);
-        }
-    }, []);
+        // when province changes, clear downstream
+        setData("regency_id", "");
+        setData("district_id", "");
+        setData("village_id", "");
+        setData("postal_code", "");
+        setDistrictList([]);
+        setVillageList([]);
+        fetchRegencies(data.province_id);
+    }, [data.province_id]);
+
+    useEffect(() => {
+        // when regency changes, clear downstream
+        setData("district_id", "");
+        setData("village_id", "");
+        setData("postal_code", "");
+        setVillageList([]);
+        fetchDistricts(data.regency_id);
+    }, [data.regency_id]);
+
+    useEffect(() => {
+        // when district changes, clear village
+        setData("village_id", "");
+        setData("postal_code", "");
+        fetchVillages(data.district_id);
+    }, [data.district_id]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -119,22 +134,14 @@ export default function Edit({ customer }) {
                                 </label>
                                 <select
                                     value={data.province_id}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setData("province_id", val);
-                                        setData("regency_id", "");
-                                        setData("district_id", "");
-                                        setData("village_id", "");
-                                        setData("postal_code", "");
-                                        fetchRegencies(val);
-                                        setDistrictList([]);
-                                        setVillageList([]);
-                                    }}
+                                    onChange={(e) =>
+                                        setData("province_id", e.target.value)
+                                    }
                                     className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-sm"
                                 >
                                     <option value="">Pilih Provinsi</option>
                                     {provinces.map((prov) => (
-                                        <option key={prov.id} value={prov.id}>
+                                        <option key={prov.code} value={prov.code}>
                                             {prov.name}
                                         </option>
                                     ))}
@@ -151,20 +158,15 @@ export default function Edit({ customer }) {
                                 </label>
                                 <select
                                     value={data.regency_id}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setData("regency_id", val);
-                                        setData("district_id", "");
-                                        setData("village_id", "");
-                                        setData("postal_code", "");
-                                        fetchDistricts(val);
-                                        setVillageList([]);
-                                    }}
+                                    onChange={(e) =>
+                                        setData("regency_id", e.target.value)
+                                    }
                                     className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-sm"
+                                    disabled={!data.province_id}
                                 >
                                     <option value="">Pilih Kota/Kabupaten</option>
                                     {regencyList.map((item) => (
-                                        <option key={item.id} value={item.id}>
+                                        <option key={item.code} value={item.code}>
                                             {item.name}
                                         </option>
                                     ))}
@@ -184,18 +186,15 @@ export default function Edit({ customer }) {
                                 </label>
                                 <select
                                     value={data.district_id}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setData("district_id", val);
-                                        setData("village_id", "");
-                                        setData("postal_code", "");
-                                        fetchVillages(val);
-                                    }}
+                                    onChange={(e) =>
+                                        setData("district_id", e.target.value)
+                                    }
                                     className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-sm"
+                                    disabled={!data.regency_id}
                                 >
                                     <option value="">Pilih Kecamatan</option>
                                     {districtList.map((item) => (
-                                        <option key={item.id} value={item.id}>
+                                        <option key={item.code} value={item.code}>
                                             {item.name}
                                         </option>
                                     ))}
@@ -214,17 +213,15 @@ export default function Edit({ customer }) {
                                     value={data.village_id}
                                     onChange={(e) => {
                                         const val = e.target.value;
-                                        const village = villageList.find(
-                                            (v) => v.id === val
-                                        );
                                         setData("village_id", val);
-                                        setData("postal_code", village?.postal_code || "");
+                                        setData("postal_code", "");
                                     }}
                                     className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-sm"
+                                    disabled={!data.district_id}
                                 >
                                     <option value="">Pilih Kelurahan</option>
                                     {villageList.map((item) => (
-                                        <option key={item.id} value={item.id}>
+                                        <option key={item.code} value={item.code}>
                                             {item.name}
                                         </option>
                                     ))}

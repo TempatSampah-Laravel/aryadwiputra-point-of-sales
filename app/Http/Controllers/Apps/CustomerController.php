@@ -7,7 +7,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Laravolt\Indonesia\Models\Province;
-use Laravolt\Indonesia\Models\Regency;
+use Laravolt\Indonesia\Models\City;
 use Laravolt\Indonesia\Models\District;
 use Laravolt\Indonesia\Models\Village;
 
@@ -38,7 +38,7 @@ class CustomerController extends Controller
      */
     public function create()
     {
-        $provinces = Province::select('id', 'name')->orderBy('name')->get();
+        $provinces = Province::select('code', 'name')->orderBy('name')->get();
 
         return Inertia::render('Dashboard/Customers/Create', [
             'provinces' => $provinces,
@@ -67,10 +67,10 @@ class CustomerController extends Controller
             'postal_code' => 'nullable|string|max:10',
         ]);
 
-        $province = Province::find($request->province_id);
-        $regency  = Regency::find($request->regency_id);
-        $district = District::find($request->district_id);
-        $village  = Village::find($request->village_id);
+        $province = Province::where('code', $request->province_id)->first();
+        $regency  = City::where('code', $request->regency_id)->first();
+        $district = District::where('code', $request->district_id)->first();
+        $village  = Village::where('code', $request->village_id)->first();
 
         //create customer
         Customer::create([
@@ -112,10 +112,10 @@ class CustomerController extends Controller
         ]);
 
         try {
-            $province = $validated['province_id'] ? Province::find($validated['province_id']) : null;
-            $regency  = $validated['regency_id'] ? Regency::find($validated['regency_id']) : null;
-            $district = $validated['district_id'] ? District::find($validated['district_id']) : null;
-            $village  = $validated['village_id'] ? Village::find($validated['village_id']) : null;
+            $province = $validated['province_id'] ? Province::where('code', $validated['province_id'])->first() : null;
+            $regency  = $validated['regency_id'] ? City::where('code', $validated['regency_id'])->first() : null;
+            $district = $validated['district_id'] ? District::where('code', $validated['district_id'])->first() : null;
+            $village  = $validated['village_id'] ? Village::where('code', $validated['village_id'])->first() : null;
 
             $customer = Customer::create([
                 'name'           => $validated['name'],
@@ -159,15 +159,15 @@ class CustomerController extends Controller
      */
     public function edit(Customer $customer)
     {
-        $provinces = Province::select('id', 'name')->orderBy('name')->get();
+        $provinces = Province::select('code', 'name')->orderBy('name')->get();
         $regencies = $customer->province_id
-            ? Regency::where('province_id', $customer->province_id)->select('id', 'name')->orderBy('name')->get()
+            ? City::where('province_code', $customer->province_id)->select('code', 'name')->orderBy('name')->get()
             : [];
         $districts = $customer->regency_id
-            ? District::where('regency_id', $customer->regency_id)->select('id', 'name')->orderBy('name')->get()
+            ? District::where('city_code', $customer->regency_id)->select('code', 'name')->orderBy('name')->get()
             : [];
         $villages = $customer->district_id
-            ? Village::where('district_id', $customer->district_id)->select('id', 'name', 'postal_code')->orderBy('name')->get()
+            ? Village::where('district_code', $customer->district_id)->select('code', 'name', 'postal_code')->orderBy('name')->get()
             : [];
 
         return Inertia::render('Dashboard/Customers/Edit', [
@@ -202,10 +202,10 @@ class CustomerController extends Controller
             'postal_code' => 'nullable|string|max:10',
         ]);
 
-        $province = Province::find($request->province_id);
-        $regency  = Regency::find($request->regency_id);
-        $district = District::find($request->district_id);
-        $village  = Village::find($request->village_id);
+        $province = Province::where('code', $request->province_id)->first();
+        $regency  = City::where('code', $request->regency_id)->first();
+        $district = District::where('code', $request->district_id)->first();
+        $village  = Village::where('code', $request->village_id)->first();
 
         //update customer
         $customer->update([

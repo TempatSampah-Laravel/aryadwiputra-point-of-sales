@@ -30,7 +30,10 @@ export default function Create() {
     const [villages, setVillages] = useState([]);
 
     const fetchRegencies = async (provinceId) => {
-        if (!provinceId) return setRegencies([]);
+        if (!provinceId) {
+            setRegencies([]);
+            return;
+        }
         const res = await axios.get(route("regions.regencies"), {
             params: { province_id: provinceId },
         });
@@ -38,7 +41,10 @@ export default function Create() {
     };
 
     const fetchDistricts = async (regencyId) => {
-        if (!regencyId) return setDistricts([]);
+        if (!regencyId) {
+            setDistricts([]);
+            return;
+        }
         const res = await axios.get(route("regions.districts"), {
             params: { regency_id: regencyId },
         });
@@ -46,12 +52,40 @@ export default function Create() {
     };
 
     const fetchVillages = async (districtId) => {
-        if (!districtId) return setVillages([]);
+        if (!districtId) {
+            setVillages([]);
+            return;
+        }
         const res = await axios.get(route("regions.villages"), {
             params: { district_id: districtId },
         });
         setVillages(res.data);
     };
+
+    // reset children when parent changes
+    useEffect(() => {
+        setData("regency_id", "");
+        setData("district_id", "");
+        setData("village_id", "");
+        setData("postal_code", "");
+        setDistricts([]);
+        setVillages([]);
+        fetchRegencies(data.province_id);
+    }, [data.province_id]);
+
+    useEffect(() => {
+        setData("district_id", "");
+        setData("village_id", "");
+        setData("postal_code", "");
+        setVillages([]);
+        fetchDistricts(data.regency_id);
+    }, [data.regency_id]);
+
+    useEffect(() => {
+        setData("village_id", "");
+        setData("postal_code", "");
+        fetchVillages(data.district_id);
+    }, [data.district_id]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -110,22 +144,12 @@ export default function Create() {
                                 </label>
                                 <select
                                     value={data.province_id}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setData("province_id", val);
-                                        setData("regency_id", "");
-                                        setData("district_id", "");
-                                        setData("village_id", "");
-                                        setData("postal_code", "");
-                                        fetchRegencies(val);
-                                        setDistricts([]);
-                                        setVillages([]);
-                                    }}
+                                    onChange={(e) => setData("province_id", e.target.value)}
                                     className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-sm"
                                 >
                                     <option value="">Pilih Provinsi</option>
                                     {provinces.map((prov) => (
-                                        <option key={prov.id} value={prov.id}>
+                                        <option key={prov.code} value={prov.code}>
                                             {prov.name}
                                         </option>
                                     ))}
@@ -142,20 +166,13 @@ export default function Create() {
                                 </label>
                                 <select
                                     value={data.regency_id}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setData("regency_id", val);
-                                        setData("district_id", "");
-                                        setData("village_id", "");
-                                        setData("postal_code", "");
-                                        fetchDistricts(val);
-                                        setVillages([]);
-                                    }}
+                                    onChange={(e) => setData("regency_id", e.target.value)}
                                     className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-sm"
+                                    disabled={!data.province_id}
                                 >
                                     <option value="">Pilih Kota/Kabupaten</option>
                                     {regencies.map((item) => (
-                                        <option key={item.id} value={item.id}>
+                                        <option key={item.code} value={item.code}>
                                             {item.name}
                                         </option>
                                     ))}
@@ -175,18 +192,13 @@ export default function Create() {
                                 </label>
                                 <select
                                     value={data.district_id}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setData("district_id", val);
-                                        setData("village_id", "");
-                                        setData("postal_code", "");
-                                        fetchVillages(val);
-                                    }}
+                                    onChange={(e) => setData("district_id", e.target.value)}
                                     className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-sm"
+                                    disabled={!data.regency_id}
                                 >
                                     <option value="">Pilih Kecamatan</option>
                                     {districts.map((item) => (
-                                        <option key={item.id} value={item.id}>
+                                        <option key={item.code} value={item.code}>
                                             {item.name}
                                         </option>
                                     ))}
@@ -205,17 +217,18 @@ export default function Create() {
                                     value={data.village_id}
                                     onChange={(e) => {
                                         const val = e.target.value;
-                                        const village = villages.find(
-                                            (v) => v.id === val
-                                        );
                                         setData("village_id", val);
-                                        setData("postal_code", village?.postal_code || "");
+                                        setData("postal_code", "");
                                     }}
                                     className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-sm"
+                                    disabled={!data.district_id}
                                 >
                                     <option value="">Pilih Kelurahan</option>
                                     {villages.map((item) => (
-                                        <option key={item.id} value={item.id}>
+                                        <option
+                                            key={item.code}
+                                            value={item.code}
+                                        >
                                             {item.name}
                                         </option>
                                     ))}
