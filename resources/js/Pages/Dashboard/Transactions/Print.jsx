@@ -237,32 +237,18 @@ export default function Print({ transaction }) {
                             )}
 
                             {(printMode === "thermal80" || printMode === "thermal58") && (
-                                <div className="flex flex-wrap gap-2">
-                                    <a
-                                        href={route("pdf.transactions.receipt", {
-                                            invoice: transaction.invoice,
-                                            size: "80",
-                                        })}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-sm font-semibold text-white transition-colors w-full sm:w-auto"
-                                    >
-                                        <IconPrinter size={18} />
-                                        PDF Struk 80mm
-                                    </a>
-                                    <a
-                                        href={route("pdf.transactions.receipt", {
-                                            invoice: transaction.invoice,
-                                            size: "58",
-                                        })}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-800 text-sm font-semibold text-white transition-colors w-full sm:w-auto"
-                                    >
-                                        <IconPrinter size={18} />
-                                        PDF Struk 58mm
-                                    </a>
-                                </div>
+                                <a
+                                    href={route("pdf.transactions.receipt", {
+                                        invoice: transaction.invoice,
+                                        size: printMode === "thermal58" ? "58" : "80",
+                                    })}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-sm font-semibold text-white transition-colors w-full sm:w-auto"
+                                >
+                                    <IconPrinter size={18} />
+                                    PDF Struk {printMode === "thermal58" ? "58mm" : "80mm"}
+                                </a>
                             )}
 
                             {printMode === "shipping" && (
