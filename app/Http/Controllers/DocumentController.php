@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Payable;
@@ -90,7 +91,11 @@ class DocumentController extends Controller
             'transaction' => $transaction,
             'store'       => $this->storeProfile(),
             'barcode'     => $this->barcode($transaction->invoice),
-        ])->setPaper([0, 0, 453.6, 311.8], 'portrait'); // 160mm x 110mm
+        ]);
+
+        // Set kertas 150mm x 100mm (dalam Points: 1mm = 2.83465pt)
+        // 150mm = 425pt, 100mm = 283pt
+        $pdf->setPaper([0, 0, 425, 283], 'landscape');
 
         return $pdf->stream("shipping-{$transaction->invoice}.pdf");
     }

@@ -1,84 +1,202 @@
+@php
+    $formatPrice = fn($v) => 'Rp ' . number_format($v ?? 0, 0, ',', '.');
+    $formatDate = fn($v) => \Carbon\Carbon::parse($v)->format('d M Y');
+@endphp
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <style>
-        @page { margin: 0; }
-        body { font-family: 'Inter', 'Helvetica', 'Arial', sans-serif; width: 160mm; height: 110mm; padding: 12mm; box-sizing: border-box; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px; }
-        .store { display: flex; gap: 10px; }
-        .logo { width: 40px; height: 40px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .section { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
-        .title { font-size: 10px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; font-weight: 700; }
-        .barcode img { height: 40px; }
+        /* Ukuran 150mm x 100mm dalam Points */
+        @page {
+            margin: 0;
+            size: 425.2pt 283.5pt;
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 425.2pt;
+            height: 283.5pt;
+            color: #1e293b;
+        }
+
+        .container {
+            padding: 15pt;
+            position: relative;
+            height: 253.5pt;
+            /* Tinggi dikurangi padding */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        td {
+            vertical-align: top;
+            overflow: hidden;
+        }
+
+        .header td {
+            vertical-align: middle;
+        }
+
+        .logo-box {
+            width: 40pt;
+            height: 40pt;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .divider {
+            border-top: 1px solid #e2e8f0;
+            margin: 8pt 0;
+        }
+
+        .section-box {
+            border: 1px solid #e2e8f0;
+            border-radius: 6pt;
+            padding: 6pt;
+            height: 65pt;
+            /* Tinggi tetap agar tidak mendorong footer */
+        }
+
+        .title-label {
+            font-size: 7pt;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: bold;
+            margin-bottom: 3pt;
+        }
+
+        .text-bold {
+            font-size: 10pt;
+            font-weight: bold;
+        }
+
+        .text-small {
+            font-size: 8pt;
+            line-height: 1.2;
+        }
+
+        .text-muted {
+            color: #64748b;
+            font-size: 7pt;
+        }
+
+        /* Footer dipaksa berada di bawah */
+        .footer-absolute {
+            position: absolute;
+            bottom: 15pt;
+            left: 15pt;
+            right: 15pt;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8pt;
+        }
+
+        .barcode-img {
+            height: 28pt;
+            width: auto;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 12pt;
+        }
+
+        li {
+            font-size: 8pt;
+            margin-bottom: 2pt;
+        }
     </style>
 </head>
+
 <body>
-    <div class="header">
-        <div class="store">
-            <div class="logo">
-                @if($store['logo_data'] ?? false)
-                    <img src="{{ $store['logo_data'] }}" alt="{{ $store['name'] }}">
-                @elseif($store['logo'])
-                    <img src="{{ $store['logo'] }}" alt="{{ $store['name'] }}">
-                @else
-                    <strong>{{ substr($store['name'],0,2) }}</strong>
-                @endif
-            </div>
-            <div>
-                <div style="font-weight:700;">{{ $store['name'] }}</div>
-                @if($store['address'])<div style="font-size:10px;color:#475569;">{{ $store['address'] }}</div>@endif
-                <div style="font-size:10px;color:#475569;">
-                    {{ $store['phone'] ? 'Telp: '.$store['phone'].' • ' : '' }}{{ $store['email'] }}
-                </div>
-            </div>
-        </div>
-        <div style="text-align:right;">
-            <div style="font-size:10px;color:#94a3b8;">Invoice</div>
-            <div style="font-size:14px;font-weight:700;">{{ $transaction->invoice }}</div>
-            <div style="font-size:10px;color:#94a3b8;">{{ \Carbon\Carbon::parse($transaction->created_at)->format('d M Y') }}</div>
-        </div>
-    </div>
+    <div class="container">
+        <table class="header">
+            <tr>
+                <td width="50pt">
+                    <div class="logo-box">
+                        @if ($store['logo_data'] ?? false)
+                            <img src="{{ $store['logo_data'] }}" style="width: 100%;">
+                        @else
+                            <span style="line-height: 40pt; font-weight: bold;">{{ substr($store['name'], 0, 2) }}</span>
+                        @endif
+                    </div>
+                </td>
+                <td>
+                    <div class="text-bold">{{ $store['name'] }}</div>
+                    <div class="text-small text-muted">{{ Str::limit($store['address'], 60) }}</div>
+                    <div class="text-small text-muted">{{ $store['phone'] }} | {{ $store['email'] }}</div>
+                </td>
+                <td width="100pt" style="text-align: right;">
+                    <div class="text-muted">INVOICE</div>
+                    <div class="text-bold" style="font-size: 10pt; color: #000;">{{ $transaction->invoice }}</div>
+                    <div class="text-small">{{ $formatDate($transaction->created_at) }}</div>
+                </td>
+            </tr>
+        </table>
 
-    <div class="section">
-        <div class="title">Penerima</div>
-        <div style="font-size:14px;font-weight:700;">{{ $transaction->customer->name ?? 'Umum' }}</div>
-        @if($transaction->customer?->phone)<div style="font-size:12px;color:#475569;">{{ $transaction->customer->phone }}</div>@endif
-        @if($transaction->customer?->address)<div style="font-size:12px;color:#475569;">{{ $transaction->customer->address }}</div>@endif
-    </div>
+        <div class="divider"></div>
 
-    <div class="section">
-        <div class="title">Detail Order</div>
-        <div style="display:flex; justify-content: space-between; font-size:12px;">
-            <span>Tanggal</span>
-            <span>{{ \Carbon\Carbon::parse($transaction->created_at)->format('d M Y') }}</span>
-        </div>
-        <div style="display:flex; justify-content: space-between; font-size:12px;">
-            <span>Jumlah Item</span>
-            <span>{{ $transaction->details->count() }} item</span>
-        </div>
-        <div style="display:flex; justify-content: space-between; font-size:12px; font-weight:700;">
-            <span>Total</span>
-            <span>{{ number_format($transaction->grand_total,0,',','.') }}</span>
-        </div>
-    </div>
+        <table>
+            <tr>
+                <td style="padding-right: 5pt;">
+                    <div class="section-box">
+                        <div class="title-label">Penerima</div>
+                        <div class="text-bold">{{ $transaction->customer->name ?? 'Umum' }}</div>
+                        <div class="text-small">{{ $transaction->customer->phone ?? '-' }}</div>
+                        <div class="text-small text-muted">
+                            {{ Str::limit($transaction->customer->address ?? 'No Address', 80) }}</div>
+                    </div>
+                </td>
+                <td style="padding-left: 5pt;">
+                    <div class="section-box">
+                        <div class="title-label">Ringkasan Pesanan</div>
+                        <table class="text-small">
+                            <tr>
+                                <td>Item</td>
+                                <td style="text-align: right;">{{ $transaction->details->count() }} unit</td>
+                            </tr>
+                            <tr>
+                                <td style="padding-top: 15pt;" class="text-bold">Total</td>
+                                <td style="padding-top: 15pt; text-align: right;" class="text-bold">
+                                    {{ $formatPrice($transaction->grand_total) }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+        </table>
 
-    <div class="section">
-        <div class="title">Produk</div>
-        <div style="font-size:12px; line-height:1.4;">
-            {{ $transaction->details->map(fn($d) => ($d->product->title ?? 'Produk')." ({$d->qty}x)")->join(', ') }}
+        <div class="title-label" style="margin-top: 10pt;">Daftar Produk</div>
+        <div style="height: 50pt; overflow: hidden;">
+            <ul>
+                @foreach ($transaction->details->take(3) as $detail)
+                    <li>{{ Str::limit($detail->product->title, 40) }} ({{ $detail->qty }}x)</li>
+                @endforeach
+            </ul>
         </div>
-    </div>
 
-    <div style="display:flex; justify-content: space-between; align-items:center; margin-top:12px;">
-        <div style="font-size:10px; color:#94a3b8;">
-            Kasir: {{ $transaction->cashier->name ?? '-' }}
-        </div>
-        <div class="barcode">
-            <img src="{{ $barcode }}" alt="barcode">
-            <div style="font-size:10px; text-align:right;">{{ $transaction->invoice }}</div>
+        <div class="footer-absolute">
+            <table class="header">
+                <tr>
+                    <td class="text-muted">
+                        Kasir: {{ $transaction->cashier->name ?? '-' }}<br>
+                        Dicetak: {{ now()->format('d/m/Y H:i') }}
+                    </td>
+                    <td style="text-align: right;">
+                        <img src="{{ $barcode }}" class="barcode-img">
+                        <div class="text-muted" style="letter-spacing: 2px;">{{ $transaction->invoice }}</div>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
 </body>
+
 </html>

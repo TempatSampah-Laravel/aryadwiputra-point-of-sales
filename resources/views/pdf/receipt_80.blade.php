@@ -9,7 +9,7 @@
     <meta charset="UTF-8">
     <style>
         @page { margin: 0; }
-        body { font-family: monospace; width: 80mm; margin: 0; padding: 8px; font-size: 12px; line-height: 1.4; }
+        body { font-family: 'Inter','Helvetica','Arial',sans-serif; width: 80mm; margin: 0; padding: 8px; font-size: 12px; line-height: 1.4; }
         .center { text-align: center; }
         .bold { font-weight: 700; }
         .barcode img { height: 28px; }
