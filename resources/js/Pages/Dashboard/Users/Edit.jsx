@@ -10,6 +10,7 @@ import {
 import Input from "@/Components/Dashboard/Input";
 import Checkbox from "@/Components/Dashboard/Checkbox";
 import toast from "react-hot-toast";
+import { useState } from "react";
 
 export default function Edit() {
     const { roles, user } = usePage().props;
@@ -20,8 +21,11 @@ export default function Edit() {
         password: "",
         password_confirmation: "",
         selectedRoles: user.roles.map((role) => role.name),
+        avatar: null,
         _method: "PUT",
     });
+
+    const [avatarPreview, setAvatarPreview] = useState(user.avatar || null);
 
     const setSelectedRoles = (e) => {
         let items = [...data.selectedRoles];
@@ -70,6 +74,44 @@ export default function Edit() {
                             Informasi Akun
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Avatar
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-14 h-14 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden flex items-center justify-center text-slate-600 font-semibold">
+                                        {avatarPreview ? (
+                                            <img
+                                                src={avatarPreview}
+                                                alt="Preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <span>
+                                                {user.name
+                                                    ? user.name
+                                                          .charAt(0)
+                                                          .toUpperCase()
+                                                    : "?"}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                setData("avatar", file);
+                                                setAvatarPreview(
+                                                    URL.createObjectURL(file)
+                                                );
+                                            }
+                                        }}
+                                        errors={errors.avatar}
+                                    />
+                                </div>
+                            </div>
                             <Input
                                 type="text"
                                 label="Nama Lengkap"

@@ -50,21 +50,28 @@ export default function AuthDropdown({ auth, isMobile }) {
         post(route("logout"));
     };
 
+    const avatarUrl = auth.user.avatar;
+    const userInitial =
+        auth.user.name?.charAt(0)?.toUpperCase() ??
+        auth.user.email?.charAt(0)?.toUpperCase() ??
+        "?";
+
     return (
         <>
             {isMobile === false ? (
                 <Menu className="relative z-10" as="div">
                     <Menu.Button className="flex items-center rounded-full">
-                        <img
-                            src={
-                                auth.user.avatar
-                                    ? auth.user.avatar
-                                    : "https://ui-avatars.com/api/?name=" +
-                                      auth.user.name
-                            }
-                            alt={auth.user.name}
-                            className="w-10 h-10 rounded-full"
-                        />
+                        {avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt={auth.user.name}
+                                className="w-10 h-10 rounded-full object-cover"
+                            />
+                        ) : (
+                            <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold">
+                                {userInitial}
+                            </div>
+                        )}
                     </Menu.Button>
                     <Transition
                         enter="transition duration-100 ease-out"
@@ -100,16 +107,17 @@ export default function AuthDropdown({ auth, isMobile }) {
             ) : (
                 <div ref={dropdownRef}>
                     <div className="flex items-center">
-                        <img
-                            src={
-                                auth.user.avatar
-                                    ? auth.user.avatar
-                                    : "https://ui-avatars.com/api/?name=" +
-                                      auth.user.name
-                            }
-                            alt={auth.user.name}
-                            className="w-10 h-10 rounded-full"
-                        />
+                        {avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt={auth.user.name}
+                                className="w-10 h-10 rounded-full object-cover"
+                            />
+                        ) : (
+                            <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold">
+                                {userInitial}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

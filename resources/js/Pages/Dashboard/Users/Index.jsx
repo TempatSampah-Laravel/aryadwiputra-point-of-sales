@@ -21,6 +21,12 @@ import Swal from "sweetalert2";
 
 // User Card for Grid View
 function UserCard({ user, isSelected, onSelect, onDelete }) {
+    const avatarUrl = user.avatar;
+    const initial =
+        user.name?.charAt(0)?.toUpperCase() ||
+        user.email?.charAt(0)?.toUpperCase() ||
+        "?";
+
     return (
         <div
             className={`
@@ -36,8 +42,16 @@ function UserCard({ user, isSelected, onSelect, onDelete }) {
             {/* Header with checkbox */}
             <div className="p-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-lg font-bold">
-                        {user.name.charAt(0).toUpperCase()}
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-lg font-bold overflow-hidden">
+                        {avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt={user.name}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            initial
+                        )}
                     </div>
                     <div>
                         <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">
@@ -281,12 +295,20 @@ export default function Index() {
                                                 (users.current_page - 1) *
                                                     users.per_page}
                                         </Table.Td>
-                                        <Table.Td>
+                                    <Table.Td>
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-bold">
-                                                    {user.name
-                                                        .charAt(0)
-                                                        .toUpperCase()}
+                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+                                                    {user.avatar ? (
+                                                        <img
+                                                            src={user.avatar}
+                                                            alt={user.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        user.name
+                                                            .charAt(0)
+                                                            .toUpperCase()
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">

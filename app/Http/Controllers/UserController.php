@@ -8,6 +8,7 @@ use App\Http\Requests\UserRequest;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -53,11 +54,18 @@ class UserController extends Controller
      */
     public function store(UserRequest $request)
     {
+        $avatarPath = null;
+
+        if ($request->file('avatar')) {
+            $avatarPath = $request->file('avatar')->store('avatars', 'public');
+        }
+
         // create new user data
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
+            'avatar' => $avatarPath,
         ]);
 
         // assign role to user
@@ -93,6 +101,16 @@ class UserController extends Controller
      */
     public function update(UserRequest $request, User $user)
     {
+        $avatarPath = $user->getRawOriginal('avatar');
+
+        if ($request->file('avatar')) {
+            if ($avatarPath) {
+                Storage::disk('public')->delete($avatarPath);
+            }
+
+            $avatarPath = $request->file('avatar')->store('avatars', 'public');
+        }
+
         // check if user send request password
         if ($request->password)
             // update user data password
@@ -103,6 +121,8 @@ class UserController extends Controller
         // update user data name
         $user->update([
             'name' => $request->name,
+            'email' => $request->email,
+            'avatar' => $avatarPath,
         ]);
 
         // assign role to user
