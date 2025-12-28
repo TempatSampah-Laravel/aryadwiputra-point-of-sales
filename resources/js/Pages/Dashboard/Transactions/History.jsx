@@ -283,12 +283,6 @@ const History = ({ transactions, filters }) => {
                                                     transaction.grand_total ?? 0
                                                 )}
                                             </td>
-                                            <td className="px-4 py-4 text-right text-sm font-semibold text-success-600 dark:text-success-400">
-                                                {formatCurrency(
-                                                    transaction.total_profit ??
-                                                        0
-                                                )}
-                                            </td>
                                             <td className="px-4 py-4 text-center">
                                                 {transaction.payment_status ===
                                                 "paid" ? (
