@@ -284,8 +284,15 @@ const History = ({ transactions, filters }) => {
                                                 )}
                                             </td>
                                             <td className="px-4 py-4 text-center">
-                                                {transaction.payment_status ===
-                                                "paid" ? (
+                                                {transaction.payment_method ===
+                                                    "pay_later" &&
+                                                transaction.payment_status !==
+                                                    "paid" ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full">
+                                                        Piutang
+                                                    </span>
+                                                ) : transaction.payment_status ===
+                                                  "paid" ? (
                                                     <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-400 rounded-full">
                                                         <IconCheck size={12} />
                                                         Lunas

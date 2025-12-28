@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\Customer;
 use App\Models\PaymentSetting;
+use App\Models\Receivable;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Services\Payments\PaymentGatewayManager;
@@ -390,11 +391,18 @@ class TransactionController extends Controller
      */
     public function store(Request $request, PaymentGatewayManager $paymentGatewayManager)
     {
-        $paymentGateway = $request->input('payment_gateway');
+        $isPayLater     = $request->boolean('pay_later');
+        $paymentGateway = $isPayLater ? null : $request->input('payment_gateway');
         if ($paymentGateway) {
             $paymentGateway = strtolower($paymentGateway);
         }
         $paymentSetting = null;
+
+        if ($isPayLater && ! $request->filled('due_date')) {
+            return redirect()
+                ->route('transactions.index')
+                ->with('error', 'Tanggal jatuh tempo wajib diisi untuk nota barang.');
+        }
 
         if ($paymentGateway) {
             $paymentSetting = PaymentSetting::first();
@@ -413,8 +421,8 @@ class TransactionController extends Controller
         }
 
         $invoice       = 'TRX-' . Str::upper($random);
-        $isCashPayment = empty($paymentGateway);
-        $cashAmount    = $isCashPayment ? $request->cash : $request->grand_total;
+        $isCashPayment = empty($paymentGateway) && ! $isPayLater;
+        $cashAmount    = $isCashPayment ? $request->cash : 0;
         $changeAmount  = $isCashPayment ? $request->change : 0;
 
         $transaction = DB::transaction(function () use (
@@ -423,7 +431,8 @@ class TransactionController extends Controller
             $cashAmount,
             $changeAmount,
             $paymentGateway,
-            $isCashPayment
+            $isCashPayment,
+            $isPayLater
         ) {
             $transaction = Transaction::create([
                 'cashier_id'      => auth()->user()->id,
@@ -434,8 +443,8 @@ class TransactionController extends Controller
                 'discount'        => $request->discount,
                 'shipping_cost'   => $request->shipping_cost ?? 0,
                 'grand_total'     => $request->grand_total,
-                'payment_method'  => $paymentGateway ?: 'cash',
-                'payment_status'  => $isCashPayment ? 'paid' : 'pending',
+                'payment_method'  => $isPayLater ? 'pay_later' : ($paymentGateway ?: 'cash'),
+                'payment_status'  => $isCashPayment ? 'paid' : ($isPayLater ? 'unpaid' : 'pending'),
                 'bank_account_id' => $paymentGateway === 'bank_transfer' ? $request->bank_account_id : null,
             ]);
 
@@ -465,6 +474,18 @@ class TransactionController extends Controller
 
             Cart::where('cashier_id', auth()->user()->id)->delete();
 
+            if ($isPayLater) {
+                Receivable::create([
+                    'customer_id'    => $request->customer_id,
+                    'transaction_id' => $transaction->id,
+                    'invoice'        => $invoice,
+                    'total'          => $request->grand_total,
+                    'paid'           => 0,
+                    'due_date'       => $request->due_date,
+                    'status'         => 'unpaid',
+                ]);
+            }
+
             return $transaction->fresh(['customer']);
         });
 
@@ -489,7 +510,7 @@ class TransactionController extends Controller
     public function print($invoice)
     {
         //get transaction
-        $transaction = Transaction::with('details.product', 'cashier', 'customer')->where('invoice', $invoice)->firstOrFail();
+        $transaction = Transaction::with('details.product', 'cashier', 'customer', 'receivable')->where('invoice', $invoice)->firstOrFail();
 
         return Inertia::render('Dashboard/Transactions/Print', [
             'transaction' => $transaction,
@@ -508,7 +529,7 @@ class TransactionController extends Controller
         ];
 
         $query = Transaction::query()
-            ->with(['cashier:id,name', 'customer:id,name'])
+            ->with(['cashier:id,name', 'customer:id,name', 'receivable'])
             ->withSum('details as total_items', 'qty')
             ->withSum('profits as total_profit', 'total')
             ->orderByDesc('created_at');

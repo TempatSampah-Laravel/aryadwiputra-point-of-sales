@@ -65,6 +65,8 @@ export default function Index({
     const [paymentMethod, setPaymentMethod] = useState(
         defaultPaymentGateway ?? "cash"
     );
+    const [payLater, setPayLater] = useState(false);
+    const [dueDate, setDueDate] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [mobileView, setMobileView] = useState("products"); // 'products' | 'cart'
     const [numpadOpen, setNumpadOpen] = useState(false);
@@ -160,7 +162,7 @@ export default function Index({
         () => Math.max(subtotal - discount + shipping, 0),
         [subtotal, discount, shipping]
     );
-    const isCashPayment = paymentMethod === "cash";
+    const isCashPayment = !payLater && paymentMethod === "cash";
     const cash = useMemo(
         () => (isCashPayment ? Math.max(0, Number(cashInput) || 0) : payable),
         [cashInput, isCashPayment, payable]
@@ -355,7 +357,12 @@ export default function Index({
             return;
         }
 
-        if (isCashPayment && cash < payable) {
+        if (payLater && !dueDate) {
+            toast.error("Isi tanggal jatuh tempo untuk nota barang");
+            return;
+        }
+
+        if (!payLater && isCashPayment && cash < payable) {
             toast.error("Jumlah pembayaran kurang dari total");
             return;
         }
@@ -378,10 +385,12 @@ export default function Index({
                 grand_total: payable,
                 cash: isCashPayment ? cash : payable,
                 change: isCashPayment ? Math.max(cash - payable, 0) : 0,
-                payment_gateway: isCashPayment ? null : paymentMethod,
+                payment_gateway: payLater ? null : isCashPayment ? null : paymentMethod,
                 bank_account_id: isBankTransfer
                     ? selectedBankAccount?.id
                     : null,
+                pay_later: payLater,
+                due_date: dueDate,
             },
             {
                 onSuccess: () => {
@@ -391,6 +400,8 @@ export default function Index({
                     setSelectedCustomer(null);
                     setSelectedBankAccount(null);
                     setPaymentMethod(defaultPaymentGateway ?? "cash");
+                    setPayLater(false);
+                    setDueDate("");
                     setIsSubmitting(false);
                     toast.success("Transaksi berhasil!");
                 },
@@ -644,6 +655,57 @@ export default function Index({
 
                         {/* Payment Details - Scrollable */}
                         <div className="p-3 space-y-4">
+                            {/* Pay later toggle */}
+                            <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-800 dark:text-white">
+                                        Bayar Belakangan (Nota Barang)
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                        Tidak perlu bayar sekarang, catat sebagai piutang.
+                                    </p>
+                                </div>
+                                <label className="inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={payLater}
+                                        onChange={(e) => {
+                                            setPayLater(e.target.checked);
+                                            if (e.target.checked) {
+                                                setSelectedBankAccount(null);
+                                                setPaymentMethod("cash");
+                                            }
+                                        }}
+                                    />
+                                    <span
+                                        className={`w-11 h-6 flex items-center bg-slate-300 rounded-full p-1 transition ${
+                                            payLater ? "bg-primary-500" : ""
+                                        }`}
+                                    >
+                                        <span
+                                            className={`bg-white w-4 h-4 rounded-full shadow transform transition ${
+                                                payLater ? "translate-x-5" : ""
+                                            }`}
+                                        />
+                                    </span>
+                                </label>
+                            </div>
+
+                            {payLater && (
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
+                                        Tanggal Jatuh Tempo
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={dueDate}
+                                        onChange={(e) => setDueDate(e.target.value)}
+                                        className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                                    />
+                                </div>
+                            )}
+
                             {/* Payment Method Selection */}
                             <div>
                                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
@@ -654,18 +716,21 @@ export default function Index({
                                         <button
                                             key={method.value}
                                             onClick={() =>
+                                                !payLater &&
                                                 setPaymentMethod(method.value)
                                             }
+                                            disabled={payLater}
                                             className={`p-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
-                                                paymentMethod === method.value
+                                                paymentMethod === method.value && !payLater
                                                     ? "border-primary-500 bg-primary-50 dark:bg-primary-950/30"
                                                     : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
-                                            }`}
+                                            } ${payLater ? "opacity-50 cursor-not-allowed" : ""}`}
                                         >
                                             <div
                                                 className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                                                     paymentMethod ===
-                                                    method.value
+                                                        method.value &&
+                                                    !payLater
                                                         ? "bg-primary-500 text-white"
                                                         : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                                                 }`}
@@ -700,7 +765,8 @@ export default function Index({
 
                             {/* Bank Selector - Only for bank_transfer */}
                             {paymentMethod === "bank_transfer" &&
-                                bankAccounts.length > 0 && (
+                                bankAccounts.length > 0 &&
+                                !payLater && (
                                     <div>
                                         <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
                                             Rekening Tujuan
@@ -934,6 +1000,7 @@ export default function Index({
                         </div>
 
                         {paymentMethod === "cash" &&
+                            !payLater &&
                             cash >= payable &&
                             payable > 0 && (
                                 <div className="flex justify-between items-center mb-3 p-2 rounded-lg bg-success-50 dark:bg-success-950/30">
@@ -952,7 +1019,9 @@ export default function Index({
                             disabled={
                                 !carts.length ||
                                 !selectedCustomer ||
-                                (paymentMethod === "cash" && cash < payable) ||
+                                (!payLater &&
+                                    paymentMethod === "cash" &&
+                                    cash < payable) ||
                                 isSubmitting
                             }
                             className={`w-full h-12 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${

@@ -57,6 +57,7 @@ export default function Print({ transaction }) {
         bank_transfer: "Transfer Bank",
         midtrans: "Midtrans",
         xendit: "Xendit",
+        pay_later: "Piutang",
     };
     const paymentMethodKey = (
         transaction?.payment_method || "cash"
@@ -65,9 +66,11 @@ export default function Print({ transaction }) {
 
     const paymentStatuses = {
         paid: "Lunas",
-        pending: "Menunggu",
+        pending: transaction?.payment_method === "pay_later" ? "Belum Lunas" : "Menunggu",
         failed: "Gagal",
         expired: "Kedaluwarsa",
+        unpaid: "Belum Lunas",
+        partial: "Parsial",
     };
     const paymentStatusKey = (transaction?.payment_status || "").toLowerCase();
     const paymentStatusLabel =
@@ -78,6 +81,10 @@ export default function Print({ transaction }) {
         paid: "bg-success-100 text-success-700 dark:bg-success-900/50 dark:text-success-400",
         pending:
             "bg-warning-100 text-warning-700 dark:bg-warning-900/50 dark:text-warning-400",
+        unpaid:
+            "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+        partial:
+            "bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-400",
         failed: "bg-danger-100 text-danger-700 dark:bg-danger-900/50 dark:text-danger-400",
         expired:
             "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400",
@@ -341,6 +348,15 @@ export default function Print({ transaction }) {
                                             <p className="text-sm opacity-80 print:opacity-100 mt-2">
                                                 {paymentMethodLabel}
                                             </p>
+                                            {transaction.payment_method ===
+                                                "pay_later" &&
+                                                transaction.receivable && (
+                                                    <p className="text-xs opacity-80 print:opacity-100 mt-1">
+                                                        Jatuh tempo:{" "}
+                                                        {transaction.receivable
+                                                            ?.due_date || "-"}
+                                                    </p>
+                                                )}
                                         </div>
                                     </div>
                                 </div>

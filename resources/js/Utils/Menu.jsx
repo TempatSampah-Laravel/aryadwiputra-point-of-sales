@@ -22,6 +22,7 @@ import {
     IconUserSquare,
     IconUsers,
     IconUsersPlus,
+    IconFileInvoice,
 } from "@tabler/icons-react";
 import hasAnyPermission from "./Permission";
 import React from "react";
@@ -88,6 +89,13 @@ export default function Menu() {
                             ? true
                             : false,
                     icon: <IconClockHour6 size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["transactions-access"]),
+                },
+                {
+                    title: "Nota Barang (Piutang)",
+                    href: route("receivables.index"),
+                    active: url.startsWith("/dashboard/receivables"),
+                    icon: <IconFileInvoice size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["transactions-access"]),
                 },
             ],

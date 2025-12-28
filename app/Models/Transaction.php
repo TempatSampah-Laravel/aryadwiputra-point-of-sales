@@ -81,6 +81,11 @@ class Transaction extends Model
         return $this->hasMany(Profit::class);
     }
 
+    public function receivable()
+    {
+        return $this->hasOne(Receivable::class);
+    }
+
     /**
      * createdAt
      *
