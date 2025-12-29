@@ -193,6 +193,18 @@
                         <div class="text-small">{{ $transaction->customer->phone ?? '-' }}</div>
                         <div class="text-small text-muted">
                             {{ Str::limit($transaction->customer->address ?? 'No Address', 80) }}</div>
+                        <div class="text-small text-muted" style="margin-top:2pt;">
+                            {{ $transaction->customer->village_name ?? '-' }}
+                            @if ($transaction->customer->district_name)
+                                , {{ $transaction->customer->district_name }}
+                            @endif
+                            @if ($transaction->customer->regency_name)
+                                , {{ $transaction->customer->regency_name }}
+                            @endif
+                            @if ($transaction->customer->province_name)
+                                , {{ $transaction->customer->province_name }}
+                            @endif
+                        </div>
                     </div>
                 </td>
                 <td style="padding-left: 5pt; width: 25%;">

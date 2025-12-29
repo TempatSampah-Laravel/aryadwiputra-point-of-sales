@@ -49,6 +49,14 @@ export default function ShippingLabel({ transaction, store = {} }) {
     const storeInitial = storeName?.[0] || "T";
     const storeLogo = store?.logo;
     const customer = transaction?.customer || {};
+    const region = [
+        customer.village_name,
+        customer.district_name,
+        customer.regency_name,
+        customer.province_name,
+    ]
+        .filter(Boolean)
+        .join(", ");
 
     return (
         <div className="w-full flex justify-center py-4 sm:py-0">
@@ -129,6 +137,11 @@ export default function ShippingLabel({ transaction, store = {} }) {
                                         {customer.address || "Ambil di Toko"}
                                     </p>
                                 </div>
+                                {region && (
+                                    <p className="text-[11px] text-slate-500 mt-1 uppercase">
+                                        {region}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
