@@ -39,6 +39,17 @@ export default function ReceivablesIndex({ receivables, filters = {} }) {
 
     const rows = receivables?.data || [];
 
+    const formatDate = (value) => {
+        if (!value) return "-";
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return value;
+        return d.toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        });
+    };
+
     const statusBadge = (value) => {
         const base = "px-2 py-1 text-xs font-semibold rounded-full";
         switch (value) {
@@ -171,7 +182,7 @@ export default function ReceivablesIndex({ receivables, filters = {} }) {
                                     {formatCurrency(item.remaining)}
                                 </div>
                                 <div className="col-span-2  text-sm text-slate-600 dark:text-slate-400">
-                                    {item.due_date || "-"}
+                                    {formatDate(item.due_date)}
                                 </div>
                                 <div className="col-span-1 flex justify-center">
                                     {statusBadge(item.status)}

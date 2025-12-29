@@ -39,6 +39,17 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
         receivable.total
     )} - Sisa ${formatCurrency(receivable.remaining)}`;
 
+    const formatDate = (value) => {
+        if (!value) return "-";
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return value;
+        return d.toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        });
+    };
+
     const statusBadge = (value) => {
         const base = "px-2 py-1 text-xs font-semibold rounded-full";
         switch (value) {
@@ -139,7 +150,7 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                             <div className="text-right">
                                 <p className="text-slate-500">Jatuh Tempo</p>
                                 <p className="font-semibold text-slate-800 dark:text-white">
-                                    {receivable.due_date || "-"}
+                                    {formatDate(receivable.due_date)}
                                 </p>
                             </div>
                         </div>
@@ -224,7 +235,7 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                             </div>
                             <div className="flex justify-between">
                                 <span>Jatuh Tempo</span>
-                                <span>{receivable.due_date || "-"}</span>
+                                <span>{formatDate(receivable.due_date)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Status</span>
@@ -419,7 +430,7 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                                             {receivable.invoice}
                                         </p>
                                         <p className="text-xs text-slate-500">
-                                            Jatuh tempo: {receivable.due_date || "-"}
+                                            Jatuh tempo: {formatDate(receivable.due_date)}
                                         </p>
                                     </div>
                                 </div>
@@ -481,7 +492,7 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                                                             {formatCurrency(pay.amount)}
                                                         </p>
                                                         <p className="text-xs text-slate-500">
-                                                            {pay.paid_at || "-"} • {pay.method || "metode"}
+                                                            {formatDate(pay.paid_at)} • {pay.method || "metode"}
                                                             {pay.bank_account && ` • ${pay.bank_account.bank_name}`}
                                                         </p>
                                                     </div>
