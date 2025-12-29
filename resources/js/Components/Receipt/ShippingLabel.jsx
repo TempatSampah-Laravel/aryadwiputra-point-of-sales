@@ -1,19 +1,16 @@
 import React from "react";
 import {
-    IconTruck,
     IconMapPin,
     IconPhone,
     IconUser,
     IconPackage,
+    IconCalendar,
+    IconInvoice,
 } from "@tabler/icons-react";
 
-/**
- * Shipping Label Component
- * Size: 150x100mm for standard shipping labels
- */
 export default function ShippingLabel({ transaction, store = {} }) {
     const formatPrice = (price = 0) =>
-        price.toLocaleString("id-ID", {
+        Number(price || 0).toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
             minimumFractionDigits: 0,
@@ -29,10 +26,6 @@ export default function ShippingLabel({ transaction, store = {} }) {
         });
     };
 
-    const handlePrint = () => {
-        window.print();
-    };
-
     const SimpleBarcode = ({ value }) => {
         const bars = (value || "").split("").map((char, idx) => {
             const weight = (char.charCodeAt(0) + idx * 17) % 4;
@@ -40,7 +33,7 @@ export default function ShippingLabel({ transaction, store = {} }) {
         });
 
         return (
-            <div className="flex items-end gap-[2px] mt-1 justify-end">
+            <div className="flex items-end gap-[1px] mt-1 justify-center sm:justify-end">
                 {bars.map((w, i) => (
                     <span
                         key={i}
@@ -55,208 +48,122 @@ export default function ShippingLabel({ transaction, store = {} }) {
     const storeName = store?.name || "TOKO";
     const storeInitial = storeName?.[0] || "T";
     const storeLogo = store?.logo;
-
-    // Get customer details
     const customer = transaction?.customer || {};
-    const hasCustomer = customer?.name;
 
     return (
-        <>
-            {/* Print Styles */}
+        <div className="w-full flex justify-center py-4 sm:py-0">
             <style>
                 {`
                     @media print {
                         @page {
-                            size: 160mm 110mm;
+                            size: 150mm 100mm;
                             margin: 0;
                         }
                         body {
                             margin: 0;
                             padding: 0;
+                            -webkit-print-color-adjust: exact;
                         }
-                        .shipping-label {
+                        .shipping-label-container {
+                            box-shadow: none !important;
+                            border: 1px solid #e2e8f0 !important;
                             width: 150mm !important;
                             height: 100mm !important;
-                            page-break-after: always;
-                        }
-                        .no-print {
-                            display: none !important;
-                        }
-                    }
-                    @media screen and (max-width: 768px) {
-                        .shipping-label {
-                            transform: scale(0.94);
-                            transform-origin: top left;
+                            margin: 0 !important;
+                            border-radius: 0 !important;
                         }
                     }
                 `}
             </style>
 
-            {/* Shipping Label */}
             <div
-                className="shipping-label bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm"
+                className="shipping-label-container bg-white border-2 border-slate-300 rounded-2xl p-6 shadow-sm relative overflow-hidden flex flex-col justify-between"
                 style={{
-                    width: "100%",
-                    maxWidth: "160mm",
+                    width: "150mm",
                     minHeight: "100mm",
                 }}
             >
-                {/* Header with store profile */}
-                <div className="flex flex-col sm:flex-row flex-wrap items-center sm:items-start justify-between gap-3 border-b border-slate-200 pb-3 mb-3 text-center sm:text-left">
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 min-w-0">
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white flex items-center justify-center p-1 flex-shrink-0">
-                            {storeLogo ? (
-                                <img
-                                    src={storeLogo}
-                                    alt={storeName}
-                                    className="max-w-full max-h-full object-contain"
-                                />
-                            ) : (
-                                <span className="text-lg font-bold text-primary-600">
-                                    {storeInitial}
-                                </span>
-                            )}
-                        </div>
-                        <div className="space-y-1 min-w-0">
-                            <p className="text-base sm:text-lg font-bold text-slate-800">
-                                {storeName}
-                            </p>
-                            {store.address && (
-                                <p className="text-[11px] sm:text-xs text-slate-600 leading-snug break-words">
-                                    {store.address}
+                {/* Decorative Side Bar (Commerce Style) */}
+                <div className="absolute left-0 top-0 bottom-0 w-2 bg-primary-600 print:hidden" />
+
+                <div>
+                    {/* Header Section */}
+                    <div className="grid grid-cols-[1fr,auto] gap-4 border-b-2 border-dashed border-slate-200 pb-4 mb-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-slate-50 rounded-xl flex items-center justify-center p-2 border border-slate-100 flex-shrink-0">
+                                {storeLogo ? (
+                                    <img src={storeLogo} alt={storeName} className="max-w-full max-h-full object-contain" />
+                                ) : (
+                                    <span className="text-2xl font-black text-primary-600">{storeInitial}</span>
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <h2 className="text-xl font-bold text-slate-900 leading-tight truncate">{storeName}</h2>
+                                <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                                    <IconPhone size={14} /> {store.phone || "-"}
                                 </p>
-                            )}
-                            <div className="flex flex-wrap justify-center sm:justify-start gap-x-2 gap-y-1 text-[11px] text-slate-600">
-                                {store.phone && (
-                                    <span className="flex items-center gap-1">
-                                        <IconPhone size={12} />
-                                        {store.phone}
-                                    </span>
-                                )}
-                                {store.email && <span>{store.email}</span>}
-                                {store.website && <span>{store.website}</span>}
                             </div>
                         </div>
-                    </div>
-                    <div className="text-center sm:text-right min-w-[140px]">
-                        <p className="text-[11px] text-slate-500">Invoice</p>
-                        <p className="text-sm sm:text-base font-bold text-slate-800">
-                            {transaction?.invoice || "-"}
-                        </p>
-                        <p className="text-[11px] text-slate-500 mt-1">
-                            {formatDate(transaction?.created_at)}
-                        </p>
-                    </div>
-                </div>
 
-                {/* Main Content */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    {/* Penerima */}
-                    <div className="border border-slate-200 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                            <IconUser size={16} className="text-slate-500" />
-                            <span className="text-xs font-semibold text-slate-600 uppercase">
-                                Penerima
-                            </span>
+                        <div className="text-right border-l pl-4 border-slate-200">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">No. Invoice</span>
+                            <p className="text-lg font-black text-primary-600 tabular-nums">{transaction?.invoice}</p>
+                            <p className="text-xs text-slate-500 font-medium">{formatDate(transaction?.created_at)}</p>
                         </div>
-                        {hasCustomer ? (
-                            <>
-                                <p className="text-base sm:text-lg font-bold text-slate-800">
-                                    {customer.name}
-                                </p>
-                                {customer.phone && (
-                                    <p className="text-sm text-slate-600 flex items-center gap-1 mt-1">
-                                        <IconPhone size={14} />
-                                        {customer.phone}
+                    </div>
+
+                    {/* Address Grid */}
+                    <div className="grid grid-cols-2 gap-6">
+                        {/* Left Side: Penerima */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-primary-600">
+                                <IconUser size={18} />
+                                <span className="text-xs font-bold uppercase tracking-wider">Penerima</span>
+                            </div>
+                            <div className="pl-1">
+                                <h3 className="text-lg font-bold text-slate-900">{customer.name || "Pelanggan Umum"}</h3>
+                                <p className="text-sm font-semibold text-slate-700 mt-1">{customer.phone || ""}</p>
+                                <div className="flex gap-2 mt-2">
+                                    <IconMapPin size={16} className="text-slate-400 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-slate-600 leading-relaxed italic uppercase">
+                                        {customer.address || "Ambil di Toko"}
                                     </p>
-                                )}
-                                {customer.address && (
-                                    <p className="text-sm text-slate-600 flex items-start gap-1 mt-1">
-                                        <IconMapPin
-                                            size={14}
-                                            className="mt-0.5 flex-shrink-0"
-                                        />
-                                        <span>{customer.address}</span>
-                                    </p>
-                                )}
-                            </>
-                        ) : (
-                            <p className="text-sm text-slate-400 italic">
-                                Pelanggan umum
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Detail Order */}
-                    <div className="border border-slate-200 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                            <IconPackage size={16} className="text-slate-500" />
-                            <span className="text-xs font-semibold text-slate-600 uppercase">
-                                Detail Order
-                            </span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="space-y-1.5">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">Tanggal:</span>
-                                <span className="font-medium text-slate-700">
-                                    {formatDate(transaction?.created_at)}
-                                </span>
+
+                        {/* Right Side: Order Summary */}
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                            <div className="flex items-center gap-2 text-slate-500 mb-3">
+                                <IconPackage size={18} />
+                                <span className="text-xs font-bold uppercase tracking-wider">Isi Paket</span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">
-                                    Jumlah Item:
-                                </span>
-                                <span className="font-medium text-slate-700">
-                                    {transaction?.details?.length || 0} item
-                                </span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">Total:</span>
-                                <span className="font-bold text-primary-600">
-                                    {formatPrice(transaction?.grand_total)}
-                                </span>
+                            <div className="space-y-2">
+                                <div className="text-[11px] text-slate-600 line-clamp-3 font-medium leading-relaxed">
+                                    {transaction?.details?.map(item => `${item.product?.title} (x${item.qty})`).join(", ")}
+                                </div>
+                                <div className="pt-2 border-t border-slate-200 flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Total Bayar</span>
+                                    <span className="text-sm font-black text-slate-900">{formatPrice(transaction?.grand_total)}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Product List */}
-                <div className="mt-3 border border-slate-200 rounded-lg p-2">
-                    <p className="text-xs font-semibold text-slate-600 mb-1">
-                        Produk:
-                    </p>
-                    <div className="text-xs text-slate-600 line-clamp-3">
-                        {transaction?.details
-                            ?.map(
-                                (item) =>
-                                    `${item.product?.title || "Produk"} (${
-                                        item.qty
-                                    }x)`
-                            )
-                            .join(", ") || "-"}
+                {/* Footer Barcode */}
+                <div className="flex justify-between items-end mt-4 pt-4 border-t-2 border-slate-100">
+                    <div className="text-[10px] text-slate-400 font-medium italic">
+                        Dicetak pada: {new Date().toLocaleString('id-ID')}
                     </div>
-                </div>
-
-                {/* Footer */}
-                <div className="mt-3 pt-3 border-t border-dashed border-slate-300">
-                    <div className="flex flex-wrap justify-between items-center gap-2">
-                        <p className="text-xs text-slate-400">
-                            Kasir: {transaction?.cashier?.name || "-"}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                            Dicetak: {new Date().toLocaleDateString("id-ID")}
-                        </p>
-                    </div>
-                    <div className="flex justify-end mt-1">
-                        <div className="inline-flex flex-col items-end">
-                            <SimpleBarcode value={transaction?.invoice} />
-                            <span className="text-[11px] text-slate-500 mt-0.5">
-                                {transaction?.invoice}
-                            </span>
-                        </div>
+                    <div className="flex flex-col items-end">
+                        <SimpleBarcode value={transaction?.invoice} />
+                        <span className="text-[10px] font-bold text-slate-800 tracking-[3px] mt-1 mr-1 uppercase">
+                            {transaction?.invoice}
+                        </span>
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     );
 }

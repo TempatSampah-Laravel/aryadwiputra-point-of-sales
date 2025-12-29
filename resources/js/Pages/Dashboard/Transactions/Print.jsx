@@ -292,20 +292,16 @@ export default function Print({ transaction }) {
                     )}
 
                     {/* Shipping Label Preview */}
-                    {printMode === "shipping" && (
-                        <div className="flex justify-center print:block">
-                            <div className="bg-white rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl p-3 sm:p-5 print:shadow-none print:border-0 print:p-0 print:rounded-none w-full">
-                                <div className="w-full overflow-x-auto sm:overflow-visible">
-                                    <div className="inline-block origin-top print:scale-100">
-                                        <ShippingLabel
-                                            transaction={transaction}
-                                            store={store}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+{printMode === "shipping" && (
+    <div className="flex justify-center items-center py-10 print:py-0 print:block">
+        <div className="w-full max-w-[150mm] mx-auto transition-all duration-300 transform scale-100 md:scale-110 lg:scale-125 print:scale-100">
+            <ShippingLabel
+                transaction={transaction}
+                store={store}
+            />
+        </div>
+    </div>
+)}
 
                     {/* Invoice View */}
                     {printMode === "invoice" && (
