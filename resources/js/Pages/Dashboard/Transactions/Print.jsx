@@ -310,7 +310,7 @@ export default function Print({ transaction }) {
                             <div className="bg-gradient-to-r from-primary-500 to-primary-700 px-6 py-6 text-white print:bg-slate-100 print:text-slate-900">
                                 <div className="flex flex-wrap items-start justify-between gap-6">
                                     <div className="flex items-start gap-3">
-                                        <div className="w-14 h-14 border border-white/30 bg-white/10 flex items-center justify-center p-1">
+                                        <div className="w-14 h-14 flex items-center justify-center p-1">
                                             {store.logo ? (
                                                 <img
                                                     src={store.logo}
@@ -369,25 +369,6 @@ export default function Print({ transaction }) {
                                                 transaction.created_at
                                             )}
                                         </p>
-                                        <div className="mt-2">
-                                            <span
-                                                className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${paymentStatusColor}`}
-                                            >
-                                                {paymentStatusLabel}
-                                            </span>
-                                            <p className="text-sm opacity-80 print:opacity-100 mt-2">
-                                                {paymentMethodLabel}
-                                            </p>
-                                            {transaction.payment_method ===
-                                                "pay_later" &&
-                                                transaction.receivable && (
-                                                    <p className="text-xs opacity-80 print:opacity-100 mt-1">
-                                                        Jatuh tempo:{" "}
-                                                        {transaction.receivable
-                                                            ?.due_date || "-"}
-                                                    </p>
-                                                )}
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -416,9 +397,30 @@ export default function Print({ transaction }) {
                                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
                                         Kasir
                                     </p>
-                                    <p className="text-base font-semibold text-slate-900 dark:text-white">
-                                        {transaction.cashier?.name ?? "-"}
-                                    </p>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <p className="text-base font-semibold text-slate-900 dark:text-white">
+                                            {transaction.cashier?.name ?? "-"}
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 justify-end">
+                                            <span
+                                                className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${paymentStatusColor}`}
+                                            >
+                                                {paymentStatusLabel}
+                                            </span>
+                                            <span className="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                                {paymentMethodLabel}
+                                            </span>
+                                            {transaction.payment_method ===
+                                                "pay_later" &&
+                                                transaction.receivable && (
+                                                    <span className="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                                                        Jatuh tempo:{" "}
+                                                        {transaction.receivable
+                                                            ?.due_date || "-"}
+                                                    </span>
+                                                )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
