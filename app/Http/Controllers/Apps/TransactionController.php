@@ -333,16 +333,22 @@ class TransactionController extends Controller
             ->delete();
 
         if ($deleted === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Transaksi ditahan tidak ditemukan',
-            ], 404);
+            return request()->wantsJson()
+                ? response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi ditahan tidak ditemukan',
+                ], 404)
+                : back()->with('error', 'Transaksi ditahan tidak ditemukan');
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Transaksi ditahan berhasil dihapus',
-        ]);
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaksi ditahan berhasil dihapus',
+            ]);
+        }
+
+        return back()->with('success', 'Transaksi ditahan berhasil dihapus');
     }
 
     /**
