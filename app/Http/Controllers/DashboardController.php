@@ -125,6 +125,20 @@ class DashboardController extends Controller
                 ];
             });
 
+        $topLocations = Transaction::join('customers', 'transactions.customer_id', '=', 'customers.id')
+            ->select('customers.village_name', DB::raw('COUNT(*) as orders'))
+            ->whereNotNull('customers.village_name')
+            ->groupBy('customers.village_name')
+            ->orderByDesc('orders')
+            ->take(5)
+            ->get()
+            ->map(function ($row) {
+                return [
+                    'name'   => $row->village_name ?? 'Lainnya',
+                    'orders' => (int) $row->orders,
+                ];
+            });
+
         return Inertia::render('Dashboard/Index', [
             'totalCategories'     => $totalCategories,
             'totalProducts'       => $totalProducts,
@@ -144,6 +158,7 @@ class DashboardController extends Controller
             'slowMovingProducts'  => $slowMovingProducts,
             'recentTransactions'  => $recentTransactions,
             'topCustomers'        => $topCustomers,
+            'topLocations'        => $topLocations,
         ]);
     }
 }

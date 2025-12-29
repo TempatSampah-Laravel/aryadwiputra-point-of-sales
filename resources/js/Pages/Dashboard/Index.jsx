@@ -18,6 +18,7 @@ import {
     IconAlertTriangle,
     IconPackageOff,
     IconTarget,
+    IconMapPin,
 } from "@tabler/icons-react";
 
 const formatCurrency = (value = 0) =>
@@ -197,10 +198,10 @@ export default function Dashboard({
     monthlyTarget = 0,
     currentMonthSales = 0,
     topProducts = [],
-    lowStockProducts = [],
     slowMovingProducts = [],
     recentTransactions = [],
     topCustomers = [],
+    topLocations = [],
 }) {
     const chartRef = useRef(null);
     const chartInstance = useRef(null);
@@ -401,11 +402,11 @@ export default function Dashboard({
                         emptyMessage="Belum ada data"
                     >
                         {topProducts.length > 0 && (
-                            <div className="space-y-3">
+                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {topProducts.slice(0, 3).map((product, index) => (
                                     <div
                                         key={index}
-                                        className="flex items-start justify-between rounded-xl border border-slate-200 dark:border-slate-800 p-3 bg-slate-50/60 dark:bg-slate-800/40"
+                                        className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
                                     >
                                         <div className="flex items-start gap-3">
                                             <span className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 text-sm font-semibold flex items-center justify-center">
@@ -434,32 +435,6 @@ export default function Dashboard({
                         )}
                     </ListCard>
 
-                    {/* Low Stock */}
-                    <ListCard
-                        title="Stok Menipis"
-                        subtitle="Stok < 10"
-                        icon={IconAlertTriangle}
-                        emptyMessage="Semua stok aman"
-                    >
-                        {lowStockProducts.length > 0 && (
-                            <ul className="space-y-3">
-                                {lowStockProducts.map((product, index) => (
-                                    <li
-                                        key={index}
-                                        className="flex items-center justify-between"
-                                    >
-                                        <span className="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[120px]">
-                                            {product.name}
-                                        </span>
-                                        <span className="text-xs font-semibold text-danger-500">
-                                            {product.stock} pcs
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </ListCard>
-
                     {/* Slow Moving Products */}
                     <ListCard
                         title="Slow Moving"
@@ -468,16 +443,21 @@ export default function Dashboard({
                         emptyMessage="Semua produk laku"
                     >
                         {slowMovingProducts.length > 0 && (
-                            <ul className="space-y-3">
+                            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {slowMovingProducts.map((product, index) => (
                                     <li
                                         key={index}
-                                        className="flex items-center justify-between"
+                                        className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
                                     >
-                                        <span className="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[120px]">
-                                            {product.name}
-                                        </span>
-                                        <span className="text-xs text-warning-500">
+                                        <div className="flex items-center gap-3">
+                                            <span className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold flex items-center justify-center">
+                                                {index + 1}
+                                            </span>
+                                            <span className="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[120px]">
+                                                {product.name}
+                                            </span>
+                                        </div>
+                                        <span className="text-xs text-warning-500 font-semibold">
                                             {product.stock} pcs
                                         </span>
                                     </li>
@@ -494,24 +474,55 @@ export default function Dashboard({
                         emptyMessage="Belum ada data"
                     >
                         {topCustomers.length > 0 && (
-                            <ul className="space-y-3">
+                            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {topCustomers
                                     .slice(0, 5)
                                     .map((customer, index) => (
                                         <li
                                             key={index}
-                                            className="flex items-center justify-between"
+                                            className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
                                         >
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center text-white text-xs font-bold">
-                                                    {customer.name.charAt(0)}
-                                                </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold flex items-center justify-center">
+                                                    {index + 1}
+                                                </span>
                                                 <span className="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[80px]">
                                                     {customer.name}
                                                 </span>
                                             </div>
-                                            <span className="text-xs text-slate-500">
+                                            <span className="text-xs text-slate-500 font-semibold">
                                                 {customer.orders}x
+                                            </span>
+                                        </li>
+                                    ))}
+                            </ul>
+                        )}
+                    </ListCard>
+
+                    {/* Top Locations */}
+                    <ListCard
+                        title="Lokasi Terbanyak"
+                        subtitle="Berdasar kelurahan transaksi"
+                        icon={IconMapPin}
+                        emptyMessage="Belum ada data"
+                    >
+                        {topLocations.length > 0 && (
+                            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {topLocations.map((loc, index) => (
+                                    <li
+                                        key={index}
+                                        className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 text-sm font-semibold flex items-center justify-center">
+                                                {index + 1}
+                                            </span>
+                                            <span className="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[120px]">
+                                                {loc.name}
+                                            </span>
+                                        </div>
+                                        <span className="text-xs text-slate-500 font-semibold">
+                                            {loc.orders}x
                                             </span>
                                         </li>
                                     ))}
