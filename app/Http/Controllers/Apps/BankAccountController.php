@@ -22,22 +22,47 @@ class BankAccountController extends Controller
     }
 
     /**
+     * Create form
+     */
+    public function create()
+    {
+        return Inertia::render('Dashboard/Settings/BankAccountForm', [
+            'bankAccount' => null,
+        ]);
+    }
+
+    /**
+     * Edit form
+     */
+    public function edit(BankAccount $bankAccount)
+    {
+        return Inertia::render('Dashboard/Settings/BankAccountForm', [
+            'bankAccount' => $bankAccount,
+        ]);
+    }
+
+    /**
      * Store a new bank account
      */
     public function store(Request $request)
     {
+        if (! $request->hasFile('logo')) {
+            $request->request->remove('logo');
+        }
+
         $validated = $request->validate([
             'bank_name'      => 'required|string|max:100',
             'account_number' => 'required|string|max:50',
             'account_name'   => 'required|string|max:100',
             'logo'           => 'nullable|image|mimes:png,jpg,jpeg,svg|max:1024',
-            'is_active'      => 'boolean',
+            'is_active'      => 'nullable|boolean',
         ]);
 
         if ($request->hasFile('logo')) {
             $validated['logo'] = $request->file('logo')->store('bank-logos', 'public');
         }
 
+        $validated['is_active']  = $request->boolean('is_active');
         $validated['sort_order'] = BankAccount::max('sort_order') + 1;
 
         BankAccount::create($validated);
@@ -52,21 +77,26 @@ class BankAccountController extends Controller
      */
     public function update(Request $request, BankAccount $bankAccount)
     {
+        if (! $request->hasFile('logo')) {
+            $request->request->remove('logo');
+        }
+
         $validated = $request->validate([
             'bank_name'      => 'required|string|max:100',
             'account_number' => 'required|string|max:50',
             'account_name'   => 'required|string|max:100',
             'logo'           => 'nullable|image|mimes:png,jpg,jpeg,svg|max:1024',
-            'is_active'      => 'boolean',
+            'is_active'      => 'nullable|boolean',
         ]);
 
         if ($request->hasFile('logo')) {
-            // Delete old logo
             if ($bankAccount->logo) {
                 Storage::disk('public')->delete($bankAccount->logo);
             }
             $validated['logo'] = $request->file('logo')->store('bank-logos', 'public');
         }
+
+        $validated['is_active'] = $request->boolean('is_active');
 
         $bankAccount->update($validated);
 
