@@ -7,6 +7,8 @@
 <head>
     <meta charset="UTF-8">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
         * {
             box-sizing: border-box;
         }
