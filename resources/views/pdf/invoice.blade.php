@@ -154,10 +154,10 @@
                     </div>
                 </div>
             </td>
-            <td style="width:40%; vertical-align:top; text-align:right;">
+            <td style="width:40%; vertical-align:middle; text-align:right;">
                 <div class="badge">INVOICE</div>
-                <div style="font-size:18px;font-weight:700; margin-top:4px;">{{ $transaction->invoice }}</div>
-                <div style="font-size:12px;color:#475569; margin-top:4px;">
+                <div style="font-size:18px;font-weight:700; margin-top:8px;">{{ $transaction->invoice }}</div>
+                <div style="font-size:12px;color:#475569; margin-top:6px;">
                     {{ \Carbon\Carbon::parse($transaction->created_at)->format('d M Y H:i') }}
                 </div>
             </td>
@@ -174,6 +174,20 @@
                 @endif
                 @if ($transaction->customer?->address)
                     <div style="color:#475569; margin-top:2px;">{{ $transaction->customer->address }}</div>
+                @endif
+                @if ($transaction->customer)
+                    <div style="color:#475569; margin-top:2px; font-size:12px;">
+                        {{ $transaction->customer->village_name ?? '' }}
+                        @if ($transaction->customer->district_name)
+                            , {{ $transaction->customer->district_name }}
+                        @endif
+                        @if ($transaction->customer->regency_name)
+                            , {{ $transaction->customer->regency_name }}
+                        @endif
+                        @if ($transaction->customer->province_name)
+                            , {{ $transaction->customer->province_name }}
+                        @endif
+                    </div>
                 @endif
             </td>
             <td style="width:50%; vertical-align:top; font-size:13px; text-align:right;">
