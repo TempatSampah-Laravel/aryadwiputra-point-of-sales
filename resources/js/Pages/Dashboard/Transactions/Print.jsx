@@ -485,7 +485,14 @@ export default function Print({ transaction }) {
                                                     subtotal / quantity;
 
                                                 return (
-                                                    <tr key={item.id ?? index}>
+                                                    <tr
+                                                        key={item.id ?? index}
+                                                        className={
+                                                            index % 2 === 0
+                                                                ? "bg-slate-50/60 dark:bg-slate-800/30"
+                                                                : ""
+                                                        }
+                                                    >
                                                         <td className="py-3">
                                                             <p className="font-medium text-slate-900 dark:text-white">
                                                                 {

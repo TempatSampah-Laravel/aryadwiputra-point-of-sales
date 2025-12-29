@@ -172,8 +172,8 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($transaction->details as $detail)
-                <tr>
+            @foreach ($transaction->details as $index => $detail)
+                <tr style="background: {{ $index % 2 === 0 ? '#f8fafc' : '#fff' }};">
                     <td>{{ $detail->product->title ?? 'Produk' }}</td>
                     <td class="right">{{ $detail->qty }}</td>
                     <td class="right">{{ number_format($detail->price / max(1, $detail->qty), 0, ',', '.') }}</td>
