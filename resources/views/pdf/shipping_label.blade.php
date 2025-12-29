@@ -24,10 +24,10 @@
         }
 
         .container {
-            padding: 15pt;
+            padding: 12pt;
             position: relative;
-            height: 253.5pt;
-            /* Tinggi dikurangi padding */
+            height: 259pt;
+            box-sizing: border-box;
         }
 
         table {
@@ -41,15 +41,22 @@
             overflow: hidden;
         }
 
+        .header {
+            width: 100%;
+            table-layout: auto !important;
+            /* Memungkinkan kolom logo merapat ke teks */
+            margin-bottom: 5pt;
+        }
+
         .header td {
             vertical-align: middle;
+            padding: 0 4pt;
         }
 
         .logo-box {
-            width: 40pt;
-            height: 40pt;
-            border: 1px solid #e2e8f0;
-            text-align: center;
+            display: block;
+            margin: 0;
+            padding: 0;
         }
 
         .divider {
@@ -98,9 +105,33 @@
             padding-top: 8pt;
         }
 
+        /* Container barcode agar ukurannya konsisten */
+        .barcode-container {
+            text-align: right;
+            width: 150pt;
+            /* Batasi lebar area barcode */
+            float: right;
+        }
+
         .barcode-img {
-            height: 28pt;
-            width: auto;
+            height: 35pt;
+            /* Sedikit lebih besar agar mudah di-scan */
+            width: 100%;
+            /* Mengikuti lebar container */
+            max-width: 140pt;
+            display: block;
+            margin-left: auto;
+            /* Aliran ke kanan */
+        }
+
+        .invoice-number {
+            font-size: 8pt;
+            font-weight: bold;
+            letter-spacing: 2pt;
+            margin-top: 2pt;
+            color: #000;
+            text-align: center;
+            /* Nomor invoice rata tengah terhadap barcode */
         }
 
         ul {
@@ -117,25 +148,35 @@
 
 <body>
     <div class="container">
-        <table class="header">
+        <table class="header" style="table-layout: auto;">
             <tr>
-                <td width="50pt">
-                    <div class="logo-box">
+                <td style="width: 1%; padding-right: 8pt;">
+                    <div class="logo-box" style="width: 40pt; height: 40pt;">
                         @if ($store['logo_data'] ?? false)
-                            <img src="{{ $store['logo_data'] }}" style="width: 100%;">
+                            <img src="{{ $store['logo_data'] }}"
+                                style="max-width: 40pt; max-height: 40pt; object-fit: contain;">
                         @else
-                            <span style="line-height: 40pt; font-weight: bold;">{{ substr($store['name'], 0, 2) }}</span>
+                            <div
+                                style="width: 40pt; height: 40pt; border: 1px solid #e2e8f0; line-height: 40pt; text-align: center; font-weight: bold; font-size: 14pt;">
+                                {{ substr($store['name'], 0, 2) }}
+                            </div>
                         @endif
                     </div>
                 </td>
-                <td>
-                    <div class="text-bold">{{ $store['name'] }}</div>
-                    <div class="text-small text-muted">{{ Str::limit($store['address'], 60) }}</div>
-                    <div class="text-small text-muted">{{ $store['phone'] }} | {{ $store['email'] }}</div>
+                <td style="text-align: left;">
+                    <div class="text-bold" style="font-size: 11pt; line-height: 1.1;">{{ $store['name'] }} </div>
+                    <div class="text-small text-muted" style="margin-top: 2pt;">{{ Str::limit($store['address'], 60) }}
+                    </div>
+                    <div class="text-small text-muted">
+                        {{ $store['phone'] }}@if ($store['phone'] && $store['email'])
+                            |
+                        @endif{{ $store['email'] }}
+                    </div>
                 </td>
-                <td width="100pt" style="text-align: right;">
-                    <div class="text-muted">INVOICE</div>
-                    <div class="text-bold" style="font-size: 10pt; color: #000;">{{ $transaction->invoice }}</div>
+                <td width="92pt" style="text-align: right; vertical-align: top;">
+                    <div class="text-muted" style="font-size: 7pt;">INVOICE </div>
+                    <div class="text-bold" style="font-size: 10pt; color: #000; line-height: 1.1;">
+                        {{ $transaction->invoice }}</div>
                     <div class="text-small">{{ $formatDate($transaction->created_at) }}</div>
                 </td>
             </tr>
@@ -183,15 +224,18 @@
         </div>
 
         <div class="footer-absolute">
-            <table class="header">
+            <table style="table-layout: auto;">
                 <tr>
-                    <td class="text-muted">
-                        Kasir: {{ $transaction->cashier->name ?? '-' }}<br>
+                    <td class="text-muted" style="vertical-align: bottom; padding-bottom: 2pt;">
+                        Kasir: <strong>{{ $transaction->cashier->name ?? '-' }}</strong><br>
                         Dicetak: {{ now()->format('d/m/Y H:i') }}
                     </td>
-                    <td style="text-align: right;">
-                        <img src="{{ $barcode }}" class="barcode-img">
-                        <div class="text-muted" style="letter-spacing: 2px;">{{ $transaction->invoice }}</div>
+
+                    <td style="text-align: right; width: 150pt;">
+                        <div class="barcode-container">
+                            <img src="{{ $barcode }}" class="barcode-img" alt="barcode">
+                            <div class="invoice-number">{{ $transaction->invoice }}</div>
+                        </div>
                     </td>
                 </tr>
             </table>
