@@ -210,7 +210,8 @@ const History = ({ transactions, filters }) => {
                 {/* Transaction List */}
                 {rows.length > 0 ? (
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                        <div className="overflow-x-auto">
+                        {/* Desktop Table */}
+                        <div className="overflow-x-auto hidden sm:block">
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-slate-100 dark:border-slate-800">
@@ -352,6 +353,143 @@ const History = ({ transactions, filters }) => {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile Cards */}
+                        <div className="sm:hidden flex flex-col gap-3">
+                            {rows.map((transaction, index) => (
+                                <div
+                                    key={transaction.id}
+                                    className="p-4 space-y-3 bg-slate-50/60 dark:bg-slate-800/40 rounded-xl"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                No {index + 1 + (currentPage - 1) * perPage}
+                                            </p>
+                                            <p className="text-base font-semibold text-slate-900 dark:text-white">
+                                                {transaction.invoice}
+                                            </p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                {transaction.created_at}
+                                            </p>
+                                        </div>
+                                        <div className="text-right space-y-2">
+                                            <div className="flex flex-wrap gap-2 justify-end">
+                                                {transaction.payment_method ===
+                                                    "pay_later" &&
+                                                transaction.payment_status !==
+                                                    "paid" ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full">
+                                                        Piutang
+                                                    </span>
+                                                ) : transaction.payment_status ===
+                                                  "paid" ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-400 rounded-full">
+                                                        <IconCheck size={12} />
+                                                        Lunas
+                                                    </span>
+                                                ) : transaction.payment_status ===
+                                                  "pending" ? (
+                                                    <button
+                                                        onClick={() =>
+                                                            setConfirmModal({
+                                                                open: true,
+                                                                transaction,
+                                                            })
+                                                        }
+                                                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400 rounded-full"
+                                                    >
+                                                        Pending
+                                                    </button>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-danger-100 dark:bg-danger-900/30 text-danger-700 dark:text-danger-400 rounded-full">
+                                                        {transaction.payment_status ??
+                                                            "-"}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                                {formatCurrency(
+                                                    transaction.grand_total ?? 0
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                        <div>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Kasir
+                                            </p>
+                                            <p className="font-medium">
+                                                {transaction.cashier?.name ??
+                                                    "-"}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Pelanggan
+                                            </p>
+                                            <p className="font-medium">
+                                                {transaction.customer?.name ??
+                                                    "Umum"}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Item
+                                            </p>
+                                            <p className="font-medium">
+                                                {transaction.total_items ?? 0}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Pembayaran
+                                            </p>
+                                            <p className="font-medium capitalize">
+                                                {transaction.payment_method?.replace("_", " ") ??
+                                                    "-"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <Link
+                                            href={route(
+                                                "transactions.print",
+                                                transaction.invoice
+                                            )}
+                                            className="inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-semibold rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                                        >
+                                            Detail
+                                        </Link>
+                                        <a
+                                            href={route(
+                                                "pdf.transactions.invoice",
+                                                transaction.invoice
+                                            )}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                                        >
+                                            Invoice
+                                        </a>
+                                        <a
+                                            href={route(
+                                                "pdf.transactions.shipping",
+                                                transaction.invoice
+                                            )}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
+                                        >
+                                            Resi
+                                        </a>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 ) : (

@@ -145,59 +145,63 @@ export default function ReceivablesIndex({ receivables, filters = {} }) {
                 </form>
 
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                    <div className="grid grid-cols-12 px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                        <div className="col-span-2">Invoice</div>
-                        <div className="col-span-3">Pelanggan</div>
-                        <div className="col-span-2 ">Total</div>
-                        <div className="col-span-2 ">Sisa</div>
-                        <div className="col-span-2 ">Jatuh Tempo</div>
-                        <div className="col-span-1 ">Status</div>
-                    </div>
-                    {rows.length > 0 ? (
-                        rows.map((item) => (
-                            <Link
-                                key={item.id}
-                                href={route("receivables.show", item.id)}
-                                className="grid grid-cols-12 px-4 py-3 items-center border-b border-slate-100 dark:border-slate-800 hover:bg-primary-50/50 dark:hover:bg-slate-800/50 transition-colors"
-                            >
-                                <div className="col-span-2">
-                                    <p className="text-sm font-semibold text-slate-800 dark:text-white">
-                                        {item.invoice}
-                                    </p>
-                                    {item.transaction_id && (
-                                        <p className="text-[11px] text-slate-500">
-                                            POS #{item.transaction_id}
-                                        </p>
-                                    )}
+                    <div className="w-full overflow-x-auto">
+                        <div className="min-w-[720px]">
+                            <div className="grid grid-cols-12 px-3 sm:px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                                <div className="col-span-2">Invoice</div>
+                                <div className="col-span-3">Pelanggan</div>
+                                <div className="col-span-2 text-right">Total</div>
+                                <div className="col-span-2 text-right">Sisa</div>
+                                <div className="col-span-2 text-right">Jatuh Tempo</div>
+                                <div className="col-span-1 text-center">Status</div>
+                            </div>
+                            {rows.length > 0 ? (
+                                rows.map((item) => (
+                                    <Link
+                                        key={item.id}
+                                        href={route("receivables.show", item.id)}
+                                        className="grid grid-cols-12 gap-2 px-3 sm:px-4 py-3 items-center border-b border-slate-100 dark:border-slate-800 hover:bg-primary-50/50 dark:hover:bg-slate-800/50 transition-colors"
+                                    >
+                                        <div className="col-span-2">
+                                            <p className="text-sm font-semibold text-slate-800 dark:text-white">
+                                                {item.invoice}
+                                            </p>
+                                            {item.transaction_id && (
+                                                <p className="text-[11px] text-slate-500">
+                                                    POS #{item.transaction_id}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="col-span-3">
+                                            <p className="text-sm text-slate-700 dark:text-slate-200">
+                                                {item.customer?.name || "Umum"}
+                                            </p>
+                                        </div>
+                                        <div className="col-span-2 text-right text-sm font-semibold text-slate-900 dark:text-white">
+                                            {formatCurrency(item.total)}
+                                        </div>
+                                        <div className="col-span-2 text-right text-sm font-semibold text-primary-600 dark:text-primary-400">
+                                            {formatCurrency(item.remaining)}
+                                        </div>
+                                        <div className="col-span-2 text-right text-sm text-slate-600 dark:text-slate-400">
+                                            {formatDate(item.due_date)}
+                                        </div>
+                                        <div className="col-span-1 flex justify-center">
+                                            {statusBadge(item.status)}
+                                        </div>
+                                    </Link>
+                                ))
+                            ) : (
+                                <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+                                    <IconAlertCircle
+                                        size={28}
+                                        className="mx-auto mb-2 text-slate-400"
+                                    />
+                                    Belum ada data nota barang.
                                 </div>
-                                <div className="col-span-3">
-                                    <p className="text-sm text-slate-700 dark:text-slate-200">
-                                        {item.customer?.name || "Umum"}
-                                    </p>
-                                </div>
-                                <div className="col-span-2  text-sm font-semibold text-slate-900 dark:text-white">
-                                    {formatCurrency(item.total)}
-                                </div>
-                                <div className="col-span-2  text-sm font-semibold text-primary-600 dark:text-primary-400">
-                                    {formatCurrency(item.remaining)}
-                                </div>
-                                <div className="col-span-2  text-sm text-slate-600 dark:text-slate-400">
-                                    {formatDate(item.due_date)}
-                                </div>
-                                <div className="col-span-1 flex justify-center">
-                                    {statusBadge(item.status)}
-                                </div>
-                            </Link>
-                        ))
-                    ) : (
-                        <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                            <IconAlertCircle
-                                size={28}
-                                className="mx-auto mb-2 text-slate-400"
-                            />
-                            Belum ada data nota barang.
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
 
                 <div className="flex justify-between items-center text-sm text-slate-500">
