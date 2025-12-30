@@ -209,7 +209,7 @@ const History = ({ transactions, filters }) => {
 
                 {/* Transaction List */}
                 {rows.length > 0 ? (
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <div className="bg-transparent border-0 shadow-none rounded-2xl sm:bg-white sm:dark:bg-slate-900 sm:border sm:border-slate-200 sm:dark:border-slate-800 sm:overflow-hidden">
                         {/* Desktop Table */}
                         <div className="overflow-x-auto hidden sm:block">
                             <table className="w-full">
@@ -356,11 +356,11 @@ const History = ({ transactions, filters }) => {
                         </div>
 
                         {/* Mobile Cards */}
-                        <div className="sm:hidden flex flex-col gap-3">
+                        <div className="sm:hidden flex flex-col gap-3 px-1">
                             {rows.map((transaction, index) => (
                                 <div
                                     key={transaction.id}
-                                    className="p-4 space-y-3 bg-slate-50/60 dark:bg-slate-800/40 rounded-xl"
+                                    className="p-4 space-y-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm"
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-1">
