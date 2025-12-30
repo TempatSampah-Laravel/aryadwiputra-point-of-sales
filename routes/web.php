@@ -26,6 +26,10 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/dashboard/access', function () {
+    return Inertia::render('Dashboard/Access');
+})->middleware(['auth'])->name('dashboard.access');
+
 // Public share routes (no login)
 Route::get('/share/transactions/{invoice}', [\App\Http\Controllers\DocumentController::class, 'publicInvoice'])
     ->name('transactions.public');

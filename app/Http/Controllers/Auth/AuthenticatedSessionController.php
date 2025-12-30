@@ -35,15 +35,16 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
         $routePriority = [
-            'dashboard-access'    => 'dashboard',
             'transactions-access' => 'transactions.index',
             'receivables-access'  => 'receivables.index',
             'payables-access'     => 'payables.index',
             'customers-access'    => 'customers.index',
             'suppliers-access'    => 'suppliers.index',
+            'reports-access'      => 'reports.sales.index',
+            'dashboard-access'    => 'dashboard',
         ];
 
-        $defaultRoute = 'transactions.index';
+        $defaultRoute = 'dashboard.access';
         foreach ($routePriority as $permission => $routeName) {
             if ($user && $user->can($permission)) {
                 $defaultRoute = $routeName;

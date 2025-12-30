@@ -1,12 +1,11 @@
 import { usePage } from "@inertiajs/react";
 
-export default function hasAnyPermission(permissions) {
+export default function hasAnyPermission(permissions, givenPermissions = null) {
+    // destruct auth from usepage props if not provided
+    const { auth } = usePage().props;
 
-    // destruct auth from usepage props
-    const { auth } = usePage().props
-
-    // get all permissions from props auth.permissions
-    let allPermissions = auth.permissions;
+    // get all permissions from props auth.permissions or provided map
+    let allPermissions = givenPermissions ?? auth.permissions;
 
     // define has permission is false
     let hasPermission = false;
