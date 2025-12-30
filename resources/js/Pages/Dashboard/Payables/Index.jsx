@@ -238,11 +238,11 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                         <div className="min-w-[720px]">
                             <div className="grid grid-cols-12 px-3 sm:px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                                 <div className="col-span-2">Dokumen</div>
-                                <div className="col-span-3">Supplier</div>
+                                <div className="col-span-2">Supplier</div>
                                 <div className="col-span-2 text-right">Total</div>
                                 <div className="col-span-2 text-right">Sisa</div>
                                 <div className="col-span-2 text-right">Jatuh Tempo</div>
-                                <div className="col-span-1 text-center min-w-[110px]">Status</div>
+                                <div className="col-span-2 text-center min-w-[140px]">Status</div>
                             </div>
                             {rows.length ? (
                                 rows.map((item) => (
@@ -256,7 +256,7 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                                                 {item.document_number}
                                             </p>
                                         </div>
-                                        <div className="col-span-3">
+                                        <div className="col-span-2">
                                             <p className="text-sm text-slate-700 dark:text-slate-200">
                                                 {item.supplier?.name || "-"}
                                             </p>
@@ -270,7 +270,7 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                                         <div className="col-span-2 text-right text-sm text-slate-600 dark:text-slate-400">
                                             {formatDate(item.due_date)}
                                         </div>
-                                        <div className="col-span-1 flex justify-center">
+                                        <div className="col-span-2 flex justify-center whitespace-nowrap">
                                             {statusBadge(item.status)}
                                         </div>
                                     </Link>
@@ -327,7 +327,7 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                                                 {item.supplier?.name || "-"}
                                             </p>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-center">
                                             <p className="text-xs text-slate-500 dark:text-slate-400">
                                                 Status
                                             </p>
