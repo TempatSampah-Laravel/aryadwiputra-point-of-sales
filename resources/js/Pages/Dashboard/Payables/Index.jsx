@@ -179,9 +179,9 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                 {/* Filters */}
                 <form
                     onSubmit={applyFilter}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-wrap gap-3 items-center"
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end"
                 >
-                    <div className="relative flex-1 min-w-[200px]">
+                    <div className="relative w-full">
                         <IconSearch
                             size={18}
                             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -193,11 +193,11 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                             className="w-full h-11 pl-10 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"
                         />
                     </div>
-                    <div>
+                    <div className="w-full">
                         <select
                             value={supplierId}
                             onChange={(e) => setSupplierId(e.target.value)}
-                            className="h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"
+                            className="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"
                         >
                             <option value="">Semua Supplier</option>
                             {suppliers.map((s) => (
@@ -207,7 +207,7 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                             ))}
                         </select>
                     </div>
-                    <div className="relative">
+                    <div className="relative w-full">
                         <IconCalendar
                             size={18}
                             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -215,7 +215,7 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                         <select
                             value={status}
                             onChange={(e) => setStatus(e.target.value)}
-                            className="h-11 pl-10 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"
+                            className="w-full h-11 pl-10 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm"
                         >
                             <option value="">Semua Status</option>
                             <option value="unpaid">Belum Lunas</option>
@@ -226,7 +226,7 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                     </div>
                     <button
                         type="submit"
-                        className="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold"
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold"
                     >
                         Terapkan
                     </button>
@@ -242,7 +242,7 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                                 <div className="col-span-2 text-right">Total</div>
                                 <div className="col-span-2 text-right">Sisa</div>
                                 <div className="col-span-2 text-right">Jatuh Tempo</div>
-                                <div className="col-span-1 text-center">Status</div>
+                                <div className="col-span-1 text-center min-w-[110px]">Status</div>
                             </div>
                             {rows.length ? (
                                 rows.map((item) => (
