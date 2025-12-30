@@ -55,6 +55,13 @@ class PermissionSeeder extends Seeder
         //permission transactions
         Permission::create(['name' => 'transactions-access']);
 
+        // permission receivables & payables
+        Permission::create(['name' => 'receivables-access']);
+        Permission::create(['name' => 'receivables-pay']);
+        Permission::create(['name' => 'payables-access']);
+        Permission::create(['name' => 'payables-pay']);
+        Permission::create(['name' => 'suppliers-access']);
+
         // permission reports
         Permission::create(['name' => 'reports-access']);
         Permission::create(['name' => 'profits-access']);

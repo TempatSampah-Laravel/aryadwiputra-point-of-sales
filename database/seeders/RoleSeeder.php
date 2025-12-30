@@ -20,6 +20,9 @@ class RoleSeeder extends Seeder
         $this->createRoleWithPermissions('products-access', '%products%');
         $this->createRoleWithPermissions('customers-access', '%customers%');
         $this->createRoleWithPermissions('transactions-access', '%transactions%');
+        $this->createRoleWithPermissions('receivables-access', '%receivables%');
+        $this->createRoleWithPermissions('payables-access', '%payables%');
+        $this->createRoleWithPermissions('suppliers-access', '%suppliers%');
         $this->createRoleWithPermissions('reports-access', '%reports%');
         $this->createRoleWithPermissions('profits-access', '%profits%');
         $this->createRoleWithPermissions('payment-settings-access', '%payment-settings%');
@@ -33,6 +36,11 @@ class RoleSeeder extends Seeder
             'transactions-access',
             'customers-access',
             'customers-create',
+            'receivables-access',
+            'receivables-pay',
+            'payables-access',
+            'payables-pay',
+            'suppliers-access',
         ])->get();
         $cashierRole->givePermissionTo($cashierPermissions);
     }
