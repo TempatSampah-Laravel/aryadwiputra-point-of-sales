@@ -232,9 +232,9 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                     </button>
                 </form>
 
-                {/* Table */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                    <div className="w-full overflow-x-auto">
+                {/* Table + Cards */}
+                <div className="bg-transparent border-0 shadow-none rounded-2xl sm:bg-white sm:dark:bg-slate-900 sm:border sm:border-slate-200 sm:dark:border-slate-800 sm:overflow-hidden">
+                    <div className="w-full overflow-x-auto hidden sm:block">
                         <div className="min-w-[720px]">
                             <div className="grid grid-cols-12 px-3 sm:px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                                 <div className="col-span-2">Dokumen</div>
@@ -285,6 +285,66 @@ export default function PayablesIndex({ payables, filters = {}, suppliers = [] }
                                 </div>
                             )}
                         </div>
+                    </div>
+
+                    {/* Mobile Cards */}
+                    <div className="sm:hidden flex flex-col gap-3 px-1">
+                        {rows.length ? (
+                            rows.map((item) => (
+                                <Link
+                                    key={item.id}
+                                    href={route("payables.show", item.id)}
+                                    className="p-4 space-y-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm"
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Dokumen
+                                            </p>
+                                            <p className="text-base font-semibold text-slate-900 dark:text-white">
+                                                {item.document_number || "-"}
+                                            </p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Jatuh tempo: {formatDate(item.due_date)}
+                                            </p>
+                                        </div>
+                                        <div className="text-right space-y-2">
+                                            {statusBadge(item.status)}
+                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                                {formatCurrency(item.total)}
+                                            </p>
+                                            <p className="text-xs text-primary-600 dark:text-primary-400">
+                                                Sisa {formatCurrency(item.remaining)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                        <div>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Supplier
+                                            </p>
+                                            <p className="font-medium">
+                                                {item.supplier?.name || "-"}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Status
+                                            </p>
+                                            <p className="font-medium capitalize">{item.status}</p>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))
+                        ) : (
+                            <div className="p-6 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+                                <IconAlertCircle
+                                    size={28}
+                                    className="mx-auto mb-2 text-slate-400"
+                                />
+                                Belum ada data hutang.
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

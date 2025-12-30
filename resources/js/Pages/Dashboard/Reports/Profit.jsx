@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Head, router } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import InputSelect from "@/Components/Dashboard/InputSelect";
-import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
 import {
     IconCoin,
@@ -300,10 +299,10 @@ const ProfitReport = ({
                     </div>
                 )}
 
-                {/* Table */}
+                {/* Table & Mobile Cards */}
                 {rows.length > 0 ? (
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                        <div className="overflow-x-auto">
+                    <div className="bg-transparent border-0 shadow-none rounded-2xl sm:bg-white sm:dark:bg-slate-900 sm:border sm:border-slate-200 sm:dark:border-slate-800 sm:overflow-hidden">
+                        <div className="overflow-x-auto hidden sm:block">
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-slate-100 dark:border-slate-800">
@@ -375,6 +374,60 @@ const ProfitReport = ({
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile Cards */}
+                        <div className="sm:hidden flex flex-col gap-3 px-1">
+                            {rows.map((trx, i) => (
+                                <div
+                                    key={trx.id}
+                                    className="p-4 space-y-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm"
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                No {i + 1 + (currentPage - 1) * perPage}
+                                            </p>
+                                            <p className="text-base font-semibold text-slate-900 dark:text-white">
+                                                {trx.invoice}
+                                            </p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                {trx.created_at}
+                                            </p>
+                                        </div>
+                                        <div className="text-right space-y-1">
+                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                                {formatCurrency(trx.grand_total ?? 0)}
+                                            </p>
+                                            <p className="text-xs text-success-600 dark:text-success-400 font-semibold">
+                                                Profit {formatCurrency(trx.total_profit ?? 0)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                        <div>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Kasir
+                                            </p>
+                                            <p className="font-medium">{trx.cashier?.name ?? "-"}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Pelanggan
+                                            </p>
+                                            <p className="font-medium">{trx.customer?.name ?? "-"}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Item
+                                            </p>
+                                            <p className="font-medium">
+                                                {trx.total_items ?? 0}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 ) : (
