@@ -9,7 +9,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Product extends Model
 {
     use HasFactory;
-    
+
+    protected $casts = [
+        'id' => 'integer',
+        'category_id' => 'integer',
+        'buy_price' => 'integer',
+        'sell_price' => 'integer',
+        'stock' => 'integer',
+    ];
+
     /**
      * fillable
      *
@@ -24,7 +32,7 @@ class Product extends Model
         'buy_price',
         'sell_price',
         'category_id',
-        'stock'
+        'stock',
     ];
 
     /**

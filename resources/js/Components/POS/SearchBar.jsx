@@ -3,7 +3,7 @@ import { IconSearch, IconX, IconBarcode } from "@tabler/icons-react";
 import { getProductImageUrl } from "@/Utils/imageUrl";
 
 const formatPrice = (value = 0) =>
-    value.toLocaleString("id-ID", {
+    Number(value || 0).toLocaleString("id-ID", {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,

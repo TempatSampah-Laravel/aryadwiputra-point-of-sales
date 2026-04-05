@@ -33,7 +33,7 @@ import {
 } from "@tabler/icons-react";
 
 const formatPrice = (value = 0) =>
-    value.toLocaleString("id-ID", {
+    Number(value || 0).toLocaleString("id-ID", {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
@@ -72,6 +72,8 @@ export default function Index({
     const [numpadOpen, setNumpadOpen] = useState(false);
     const [showShortcuts, setShowShortcuts] = useState(false);
     const [selectedBankAccount, setSelectedBankAccount] = useState(null);
+    const normalizedSelectedCategory =
+        selectedCategory === null ? null : Number(selectedCategory);
 
     // Ref for search input to enable keyboard focus
     const searchInputRef = useRef(null);
@@ -378,7 +380,8 @@ export default function Index({
     const allProducts = useMemo(() => {
         return products.filter((product) => {
             const matchesCategory =
-                !selectedCategory || product.category_id === selectedCategory;
+                normalizedSelectedCategory === null ||
+                Number(product.category_id) === normalizedSelectedCategory;
             const matchesSearch =
                 !searchQuery ||
                 product.title
@@ -389,7 +392,7 @@ export default function Index({
                     .includes(searchQuery.toLowerCase());
             return matchesCategory && matchesSearch;
         });
-    }, [products, selectedCategory, searchQuery]);
+    }, [products, normalizedSelectedCategory, searchQuery]);
 
     return (
         <>
@@ -441,7 +444,11 @@ export default function Index({
                         products={allProducts}
                         categories={categories}
                         selectedCategory={selectedCategory}
-                        onCategoryChange={setSelectedCategory}
+                        onCategoryChange={(categoryId) =>
+                            setSelectedCategory(
+                                categoryId === null ? null : Number(categoryId)
+                            )
+                        }
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
                         isSearching={isSearching}

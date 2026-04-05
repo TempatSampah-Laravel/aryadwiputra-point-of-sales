@@ -138,6 +138,34 @@ class TransactionFlowTest extends TestCase
             );
     }
 
+    public function test_transaction_page_serializes_product_and_category_numeric_fields_as_integers(): void
+    {
+        $cashier = $this->createCashier();
+        $product = $this->createProduct();
+
+        $response = $this
+            ->actingAs($cashier)
+            ->get(route('transactions.index'));
+
+        $response
+            ->assertOk()
+            ->assertInertia(function (Assert $page) use ($product) {
+                $page->component('Dashboard/Transactions/Index');
+
+                $products = $page->toArray()['props']['products'] ?? [];
+                $categories = $page->toArray()['props']['categories'] ?? [];
+
+                $serializedProduct = collect($products)->firstWhere('id', $product->id);
+                $serializedCategory = collect($categories)->firstWhere('id', $product->category_id);
+
+                $this->assertIsInt($serializedProduct['id']);
+                $this->assertIsInt($serializedProduct['category_id']);
+                $this->assertIsInt($serializedProduct['sell_price']);
+                $this->assertIsInt($serializedProduct['stock']);
+                $this->assertIsInt($serializedCategory['id']);
+            });
+    }
+
     public function test_cashier_can_request_midtrans_payment_link(): void
     {
         $cashier = $this->createCashier();

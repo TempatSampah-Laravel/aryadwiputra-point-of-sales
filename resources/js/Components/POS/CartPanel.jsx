@@ -8,7 +8,7 @@ import {
 import { getProductImageUrl } from "@/Utils/imageUrl";
 
 const formatPrice = (value = 0) =>
-    value.toLocaleString("id-ID", {
+    Number(value || 0).toLocaleString("id-ID", {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
@@ -17,8 +17,11 @@ const formatPrice = (value = 0) =>
 // Single Cart Item
 function CartItem({ item, onUpdateQty, onRemove, isRemoving }) {
     // Note: item.price from backend is already the total (sell_price * qty)
-    const unitPrice = item.product?.sell_price || item.price / item.qty || 0;
-    const subtotal = item.price; // Already calculated total from backend
+    const quantity = Number(item.qty || 0);
+    const itemPrice = Number(item.price || 0);
+    const unitPrice =
+        Number(item.product?.sell_price || 0) || itemPrice / quantity || 0;
+    const subtotal = itemPrice; // Already calculated total from backend
 
     return (
         <div
@@ -125,9 +128,9 @@ export default function CartPanel({
     removingItemId,
     className = "",
 }) {
-    const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
+    const totalItems = items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
     // Note: item.price from backend is already sell_price * qty
-    const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+    const subtotal = items.reduce((sum, item) => sum + Number(item.price || 0), 0);
 
     return (
         <div className={`flex flex-col h-full ${className}`}>

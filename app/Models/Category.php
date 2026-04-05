@@ -9,14 +9,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Category extends Model
 {
     use HasFactory;
-    
+
+    protected $casts = [
+        'id' => 'integer',
+    ];
+
     /**
      * fillable
      *
      * @var array
      */
     protected $fillable = [
-        'image', 'name', 'description'
+        'image', 'name', 'description',
     ];
 
     /**

@@ -8,7 +8,7 @@ import {
 import { getProductImageUrl } from "@/Utils/imageUrl";
 
 const formatPrice = (value = 0) =>
-    value.toLocaleString("id-ID", {
+    Number(value || 0).toLocaleString("id-ID", {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
@@ -165,10 +165,14 @@ export default function ProductGrid({
     addingProductId,
     searchInputRef,
 }) {
+    const normalizedSelectedCategory =
+        selectedCategory === null ? null : Number(selectedCategory);
+
     // Filter products by category and search
     const filteredProducts = products.filter((product) => {
         const matchesCategory =
-            !selectedCategory || product.category_id === selectedCategory;
+            normalizedSelectedCategory === null ||
+            Number(product.category_id) === normalizedSelectedCategory;
         const matchesSearch =
             !searchQuery ||
             product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -195,15 +199,18 @@ export default function ProductGrid({
                 <div className="flex gap-2">
                     <CategoryTab
                         category={{ id: null, name: "Semua" }}
-                        isActive={!selectedCategory}
+                        isActive={normalizedSelectedCategory === null}
                         onClick={() => onCategoryChange(null)}
                     />
                     {categories.map((category) => (
                         <CategoryTab
                             key={category.id}
                             category={category}
-                            isActive={selectedCategory === category.id}
-                            onClick={() => onCategoryChange(category.id)}
+                            isActive={
+                                normalizedSelectedCategory ===
+                                Number(category.id)
+                            }
+                            onClick={() => onCategoryChange(Number(category.id))}
                         />
                     ))}
                 </div>

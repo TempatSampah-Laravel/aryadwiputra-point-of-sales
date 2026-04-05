@@ -11,7 +11,7 @@ import {
 import toast from "react-hot-toast";
 
 const formatPrice = (value = 0) =>
-    value.toLocaleString("id-ID", {
+    Number(value || 0).toLocaleString("id-ID", {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
@@ -81,7 +81,10 @@ export default function HeldTransactions({
         });
     };
 
-    const totalHeldAmount = heldCarts.reduce((sum, h) => sum + h.total, 0);
+    const totalHeldAmount = heldCarts.reduce(
+        (sum, h) => sum + Number(h.total || 0),
+        0
+    );
 
     // Collapsed view - compact clickable badge (minimal space)
     if (!isExpanded) {
