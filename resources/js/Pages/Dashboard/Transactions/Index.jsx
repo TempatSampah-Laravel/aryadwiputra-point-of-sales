@@ -30,6 +30,7 @@ import {
     IconCreditCard,
     IconBuildingBank,
     IconAlertTriangle,
+    IconWallet,
 } from "@tabler/icons-react";
 
 const formatPrice = (value = 0) =>
@@ -49,8 +50,16 @@ export default function Index({
     paymentGateways = [],
     defaultPaymentGateway = "cash",
     bankAccounts = [],
+    shiftSummary = null,
 }) {
-    const { auth, errors, lowStockNotifications = [] } = usePage().props;
+    const {
+        auth,
+        errors,
+        lowStockNotifications = [],
+        activeCashierShift,
+    } = usePage().props;
+    const canOpenShift =
+        auth?.super || auth?.permissions?.["cashier-shifts-open"];
 
     // State
     const [searchQuery, setSearchQuery] = useState("");
@@ -72,6 +81,8 @@ export default function Index({
     const [numpadOpen, setNumpadOpen] = useState(false);
     const [showShortcuts, setShowShortcuts] = useState(false);
     const [selectedBankAccount, setSelectedBankAccount] = useState(null);
+    const [openingCashInput, setOpeningCashInput] = useState("");
+    const [shiftNotesInput, setShiftNotesInput] = useState("");
     const normalizedSelectedCategory =
         selectedCategory === null ? null : Number(selectedCategory);
 
@@ -160,6 +171,14 @@ export default function Index({
             setCashInput(String(payable));
         }
     }, [isCashPayment, payable]);
+
+    const handleOpenShift = () => {
+        router.post(route("cashier-shifts.store"), {
+            opening_cash: Number(openingCashInput || 0),
+            notes: shiftNotesInput,
+            redirect_to: "transactions",
+        });
+    };
 
     // Handle add product to cart
     const handleAddToCart = async (product) => {
@@ -394,11 +413,101 @@ export default function Index({
         });
     }, [products, normalizedSelectedCategory, searchQuery]);
 
+    if (!activeCashierShift) {
+        return (
+            <>
+                <Head title="Buka Shift Kasir" />
+
+                <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl items-center justify-center px-4 py-10">
+                    <div className="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
+                        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                            <IconWallet size={28} />
+                        </div>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                            Shift kasir belum dibuka
+                        </h1>
+                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                            Buka shift terlebih dulu untuk mengaktifkan transaksi, keranjang, dan cash closing.
+                        </p>
+
+                        <div className="mt-6 grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Modal Awal
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={openingCashInput}
+                                    onChange={(event) => setOpeningCashInput(event.target.value)}
+                                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                    placeholder="0"
+                                />
+                                {errors?.opening_cash && (
+                                    <p className="mt-2 text-xs text-rose-500">{errors.opening_cash}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Catatan
+                                </label>
+                                <input
+                                    type="text"
+                                    value={shiftNotesInput}
+                                    onChange={(event) => setShiftNotesInput(event.target.value)}
+                                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                    placeholder="Opsional"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                            {canOpenShift && (
+                                <button
+                                    type="button"
+                                    onClick={handleOpenShift}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary-500 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-600"
+                                >
+                                    <IconWallet size={18} />
+                                    <span>Buka Shift Sekarang</span>
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => router.visit(route("cashier-shifts.index"))}
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                            >
+                                <span>Lihat Histori Shift</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
     return (
         <>
             <Head title="Transaksi" />
 
             <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row">
+                {shiftSummary && (
+                    <div className="hidden lg:block absolute left-6 top-20 z-10">
+                        <div className="rounded-2xl border border-emerald-200 bg-white/95 p-4 shadow-lg backdrop-blur dark:border-emerald-900/50 dark:bg-slate-900/95">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                                Shift Aktif
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+                                {shiftSummary.user?.name}
+                            </p>
+                            <div className="mt-3 space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                                <p>Modal: {formatPrice(shiftSummary.opening_cash)}</p>
+                                <p>Expected: {formatPrice(shiftSummary.expected_cash)}</p>
+                                <p>Transaksi: {shiftSummary.transactions_count}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* Mobile Tab Switcher */}
                 <div className="lg:hidden flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                     <button

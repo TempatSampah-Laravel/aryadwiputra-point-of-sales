@@ -11,11 +11,12 @@ import {
     IconMenu2,
     IconX,
     IconUser,
+    IconWallet,
 } from "@tabler/icons-react";
 import Notification from "@/Components/Dashboard/Notification";
 
 export default function POSLayout({ children }) {
-    const { auth, storeProfile } = usePage().props;
+    const { auth, storeProfile, activeCashierShift } = usePage().props;
     const { darkMode, themeSwitcher } = useTheme();
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -150,6 +151,20 @@ export default function POSLayout({ children }) {
 
                     {/* User Info - Simplified */}
                     <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200 dark:border-slate-700">
+                        {activeCashierShift && (
+                            <Link
+                                href={route("cashier-shifts.show", activeCashierShift.id)}
+                                className="hidden lg:flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/60"
+                            >
+                                <IconWallet size={16} />
+                                <span>
+                                    Shift aktif •{" "}
+                                    {new Intl.NumberFormat("id-ID").format(
+                                        activeCashierShift.expected_cash || 0
+                                    )}
+                                </span>
+                            </Link>
+                        )}
                         <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
                             {auth.user.name}
                         </p>

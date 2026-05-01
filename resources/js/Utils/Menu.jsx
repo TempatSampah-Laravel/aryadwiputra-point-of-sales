@@ -25,6 +25,7 @@ import {
     IconFileInvoice,
     IconBuildingWarehouse,
     IconCurrencyDollar,
+    IconWallet,
 } from "@tabler/icons-react";
 import hasAnyPermission from "./Permission";
 import React from "react";
@@ -84,6 +85,13 @@ export default function Menu() {
                     permissions: hasAnyPermission(["stock-mutations-access"]),
                 },
                 {
+                    title: "Shift Kasir",
+                    href: route("cashier-shifts.index"),
+                    active: url.startsWith("/dashboard/cashier-shifts"),
+                    icon: <IconWallet size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["cashier-shifts-access"]),
+                },
+                {
                     title: "Pelanggan",
                     href: route("customers.index"),
                     active: url === "/dashboard/customers" ? true : false, // Update comparison here
@@ -111,6 +119,13 @@ export default function Menu() {
                             : false,
                     icon: <IconClockHour6 size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["transactions-access"]),
+                },
+                {
+                    title: "Retur Penjualan",
+                    href: route("sales-returns.index"),
+                    active: url.startsWith("/dashboard/sales-returns"),
+                    icon: <IconFileCertificate size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["sales-returns-access"]),
                 },
                 {
                     title: "Nota Barang (Piutang)",
