@@ -4,10 +4,13 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Spatie\Permission\Exceptions\UnauthorizedException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,17 +32,39 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (UnauthorizedException $exception, Request $request) {
-            $message = __('Anda tidak memiliki izin untuk mengakses halaman tersebut.');
+        $exceptions->render(function (\Throwable $exception, Request $request) {
+            $status = match (true) {
+                $exception instanceof UnauthorizedException => Response::HTTP_FORBIDDEN,
+                $exception instanceof HttpExceptionInterface => $exception->getStatusCode(),
+                default => Response::HTTP_INTERNAL_SERVER_ERROR,
+            };
 
             if ($request->expectsJson()) {
+                $message = $exception instanceof UnauthorizedException
+                    ? __('Anda tidak memiliki izin untuk mengakses halaman tersebut.')
+                    : ($exception->getMessage() ?: Response::$statusTexts[$status] ?? 'Server Error');
+
                 return response()->json([
                     'message' => $message,
-                ], 403);
+                ], $status);
             }
 
-            return redirect()
-                ->back(fallback: route('dashboard'))
-                ->with('error', $message);
+            if (!in_array($status, [
+                Response::HTTP_UNAUTHORIZED,
+                Response::HTTP_FORBIDDEN,
+                Response::HTTP_NOT_FOUND,
+                419,
+                Response::HTTP_TOO_MANY_REQUESTS,
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                Response::HTTP_SERVICE_UNAVAILABLE,
+            ], true)) {
+                return null;
+            }
+
+            return Inertia::render('Error', [
+                'status'    => $status,
+                'homeUrl'   => $request->user() ? route('dashboard') : url('/'),
+                'homeLabel' => $request->user() ? __('Kembali ke Dashboard') : __('Kembali ke Beranda'),
+            ])->toResponse($request)->setStatusCode($status);
         });
     })->create();
