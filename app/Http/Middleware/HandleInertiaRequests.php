@@ -2,10 +2,13 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CashierShift;
 use App\Models\Product;
 use App\Models\Receivable;
 use App\Models\Payable;
+use App\Services\CashierShiftService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -35,6 +38,7 @@ class HandleInertiaRequests extends Middleware
         $lowStockNotifications    = [];
         $receivableNotifications  = [];
         $payableNotifications     = [];
+        $activeCashierShift       = null;
 
         if ($request->user()) {
             $userId = $request->user()->id;
@@ -92,22 +96,45 @@ class HandleInertiaRequests extends Middleware
                         'status'   => $item->status,
                     ];
                 });
-        }
 
-        $logo = \App\Models\Setting::get('store_logo');
-        if ($logo && !str_starts_with($logo, 'http') && !str_starts_with($logo, '/storage')) {
-            $logo = asset('storage/' . ltrim($logo, '/'));
+            $activeShift = CashierShift::query()
+                ->with('user:id,name')
+                ->open()
+                ->where('user_id', $userId)
+                ->latest('opened_at')
+                ->first();
+
+            if ($activeShift) {
+                $activeCashierShift = app(CashierShiftService::class)->summarizeForDisplay($activeShift);
+            }
         }
 
         $storeProfile = [
-            'name'    => \App\Models\Setting::get('store_name', 'Toko Anda'),
-            'logo'    => $logo,
-            'address' => \App\Models\Setting::get('store_address', ''),
-            'phone'   => \App\Models\Setting::get('store_phone', ''),
-            'email'   => \App\Models\Setting::get('store_email', ''),
-            'website' => \App\Models\Setting::get('store_website', ''),
-            'city'    => \App\Models\Setting::get('store_city', ''),
+            'name'    => 'Toko Anda',
+            'logo'    => null,
+            'address' => '',
+            'phone'   => '',
+            'email'   => '',
+            'website' => '',
+            'city'    => '',
         ];
+
+        if (Schema::hasTable('settings')) {
+            $logo = \App\Models\Setting::get('store_logo');
+            if ($logo && !str_starts_with($logo, 'http') && !str_starts_with($logo, '/storage')) {
+                $logo = asset('storage/' . ltrim($logo, '/'));
+            }
+
+            $storeProfile = [
+                'name'    => \App\Models\Setting::get('store_name', 'Toko Anda'),
+                'logo'    => $logo,
+                'address' => \App\Models\Setting::get('store_address', ''),
+                'phone'   => \App\Models\Setting::get('store_phone', ''),
+                'email'   => \App\Models\Setting::get('store_email', ''),
+                'website' => \App\Models\Setting::get('store_website', ''),
+                'city'    => \App\Models\Setting::get('store_city', ''),
+            ];
+        }
 
         return [
             ...parent::share($request),
@@ -119,6 +146,7 @@ class HandleInertiaRequests extends Middleware
             'lowStockNotifications'   => $lowStockNotifications,
             'receivableNotifications' => $receivableNotifications,
             'payableNotifications'    => $payableNotifications,
+            'activeCashierShift'      => $activeCashierShift,
             'storeProfile'            => $storeProfile,
         ];
     }

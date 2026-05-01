@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -15,6 +16,8 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         $admin = User::updateOrCreate(
             ['email' => 'arya@gmail.com'],
             [
@@ -45,10 +48,13 @@ class UserSeeder extends Seeder
         if ($cashierRole) {
             $cashier->syncRoles([$cashierRole->name]);
             $cashier->syncPermissions([]);
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
             return;
         }
 
         $transactionsPermission = Permission::where('name', 'transactions-access')->first();
         $cashier->syncPermissions($transactionsPermission ? [$transactionsPermission] : []);
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

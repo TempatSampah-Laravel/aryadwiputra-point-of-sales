@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Models\SalesReturn;
 use App\Models\StockMutation;
 use App\Models\StockOpname;
 
@@ -50,6 +51,31 @@ class StockMutationService
             'stock_before' => $stockBefore,
             'stock_after' => $stockAfter,
             'notes' => $reason ?: 'Adjustment dari stock opname.',
+            'created_by' => $userId,
+        ]);
+    }
+
+    public function recordSalesReturnRestock(
+        Product $product,
+        SalesReturn $salesReturn,
+        int $stockBefore,
+        int $stockAfter,
+        ?string $reason,
+        ?int $userId = null
+    ): ?StockMutation {
+        if ($stockBefore === $stockAfter) {
+            return null;
+        }
+
+        return StockMutation::create([
+            'product_id' => $product->id,
+            'reference_type' => 'sales_return',
+            'reference_id' => $salesReturn->id,
+            'mutation_type' => 'in',
+            'qty' => abs($stockAfter - $stockBefore),
+            'stock_before' => $stockBefore,
+            'stock_after' => $stockAfter,
+            'notes' => $reason ?: 'Restock dari retur penjualan.',
             'created_by' => $userId,
         ]);
     }

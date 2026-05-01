@@ -2,6 +2,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -13,6 +14,8 @@ class RoleSeeder extends Seeder
     // Refactor the RoleSeeder to improve readability and avoid repetitive code
     public function run(): void
     {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         $this->createRoleWithPermissions('users-access', '%users%');
         $this->createRoleWithPermissions('roles-access', '%roles%');
         $this->createRoleWithPermissions('permission-access', '%permissions%');
@@ -28,6 +31,8 @@ class RoleSeeder extends Seeder
         $this->createRoleWithPermissions('payment-settings-access', '%payment-settings%');
         $this->createRoleWithPermissions('stock-opnames-access', '%stock-opnames%');
         $this->createRoleWithPermissions('stock-mutations-access', '%stock-mutations%');
+        $this->createRoleWithPermissions('sales-returns-access', '%sales-returns%');
+        $this->createRoleWithPermissions('cashier-shifts-access', '%cashier-shifts%');
 
         $superAdminRole = Role::firstOrCreate(['name' => 'super-admin']);
         $superAdminRole->syncPermissions(Permission::all());
@@ -37,6 +42,9 @@ class RoleSeeder extends Seeder
         $cashierPermissions = Permission::whereIn('name', [
             'dashboard-access',
             'transactions-access',
+            'cashier-shifts-access',
+            'cashier-shifts-open',
+            'cashier-shifts-close',
             'customers-access',
             'customers-create',
             'receivables-access',
@@ -46,6 +54,8 @@ class RoleSeeder extends Seeder
             'suppliers-access',
         ])->get();
         $cashierRole->syncPermissions($cashierPermissions);
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     private function createRoleWithPermissions($roleName, $permissionNamePattern)

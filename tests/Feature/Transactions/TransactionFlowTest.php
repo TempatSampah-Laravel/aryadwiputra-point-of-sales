@@ -28,11 +28,24 @@ class TransactionFlowTest extends TestCase
             'name' => 'transactions-access',
             'guard_name' => 'web',
         ]);
+        Permission::firstOrCreate([
+            'name' => 'cashier-shifts-access',
+            'guard_name' => 'web',
+        ]);
+        Permission::firstOrCreate([
+            'name' => 'cashier-shifts-open',
+            'guard_name' => 'web',
+        ]);
+        Permission::firstOrCreate([
+            'name' => 'cashier-shifts-close',
+            'guard_name' => 'web',
+        ]);
     }
 
     public function test_cashier_can_complete_transaction_and_redirects_to_invoice(): void
     {
         $cashier = $this->createCashier();
+        $shift = $this->openShiftFor($cashier);
         $customer = Customer::create([
             'name' => 'John Doe',
             'no_telp' => 62812345,
@@ -68,6 +81,7 @@ class TransactionFlowTest extends TestCase
         $response->assertRedirect(route('transactions.print', $transaction->invoice));
         $this->assertStringStartsWith('TRX-', $transaction->invoice);
         $this->assertSame($cashier->id, $transaction->cashier_id);
+        $this->assertSame($shift->id, $transaction->cashier_shift_id);
         $this->assertSame($customer->id, $transaction->customer_id);
         $this->assertSame($grandTotal, (int) $transaction->grand_total);
         $this->assertSame($discount, (int) $transaction->discount);
@@ -95,6 +109,7 @@ class TransactionFlowTest extends TestCase
     public function test_cashier_can_view_invoice_page_after_transaction(): void
     {
         $cashier = $this->createCashier();
+        $shift = $this->openShiftFor($cashier);
         $customer = Customer::create([
             'name' => 'Jane Customer',
             'no_telp' => 62856789,
@@ -104,6 +119,7 @@ class TransactionFlowTest extends TestCase
 
         $transaction = Transaction::create([
             'cashier_id' => $cashier->id,
+            'cashier_shift_id' => $shift->id,
             'customer_id' => $customer->id,
             'invoice' => 'TRX-' . Str::upper(Str::random(8)),
             'cash' => 200000,
@@ -141,6 +157,7 @@ class TransactionFlowTest extends TestCase
     public function test_transaction_page_serializes_product_and_category_numeric_fields_as_integers(): void
     {
         $cashier = $this->createCashier();
+        $shift = $this->openShiftFor($cashier);
         $product = $this->createProduct();
 
         $response = $this
@@ -149,7 +166,7 @@ class TransactionFlowTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertInertia(function (Assert $page) use ($product) {
+            ->assertInertia(function (Assert $page) use ($product, $shift) {
                 $page->component('Dashboard/Transactions/Index');
 
                 $products = $page->toArray()['props']['products'] ?? [];
@@ -163,12 +180,14 @@ class TransactionFlowTest extends TestCase
                 $this->assertIsInt($serializedProduct['sell_price']);
                 $this->assertIsInt($serializedProduct['stock']);
                 $this->assertIsInt($serializedCategory['id']);
+                $this->assertSame($shift->id, $page->toArray()['props']['activeCashierShift']['id']);
             });
     }
 
     public function test_cashier_can_request_midtrans_payment_link(): void
     {
         $cashier = $this->createCashier();
+        $shift = $this->openShiftFor($cashier);
         $customer = Customer::create([
             'name' => 'Tony Midtrans',
             'no_telp' => 62899000,
@@ -213,6 +232,7 @@ class TransactionFlowTest extends TestCase
 
         $this->assertNotNull($transaction);
         $response->assertRedirect(route('transactions.print', $transaction->invoice));
+        $this->assertSame($shift->id, $transaction->cashier_shift_id);
         $this->assertSame('midtrans', $transaction->payment_method);
         $this->assertSame('pending', $transaction->payment_status);
         $this->assertSame('https://pay.midtrans.test/invoice', $transaction->payment_url);
@@ -225,9 +245,59 @@ class TransactionFlowTest extends TestCase
     protected function createCashier(): User
     {
         $user = User::factory()->create();
-        $user->givePermissionTo('transactions-access');
+        $user->givePermissionTo([
+            'transactions-access',
+            'cashier-shifts-access',
+            'cashier-shifts-open',
+            'cashier-shifts-close',
+        ]);
 
         return $user;
+    }
+
+    public function test_cashier_cannot_store_transaction_without_active_shift(): void
+    {
+        $cashier = $this->createCashier();
+        $customer = Customer::create([
+            'name' => 'No Shift',
+            'no_telp' => 62812345,
+            'address' => 'Jl. Tanpa Shift',
+        ]);
+        $product = $this->createProduct();
+
+        Cart::create([
+            'cashier_id' => $cashier->id,
+            'product_id' => $product->id,
+            'qty' => 1,
+            'price' => $product->sell_price,
+        ]);
+
+        $response = $this
+            ->from(route('transactions.index'))
+            ->actingAs($cashier)
+            ->post(route('transactions.store'), [
+                'customer_id' => $customer->id,
+                'discount' => 0,
+                'grand_total' => $product->sell_price,
+                'cash' => $product->sell_price,
+                'change' => 0,
+            ]);
+
+        $response->assertRedirect(route('transactions.index'));
+        $response->assertSessionHas('error', 'Shift kasir belum dibuka.');
+        $this->assertDatabaseCount('transactions', 0);
+    }
+
+    protected function openShiftFor(User $cashier)
+    {
+        return \App\Models\CashierShift::create([
+            'user_id' => $cashier->id,
+            'opened_by' => $cashier->id,
+            'opened_at' => now(),
+            'opening_cash' => 100000,
+            'expected_cash' => 100000,
+            'status' => 'open',
+        ]);
     }
 
     protected function createProduct(): Product

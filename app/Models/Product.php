@@ -55,6 +55,11 @@ class Product extends Model
         return $this->hasMany(StockMutation::class);
     }
 
+    public function salesReturnItems()
+    {
+        return $this->hasMany(SalesReturnItem::class);
+    }
+
     /**
      * image
      *
