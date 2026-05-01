@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -15,32 +15,40 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $user = User::create([
-            'name' => 'Arya Dwi Putra',
-            'email' => 'arya@gmail.com',
-            'password' => bcrypt('password'),
-        ]);
+        $admin = User::updateOrCreate(
+            ['email' => 'arya@gmail.com'],
+            [
+                'name'     => 'Arya Dwi Putra',
+                'password' => Hash::make('password'),
+            ]
+        );
 
-        // get admin role
-        $role = Role::where('name', 'super-admin')->first();
-
-        // get all permissions
+        $superAdminRole = Role::where('name', 'super-admin')->first();
         $permissions = Permission::all();
 
-        // assign role to user
-        $user->syncPermissions($permissions);
+        if ($superAdminRole) {
+            $admin->syncRoles([$superAdminRole->name]);
+        }
 
-        // assign a role to user
-        $user->assignRole($role);
+        $admin->syncPermissions($permissions);
 
-        $cashier = User::create([
-            'name' => 'Cashier',
-            'email' => 'cashier@gmail.com',
-            'password' => bcrypt('password'),
-        ]);
+        $cashier = User::updateOrCreate(
+            ['email' => 'cashier@gmail.com'],
+            [
+                'name'     => 'Cashier',
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        $cashierRole = Role::where('name', 'cashier')->first();
+
+        if ($cashierRole) {
+            $cashier->syncRoles([$cashierRole->name]);
+            $cashier->syncPermissions([]);
+            return;
+        }
 
         $transactionsPermission = Permission::where('name', 'transactions-access')->first();
-
-        $cashier->syncPermissions($transactionsPermission);
+        $cashier->syncPermissions($transactionsPermission ? [$transactionsPermission] : []);
     }
 }
