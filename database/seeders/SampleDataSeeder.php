@@ -4,8 +4,13 @@ namespace Database\Seeders;
 use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\Payable;
+use App\Models\PayablePayment;
 use App\Models\Product;
 use App\Models\Profit;
+use App\Models\Receivable;
+use App\Models\ReceivablePayment;
+use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
@@ -26,12 +31,17 @@ class SampleDataSeeder extends Seeder
         Schema::disableForeignKeyConstraints();
 
         Cart::truncate();
+        ReceivablePayment::truncate();
+        PayablePayment::truncate();
+        Receivable::truncate();
+        Payable::truncate();
         TransactionDetail::truncate();
         Profit::truncate();
         Transaction::truncate();
         Product::truncate();
         Category::truncate();
         Customer::truncate();
+        Supplier::truncate();
 
         Schema::enableForeignKeyConstraints();
 
@@ -42,6 +52,9 @@ class SampleDataSeeder extends Seeder
         $this->command->info('Seeding customers...');
         $customers = $this->seedCustomers();
 
+        $this->command->info('Seeding suppliers...');
+        $suppliers = $this->seedSuppliers();
+
         $this->command->info('Seeding categories with images...');
         $categories = $this->seedCategories();
 
@@ -50,6 +63,12 @@ class SampleDataSeeder extends Seeder
 
         $this->command->info('Seeding transactions...');
         $this->seedTransactions($customers, $products);
+
+        $this->command->info('Seeding receivables...');
+        $this->seedReceivables($customers);
+
+        $this->command->info('Seeding payables...');
+        $this->seedPayables($suppliers);
 
         $this->command->info('Sample data seeding completed!');
     }
@@ -100,6 +119,23 @@ class SampleDataSeeder extends Seeder
 
         return $customers
             ->map(fn($customer) => Customer::create($customer))
+            ->keyBy('name');
+    }
+
+    /**
+     * Seed master suppliers.
+     */
+    private function seedSuppliers(): Collection
+    {
+        $suppliers = collect([
+            ['name' => 'PT Sumber Pangan Nusantara', 'phone' => '0215551001', 'email' => 'sales@sumberpangan.test', 'address' => 'Jl. Industri Pangan No. 10, Jakarta'],
+            ['name' => 'CV Makmur Jaya Distribusi', 'phone' => '0225551002', 'email' => 'order@makmurjaya.test', 'address' => 'Jl. Soekarno Hatta No. 88, Bandung'],
+            ['name' => 'PT Segar Sentosa Abadi', 'phone' => '0315551003', 'email' => 'hello@segarsentosa.test', 'address' => 'Jl. Raya Darmo No. 21, Surabaya'],
+            ['name' => 'UD Berkah Retail Grosir', 'phone' => '0245551004', 'email' => 'admin@berkahretail.test', 'address' => 'Jl. Pandanaran No. 45, Semarang'],
+        ]);
+
+        return $suppliers
+            ->map(fn($supplier) => Supplier::create($supplier))
             ->keyBy('name');
     }
 
@@ -372,6 +408,186 @@ class SampleDataSeeder extends Seeder
                 ]);
 
                 $item['product']->decrement('stock', $item['qty']);
+            }
+        }
+    }
+
+    /**
+     * Seed receivables and their payments.
+     */
+    private function seedReceivables(Collection $customers): void
+    {
+        $cashier = User::where('email', 'cashier@gmail.com')->first() ?? User::first();
+
+        $sourceTransactions = Transaction::with('customer')
+            ->whereNotNull('customer_id')
+            ->take(3)
+            ->get();
+
+        foreach ($sourceTransactions as $index => $transaction) {
+            $paid = match ($index) {
+                0 => (float) ($transaction->grand_total * 0.4),
+                1 => (float) ($transaction->grand_total * 0.7),
+                default => 0,
+            };
+
+            $status = $paid <= 0
+                ? 'unpaid'
+                : ($paid >= $transaction->grand_total ? 'paid' : 'partial');
+
+            $receivable = Receivable::create([
+                'customer_id'    => $transaction->customer_id,
+                'transaction_id' => $transaction->id,
+                'invoice'        => 'RCV-' . $transaction->invoice,
+                'total'          => $transaction->grand_total,
+                'paid'           => $paid,
+                'due_date'       => now()->addDays(($index + 1) * 7)->toDateString(),
+                'status'         => $status,
+                'note'           => 'Piutang dari transaksi penjualan ' . $transaction->invoice,
+            ]);
+
+            if ($paid > 0) {
+                ReceivablePayment::create([
+                    'receivable_id' => $receivable->id,
+                    'paid_at'       => now()->subDays(2 + $index)->toDateString(),
+                    'amount'        => $paid,
+                    'method'        => 'cash',
+                    'user_id'       => $cashier?->id,
+                    'note'          => 'Pembayaran awal piutang',
+                ]);
+            }
+
+            $transaction->update([
+                'payment_method' => 'credit',
+                'payment_status' => $status === 'paid' ? 'paid' : 'unpaid',
+                'cash'           => (int) $paid,
+                'change'         => 0,
+            ]);
+        }
+
+        $manualReceivables = [
+            [
+                'customer' => 'Gina Putri',
+                'invoice'  => 'RCV-MANUAL-001',
+                'total'    => 185000,
+                'paid'     => 50000,
+                'due_date' => now()->addDays(10)->toDateString(),
+                'status'   => 'partial',
+                'note'     => 'Piutang manual untuk pembelian grosir bulanan',
+            ],
+            [
+                'customer' => 'Hendra Wijaya',
+                'invoice'  => 'RCV-MANUAL-002',
+                'total'    => 275000,
+                'paid'     => 0,
+                'due_date' => now()->subDays(3)->toDateString(),
+                'status'   => 'overdue',
+                'note'     => 'Piutang manual yang sudah melewati jatuh tempo',
+            ],
+        ];
+
+        foreach ($manualReceivables as $item) {
+            $customer = $customers->get($item['customer']);
+
+            if (! $customer) {
+                continue;
+            }
+
+            $receivable = Receivable::create([
+                'customer_id' => $customer->id,
+                'invoice'     => $item['invoice'],
+                'total'       => $item['total'],
+                'paid'        => $item['paid'],
+                'due_date'    => $item['due_date'],
+                'status'      => $item['status'],
+                'note'        => $item['note'],
+            ]);
+
+            if ($item['paid'] > 0) {
+                ReceivablePayment::create([
+                    'receivable_id' => $receivable->id,
+                    'paid_at'       => now()->subDays(1)->toDateString(),
+                    'amount'        => $item['paid'],
+                    'method'        => 'bank_transfer',
+                    'user_id'       => $cashier?->id,
+                    'note'          => 'Pembayaran sebagian piutang manual',
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Seed payables and their payments.
+     */
+    private function seedPayables(Collection $suppliers): void
+    {
+        $cashier = User::where('email', 'cashier@gmail.com')->first() ?? User::first();
+
+        $blueprints = [
+            [
+                'supplier'        => 'PT Sumber Pangan Nusantara',
+                'document_number' => 'PYB-0001',
+                'total'           => 450000,
+                'paid'            => 150000,
+                'due_date'        => now()->addDays(14)->toDateString(),
+                'status'          => 'partial',
+                'note'            => 'Pengadaan stok minuman dan snack',
+            ],
+            [
+                'supplier'        => 'CV Makmur Jaya Distribusi',
+                'document_number' => 'PYB-0002',
+                'total'           => 720000,
+                'paid'            => 0,
+                'due_date'        => now()->addDays(21)->toDateString(),
+                'status'          => 'unpaid',
+                'note'            => 'Pengadaan produk rumah tangga',
+            ],
+            [
+                'supplier'        => 'PT Segar Sentosa Abadi',
+                'document_number' => 'PYB-0003',
+                'total'           => 390000,
+                'paid'            => 390000,
+                'due_date'        => now()->subDays(2)->toDateString(),
+                'status'          => 'paid',
+                'note'            => 'Pembelian produk susu dan frozen food',
+            ],
+            [
+                'supplier'        => 'UD Berkah Retail Grosir',
+                'document_number' => 'PYB-0004',
+                'total'           => 510000,
+                'paid'            => 100000,
+                'due_date'        => now()->subDays(5)->toDateString(),
+                'status'          => 'overdue',
+                'note'            => 'Pengadaan barang campuran jatuh tempo',
+            ],
+        ];
+
+        foreach ($blueprints as $item) {
+            $supplier = $suppliers->get($item['supplier']);
+
+            if (! $supplier) {
+                continue;
+            }
+
+            $payable = Payable::create([
+                'supplier_id'      => $supplier->id,
+                'document_number'  => $item['document_number'],
+                'total'            => $item['total'],
+                'paid'             => $item['paid'],
+                'due_date'         => $item['due_date'],
+                'status'           => $item['status'],
+                'note'             => $item['note'],
+            ]);
+
+            if ($item['paid'] > 0) {
+                PayablePayment::create([
+                    'payable_id' => $payable->id,
+                    'paid_at'    => now()->subDays(3)->toDateString(),
+                    'amount'     => $item['paid'],
+                    'method'     => 'bank_transfer',
+                    'user_id'    => $cashier?->id,
+                    'note'       => 'Pembayaran hutang supplier',
+                ]);
             }
         }
     }
