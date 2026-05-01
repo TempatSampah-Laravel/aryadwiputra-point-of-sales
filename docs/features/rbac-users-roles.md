@@ -41,8 +41,10 @@ Setiap modul memakai permission sendiri, contohnya:
 ## Catatan Super Admin
 
 - user `super-admin` mendapat role `super-admin`
+- backend memperlakukan role `super-admin` sebagai bypass permission yang konsisten untuk `can`, `canAny`, dan middleware Spatie
 - seeder juga menyinkronkan permission ke user admin default
 - cache permission Spatie harus di-reset saat seeding agar permission baru terbaca konsisten
+- role lama `permission-access` dinormalisasi ke `permissions-access` saat seeding agar naming RBAC tidak ambigu
 
 ## Integrasi Frontend
 
@@ -52,6 +54,11 @@ Frontend membaca:
 - `auth.super`
 
 Ini dipakai untuk menampilkan atau menyembunyikan menu dan action tertentu.
+
+Helper frontend utama:
+
+- `resources/js/Utils/authorization.js`
+- `resources/js/Utils/Permission.jsx`
 
 ## Batasan Saat Ini
 

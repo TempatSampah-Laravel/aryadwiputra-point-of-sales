@@ -1,6 +1,7 @@
 <?php
 namespace Database\Seeders;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Models\Permission;
@@ -16,9 +17,11 @@ class RoleSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
+        $this->normalizeLegacyPermissionRole();
+
         $this->createRoleWithPermissions('users-access', '%users%');
         $this->createRoleWithPermissions('roles-access', '%roles%');
-        $this->createRoleWithPermissions('permission-access', '%permissions%');
+        $this->createRoleWithPermissions('permissions-access', '%permissions%');
         $this->createRoleWithPermissions('categories-access', '%categories%');
         $this->createRoleWithPermissions('products-access', '%products%');
         $this->createRoleWithPermissions('customers-access', '%customers%');
@@ -57,6 +60,34 @@ class RoleSeeder extends Seeder
         $cashierRole->syncPermissions($cashierPermissions);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    private function normalizeLegacyPermissionRole(): void
+    {
+        $legacyRole = Role::where('name', 'permission-access')->first();
+
+        if (! $legacyRole) {
+            return;
+        }
+
+        $finalRole = Role::firstOrCreate([
+            'name' => 'permissions-access',
+            'guard_name' => $legacyRole->guard_name,
+        ]);
+
+        if (DB::getSchemaBuilder()->hasTable('model_has_roles')) {
+            DB::table('model_has_roles')
+                ->where('role_id', $legacyRole->id)
+                ->update(['role_id' => $finalRole->id]);
+        }
+
+        if (DB::getSchemaBuilder()->hasTable('role_has_permissions')) {
+            DB::table('role_has_permissions')
+                ->where('role_id', $legacyRole->id)
+                ->update(['role_id' => $finalRole->id]);
+        }
+
+        $legacyRole->delete();
     }
 
     private function createRoleWithPermissions($roleName, $permissionNamePattern)
