@@ -39,7 +39,7 @@ export default function AppLayout({ children }) {
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     return (
-        <div className="min-h-screen flex bg-slate-100 dark:bg-slate-950 transition-colors duration-200">
+        <div className="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950 transition-colors duration-200">
             <Sidebar sidebarOpen={sidebarOpen} />
             {/* Mobile overlay */}
             <div
@@ -48,13 +48,13 @@ export default function AppLayout({ children }) {
                 }`}
                 onClick={() => setSidebarOpen(false)}
             />
-            <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
                 <Navbar
                     toggleSidebar={toggleSidebar}
                     themeSwitcher={themeSwitcher}
                     darkMode={darkMode}
                 />
-                <main className="flex-1 overflow-y-auto">
+                <main className="dashboard-scrollbar flex-1 overflow-y-auto">
                     <div className="w-full py-6 px-4 md:px-6 lg:px-8 pb-20 md:pb-6">
                         <Toaster
                             position="top-right"

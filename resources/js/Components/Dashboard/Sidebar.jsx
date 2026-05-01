@@ -22,7 +22,7 @@ export default function Sidebar({ sidebarOpen }) {
                 ${sidebarOpen ? "translate-x-0 w-[260px]" : "-translate-x-full w-[260px]"}
                 md:translate-x-0 ${sidebarOpen ? "md:w-[260px]" : "md:w-[80px]"}
                 fixed md:relative inset-y-0 left-0 z-40
-                flex flex-col h-screen md:h-auto md:self-stretch md:min-h-full overflow-y-auto
+                flex h-screen flex-col overflow-hidden md:sticky md:top-0 md:self-stretch md:shrink-0
                 border-r border-slate-200 dark:border-slate-800
                 bg-white dark:bg-slate-900
                 transition-all duration-300 ease-in-out
@@ -67,7 +67,7 @@ export default function Sidebar({ sidebarOpen }) {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto py-3 scrollbar-thin">
+            <nav className="dashboard-scrollbar min-h-0 flex-1 overflow-y-auto py-3">
                 {menuNavigation.map((section, index) => {
                     const hasPermission = section.details.some(
                         (detail) => detail.permissions === true

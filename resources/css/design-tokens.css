@@ -189,22 +189,49 @@ body {
 }
 
 /* Smooth scrollbar */
-.scrollbar-thin::-webkit-scrollbar {
+.scrollbar-thin,
+.dashboard-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--scrollbar-thumb)) rgb(var(--scrollbar-track));
+}
+
+.scrollbar-thin::-webkit-scrollbar,
+.dashboard-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
+.scrollbar-thin::-webkit-scrollbar-track,
+.dashboard-scrollbar::-webkit-scrollbar-track {
+  background: rgb(var(--scrollbar-track));
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgb(var(--color-slate-300));
+.scrollbar-thin::-webkit-scrollbar-thumb,
+.dashboard-scrollbar::-webkit-scrollbar-thumb {
+  background: rgb(var(--scrollbar-thumb));
   border-radius: var(--radius-full);
+  border: 1px solid rgb(var(--scrollbar-track));
 }
 
-.dark .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgb(var(--color-slate-700));
+.scrollbar-thin::-webkit-scrollbar-thumb:hover,
+.dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--scrollbar-thumb-hover));
+}
+
+.dashboard-scrollbar {
+  scrollbar-gutter: stable;
+}
+
+:root {
+  --scrollbar-track: var(--color-slate-100);
+  --scrollbar-thumb: var(--color-slate-300);
+  --scrollbar-thumb-hover: var(--color-slate-400);
+}
+
+.dark {
+  --scrollbar-track: var(--color-slate-900);
+  --scrollbar-thumb: var(--color-slate-700);
+  --scrollbar-thumb-hover: var(--color-slate-600);
 }
 
 /* Hide scrollbar but keep functionality */
