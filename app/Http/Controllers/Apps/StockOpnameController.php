@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateStockOpnameRequest;
 use App\Models\Product;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
+use App\Services\AuditLogService;
 use App\Services\StockMutationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,8 @@ use Inertia\Response;
 class StockOpnameController extends Controller
 {
     public function __construct(
-        private readonly StockMutationService $stockMutationService
+        private readonly StockMutationService $stockMutationService,
+        private readonly AuditLogService $auditLogService
     ) {
     }
 
@@ -180,6 +182,7 @@ class StockOpnameController extends Controller
         $this->ensureDraft($stockOpname);
 
         $stockOpname->load('items.product');
+        $beforeStatus = $stockOpname->status;
 
         foreach ($stockOpname->items as $item) {
             if ($item->difference !== null && $item->difference !== 0 && blank($item->adjustment_reason)) {
@@ -224,6 +227,31 @@ class StockOpnameController extends Controller
                 'finalized_at' => now(),
             ]);
         });
+
+        $stockOpname->refresh();
+        $stockOpname->load('items.product');
+
+        $this->auditLogService->log(
+            event: 'stock.opname.finalized',
+            module: 'stock',
+            auditable: $stockOpname,
+            description: 'Stock opname difinalisasi.',
+            before: ['status' => $beforeStatus],
+            after: ['status' => $stockOpname->status],
+            meta: [
+                'code' => $stockOpname->code,
+                'notes' => $stockOpname->notes,
+                'items' => $stockOpname->items->map(fn (StockOpnameItem $item) => [
+                    'product_id' => $item->product_id,
+                    'product_title' => $item->product?->title,
+                    'stock_before' => (int) $item->system_stock,
+                    'stock_after' => $item->physical_stock !== null ? (int) $item->physical_stock : null,
+                    'difference' => $item->difference !== null ? (int) $item->difference : null,
+                    'reason' => $item->adjustment_reason,
+                    'reference' => $stockOpname->code,
+                ])->values()->all(),
+            ],
+        );
 
         return back()->with('success', 'Stock opname berhasil difinalisasi.');
     }

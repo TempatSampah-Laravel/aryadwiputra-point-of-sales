@@ -8,12 +8,14 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
+use App\Services\AuditLogService;
 use App\Services\StockMutationService;
 
 class ProductController extends Controller
 {
     public function __construct(
-        private readonly StockMutationService $stockMutationService
+        private readonly StockMutationService $stockMutationService,
+        private readonly AuditLogService $auditLogService
     ) {
     }
 
@@ -90,6 +92,13 @@ class ProductController extends Controller
         ]);
 
         $this->stockMutationService->recordInitialStock($product, $request->user()?->id);
+        $this->auditLogService->log(
+            event: 'product.created',
+            module: 'products',
+            auditable: $product,
+            description: 'Produk baru dibuat.',
+            after: $this->productAuditPayload($product->fresh())
+        );
 
         //redirect
         return to_route('products.index');
@@ -121,6 +130,8 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
+        $before = $this->productAuditPayload($product);
+
         /**
          * validate
          */
@@ -156,6 +167,8 @@ class ProductController extends Controller
                 'sell_price' => $request->sell_price,
             ]);
 
+            $this->logProductUpdate($product, $before);
+
             return to_route('products.index');
         }
 
@@ -169,6 +182,8 @@ class ProductController extends Controller
             'buy_price' => $request->buy_price,
             'sell_price' => $request->sell_price,
         ]);
+
+        $this->logProductUpdate($product, $before);
 
         //redirect
         return to_route('products.index');
@@ -184,6 +199,7 @@ class ProductController extends Controller
     {
         //find by ID
         $product = Product::findOrFail($id);
+        $before = $this->productAuditPayload($product);
 
         //remove image
         Storage::disk('local')->delete('public/products/' . basename($product->image));
@@ -191,7 +207,62 @@ class ProductController extends Controller
         //delete
         $product->delete();
 
+        $this->auditLogService->log(
+            event: 'product.deleted',
+            module: 'products',
+            auditable: $product,
+            description: 'Produk dihapus.',
+            before: $before
+        );
+
         //redirect
         return back();
+    }
+
+    private function logProductUpdate(Product $product, array $before): void
+    {
+        $after = $this->productAuditPayload($product->fresh());
+
+        $this->auditLogService->log(
+            event: 'product.updated',
+            module: 'products',
+            auditable: $product,
+            description: 'Data produk diperbarui.',
+            before: $before,
+            after: $after
+        );
+
+        if (
+            (int) $before['buy_price'] !== (int) $after['buy_price']
+            || (int) $before['sell_price'] !== (int) $after['sell_price']
+        ) {
+            $this->auditLogService->log(
+                event: 'product.price_updated',
+                module: 'products',
+                auditable: $product,
+                description: 'Harga produk diperbarui.',
+                before: [
+                    'buy_price' => $before['buy_price'],
+                    'sell_price' => $before['sell_price'],
+                ],
+                after: [
+                    'buy_price' => $after['buy_price'],
+                    'sell_price' => $after['sell_price'],
+                ]
+            );
+        }
+    }
+
+    private function productAuditPayload(Product $product): array
+    {
+        return $this->auditLogService->only($product->toArray(), [
+            'title',
+            'barcode',
+            'sku',
+            'buy_price',
+            'sell_price',
+            'stock',
+            'category_id',
+        ]);
     }
 }

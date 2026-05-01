@@ -7,6 +7,7 @@ use App\Http\Requests\CloseCashierShiftRequest;
 use App\Http\Requests\StoreCashierShiftRequest;
 use App\Models\CashierShift;
 use App\Models\User;
+use App\Services\AuditLogService;
 use App\Services\CashierShiftService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +18,8 @@ use Inertia\Response;
 class CashierShiftController extends Controller
 {
     public function __construct(
-        private readonly CashierShiftService $cashierShiftService
+        private readonly CashierShiftService $cashierShiftService,
+        private readonly AuditLogService $auditLogService
     ) {
     }
 
@@ -76,6 +78,18 @@ class CashierShiftController extends Controller
             notes: $request->validated('notes'),
         );
 
+        $this->auditLogService->log(
+            event: 'cashier_shift.opened',
+            module: 'cashier_shifts',
+            auditable: $shift,
+            description: 'Shift kasir dibuka.',
+            after: $this->shiftAuditPayload($shift),
+            meta: [
+                'cashier_id' => $shift->user_id,
+                'opened_by' => $shift->opened_by,
+            ],
+        );
+
         $target = $request->input('redirect_to') === 'transactions'
             ? route('transactions.index')
             : route('cashier-shifts.show', $shift);
@@ -86,6 +100,7 @@ class CashierShiftController extends Controller
     public function close(CloseCashierShiftRequest $request, CashierShift $cashierShift): RedirectResponse
     {
         $cashierShift = $this->resolveVisibleShift($request, $cashierShift);
+        $before = $this->shiftAuditPayload($cashierShift);
         $forceClose = $cashierShift->user_id !== $request->user()->id;
 
         if ($forceClose && ! ($request->user()->isSuperAdmin() || $request->user()->can('cashier-shifts-force-close'))) {
@@ -98,6 +113,19 @@ class CashierShiftController extends Controller
             actualCash: (int) $request->validated('actual_cash'),
             closeNotes: $request->validated('close_notes'),
             forceClose: $forceClose,
+        );
+
+        $this->auditLogService->log(
+            event: $forceClose ? 'cashier_shift.force_closed' : 'cashier_shift.closed',
+            module: 'cashier_shifts',
+            auditable: $closedShift,
+            description: $forceClose ? 'Shift kasir ditutup paksa.' : 'Shift kasir ditutup.',
+            before: $before,
+            after: $this->shiftAuditPayload($closedShift),
+            meta: [
+                'cashier_id' => $closedShift->user_id,
+                'closed_by' => $closedShift->closed_by,
+            ],
         );
 
         return to_route('cashier-shifts.show', $closedShift)->with('success', 'Shift kasir berhasil ditutup.');
@@ -149,6 +177,19 @@ class CashierShiftController extends Controller
                 'id' => $shift->closedBy->id,
                 'name' => $shift->closedBy->name,
             ] : null,
+        ];
+    }
+
+    private function shiftAuditPayload(CashierShift $shift): array
+    {
+        return [
+            'status' => $shift->status,
+            'opening_cash' => (int) $shift->opening_cash,
+            'expected_cash' => (int) ($shift->expected_cash ?? $shift->opening_cash),
+            'actual_cash' => $shift->actual_cash !== null ? (int) $shift->actual_cash : null,
+            'cash_difference' => $shift->cash_difference !== null ? (int) $shift->cash_difference : null,
+            'transactions_count' => (int) ($shift->transactions_count ?? 0),
+            'sales_returns_count' => (int) ($shift->sales_returns_count ?? 0),
         ];
     }
 }

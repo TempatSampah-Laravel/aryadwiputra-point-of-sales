@@ -11,6 +11,7 @@ use App\Models\SalesReturn;
 use App\Models\SalesReturnItem;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
+use App\Services\AuditLogService;
 use App\Services\CashierShiftService;
 use App\Services\StockMutationService;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,7 +29,8 @@ class SalesReturnController extends Controller
 {
     public function __construct(
         private readonly StockMutationService $stockMutationService,
-        private readonly CashierShiftService $cashierShiftService
+        private readonly CashierShiftService $cashierShiftService,
+        private readonly AuditLogService $auditLogService
     ) {
     }
 
@@ -110,6 +112,15 @@ class SalesReturnController extends Controller
             return $salesReturn;
         });
 
+        $salesReturn->load('items.product');
+        $this->auditLogService->log(
+            event: 'sales_return.created',
+            module: 'sales_returns',
+            auditable: $salesReturn,
+            description: 'Draft retur penjualan dibuat.',
+            after: $this->salesReturnAuditPayload($salesReturn),
+        );
+
         return to_route('sales-returns.show', $salesReturn)->with('success', 'Draft retur penjualan berhasil dibuat.');
     }
 
@@ -131,6 +142,7 @@ class SalesReturnController extends Controller
 
         $salesReturn = $this->resolveAccessibleSalesReturn($request, $salesReturn->id);
         $this->ensureDraft($salesReturn);
+        $before = $this->salesReturnAuditPayload($salesReturn);
 
         $payload = $this->prepareDraftPayload($salesReturn->transaction, $request->validated(), $salesReturn->id);
 
@@ -147,6 +159,17 @@ class SalesReturnController extends Controller
             $salesReturn->items()->createMany($payload['items']);
         });
 
+        $salesReturn->refresh();
+        $salesReturn->load('items.product');
+        $this->auditLogService->log(
+            event: 'sales_return.updated',
+            module: 'sales_returns',
+            auditable: $salesReturn,
+            description: 'Draft retur penjualan diperbarui.',
+            before: $before,
+            after: $this->salesReturnAuditPayload($salesReturn),
+        );
+
         return back()->with('success', 'Draft retur penjualan berhasil diperbarui.');
     }
 
@@ -156,6 +179,7 @@ class SalesReturnController extends Controller
 
         $salesReturn = $this->resolveAccessibleSalesReturn($request, $salesReturn->id);
         $this->ensureDraft($salesReturn);
+        $before = $this->salesReturnAuditPayload($salesReturn);
 
         DB::transaction(function () use ($request, $salesReturn) {
             $activeShift = $this->cashierShiftService->requireActiveShiftForUser(
@@ -278,7 +302,38 @@ class SalesReturnController extends Controller
             }
         });
 
+        $salesReturn->refresh();
+        $salesReturn->load('items.product');
+        $this->auditLogService->log(
+            event: 'sales_return.completed',
+            module: 'sales_returns',
+            auditable: $salesReturn,
+            description: 'Retur penjualan diselesaikan.',
+            before: $before,
+            after: $this->salesReturnAuditPayload($salesReturn),
+        );
+
         return back()->with('success', 'Retur penjualan berhasil diselesaikan.');
+    }
+
+    private function salesReturnAuditPayload(SalesReturn $salesReturn): array
+    {
+        return [
+            'code' => $salesReturn->code,
+            'status' => $salesReturn->status,
+            'return_type' => $salesReturn->return_type,
+            'refund_amount' => (int) $salesReturn->refund_amount,
+            'credited_amount' => (int) $salesReturn->credited_amount,
+            'total_return_amount' => (int) $salesReturn->total_return_amount,
+            'transaction_id' => (int) $salesReturn->transaction_id,
+            'items_summary' => $salesReturn->items->map(fn (SalesReturnItem $item) => [
+                'product_id' => $item->product_id,
+                'product_title' => $item->product?->title,
+                'qty_return' => (int) $item->qty_return,
+                'subtotal_return' => (int) $item->subtotal_return,
+                'restock_to_inventory' => (bool) $item->restock_to_inventory,
+            ])->values()->all(),
+        ];
     }
 
     private function resolveAccessibleTransaction(Request $request, int $transactionId): Transaction

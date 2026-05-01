@@ -96,4 +96,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(CashierShift::class);
     }
+
+    public function auditLogs()
+    {
+        return $this->hasMany(AuditLog::class);
+    }
 }

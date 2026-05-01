@@ -91,6 +91,9 @@ class PermissionSeeder extends Seeder
         $create('cashier-shifts-close');
         $create('cashier-shifts-force-close');
 
+        // audit logs
+        $create('audit-logs-access');
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

@@ -8,10 +8,16 @@ use App\Http\Requests\UserRequest;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogService;
 use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
+    public function __construct(
+        private readonly AuditLogService $auditLogService
+    ) {
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -71,6 +77,18 @@ class UserController extends Controller
         // assign role to user
         $user->assignRole($request->selectedRoles);
 
+        $this->auditLogService->log(
+            event: 'user.created',
+            module: 'users',
+            auditable: $user,
+            description: 'Pengguna baru dibuat.',
+            after: $this->userPayload(
+                $user,
+                $this->auditLogService->roleNames($request->selectedRoles),
+                $avatarPath !== null
+            ),
+        );
+
         // render view
         return to_route('users.index');
     }
@@ -101,7 +119,10 @@ class UserController extends Controller
      */
     public function update(UserRequest $request, User $user)
     {
+        $beforeRoles = $user->roles()->pluck('name')->all();
+        $before = $this->userPayload($user, $beforeRoles, false);
         $avatarPath = $user->getRawOriginal('avatar');
+        $avatarChanged = false;
 
         if ($request->file('avatar')) {
             if ($avatarPath) {
@@ -109,6 +130,7 @@ class UserController extends Controller
             }
 
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
+            $avatarChanged = true;
         }
 
         // check if user send request password
@@ -128,6 +150,29 @@ class UserController extends Controller
         // assign role to user
         $user->syncRoles($request->selectedRoles);
 
+        $afterRoles = $this->auditLogService->roleNames($request->selectedRoles);
+        $after = $this->userPayload($user->fresh(), $afterRoles, $avatarChanged);
+
+        $this->auditLogService->log(
+            event: 'user.updated',
+            module: 'users',
+            auditable: $user,
+            description: 'Data pengguna diperbarui.',
+            before: $before,
+            after: $after,
+        );
+
+        if ($beforeRoles !== $afterRoles) {
+            $this->auditLogService->log(
+                event: 'user.role_changed',
+                module: 'users',
+                auditable: $user,
+                description: 'Role pengguna diperbarui.',
+                before: ['roles' => array_values($beforeRoles)],
+                after: ['roles' => array_values($afterRoles)],
+            );
+        }
+
         // render view
         return to_route('users.index');
     }
@@ -138,13 +183,31 @@ class UserController extends Controller
     public function destroy($id)
     {
         $ids = explode(',', $id);
+        $users = User::query()->with('roles')->whereIn('id', $ids)->get();
 
-        if (count($ids) > 0)
-            User::whereIn('id', $ids)->delete();
-        else
-            User::findOrFail($id)->delete();
+        foreach ($users as $user) {
+            $this->auditLogService->log(
+                event: 'user.deleted',
+                module: 'users',
+                auditable: $user,
+                description: 'Pengguna dihapus.',
+                before: $this->userPayload($user, $user->roles->pluck('name')->all(), false),
+            );
+        }
+
+        User::whereIn('id', $ids)->delete();
 
         // render view
         return back();
+    }
+
+    private function userPayload(User $user, array $roles, bool $avatarChanged): array
+    {
+        return [
+            'name' => $user->name,
+            'email' => $user->email,
+            'avatar_changed' => $avatarChanged,
+            'roles' => array_values($roles),
+        ];
     }
 }

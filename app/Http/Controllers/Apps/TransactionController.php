@@ -9,6 +9,7 @@ use App\Models\PaymentSetting;
 use App\Models\Receivable;
 use App\Models\Product;
 use App\Models\Transaction;
+use App\Services\AuditLogService;
 use App\Services\CashierShiftService;
 use App\Services\Payments\PaymentGatewayManager;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +22,8 @@ use Inertia\Inertia;
 class TransactionController extends Controller
 {
     public function __construct(
-        private readonly CashierShiftService $cashierShiftService
+        private readonly CashierShiftService $cashierShiftService,
+        private readonly AuditLogService $auditLogService
     ) {
     }
 
@@ -626,9 +628,33 @@ class TransactionController extends Controller
                 ->with('error', 'Transaksi sudah dibayar.');
         }
 
+        $beforeStatus = $transaction->payment_status;
         $transaction->update([
             'payment_status' => 'paid',
         ]);
+
+        $this->auditLogService->log(
+            event: 'transaction.payment_confirmed',
+            module: 'transactions',
+            auditable: $transaction,
+            description: "Pembayaran untuk invoice {$transaction->invoice} dikonfirmasi.",
+            before: [
+                'invoice' => $transaction->invoice,
+                'payment_method' => $transaction->payment_method,
+                'payment_status' => $beforeStatus,
+                'bank_account_id' => $transaction->bank_account_id,
+            ],
+            after: [
+                'invoice' => $transaction->invoice,
+                'payment_method' => $transaction->payment_method,
+                'payment_status' => 'paid',
+                'bank_account_id' => $transaction->bank_account_id,
+            ],
+            meta: [
+                'invoice' => $transaction->invoice,
+                'bank_account_id' => $transaction->bank_account_id,
+            ],
+        );
 
         return redirect()
             ->back()

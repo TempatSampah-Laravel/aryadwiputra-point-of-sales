@@ -33,6 +33,7 @@ class RoleSeeder extends Seeder
         $this->createRoleWithPermissions('stock-mutations-access', '%stock-mutations%');
         $this->createRoleWithPermissions('sales-returns-access', '%sales-returns%');
         $this->createRoleWithPermissions('cashier-shifts-access', '%cashier-shifts%');
+        $this->createRoleWithPermissions('audit-logs-access', '%audit-logs%');
 
         $superAdminRole = Role::firstOrCreate(['name' => 'super-admin']);
         $superAdminRole->syncPermissions(Permission::all());

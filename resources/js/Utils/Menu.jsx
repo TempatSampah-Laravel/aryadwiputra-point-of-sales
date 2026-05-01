@@ -26,6 +26,7 @@ import {
     IconBuildingWarehouse,
     IconCurrencyDollar,
     IconWallet,
+    IconFileSearch,
 } from "@tabler/icons-react";
 import hasAnyPermission from "./Permission";
 import React from "react";
@@ -83,6 +84,13 @@ export default function Menu() {
                         />
                     ),
                     permissions: hasAnyPermission(["stock-mutations-access"]),
+                },
+                {
+                    title: "Audit Log",
+                    href: route("audit-logs.index"),
+                    active: url.startsWith("/dashboard/audit-logs"),
+                    icon: <IconFileSearch size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["audit-logs-access"]),
                 },
                 {
                     title: "Shift Kasir",
