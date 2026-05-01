@@ -7,10 +7,16 @@ use App\Http\Requests\RoleRequest;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogService;
 use Spatie\Permission\Models\Permission;
 
 class RoleController extends Controller
 {
+    public function __construct(
+        private readonly AuditLogService $auditLogService
+    ) {
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -49,6 +55,17 @@ class RoleController extends Controller
         // give permissions to role
         $role->givePermissionTo($request->selectedPermission);
 
+        $this->auditLogService->log(
+            event: 'role.created',
+            module: 'roles',
+            auditable: $role,
+            description: 'Role baru dibuat.',
+            after: [
+                'name' => $role->name,
+                'permissions' => $this->auditLogService->permissionNames($request->selectedPermission),
+            ],
+        );
+
         // render view
         return back();
     }
@@ -58,11 +75,42 @@ class RoleController extends Controller
      */
     public function update(RoleRequest $request, Role $role)
     {
+        $beforePermissions = $role->permissions()->pluck('name')->all();
+        $before = [
+            'name' => $role->name,
+            'permissions' => array_values($beforePermissions),
+        ];
+
         // update role data
         $role->update(['name' => $request->name]);
 
         // sync role permissions
         $role->syncPermissions($request->selectedPermission);
+
+        $afterPermissions = $this->auditLogService->permissionNames($request->selectedPermission);
+
+        $this->auditLogService->log(
+            event: 'role.updated',
+            module: 'roles',
+            auditable: $role,
+            description: 'Role diperbarui.',
+            before: $before,
+            after: [
+                'name' => $role->fresh()->name,
+                'permissions' => array_values($afterPermissions),
+            ],
+        );
+
+        if ($beforePermissions !== $afterPermissions) {
+            $this->auditLogService->log(
+                event: 'role.permission_changed',
+                module: 'roles',
+                auditable: $role,
+                description: 'Permission role diperbarui.',
+                before: ['permissions' => array_values($beforePermissions)],
+                after: ['permissions' => array_values($afterPermissions)],
+            );
+        }
 
         // render view
         return back();
@@ -73,8 +121,21 @@ class RoleController extends Controller
      */
     public function destroy(Role $role)
     {
+        $before = [
+            'name' => $role->name,
+            'permissions' => $role->permissions()->pluck('name')->all(),
+        ];
+
         // delete role data
         $role->delete();
+
+        $this->auditLogService->log(
+            event: 'role.deleted',
+            module: 'roles',
+            auditable: $role,
+            description: 'Role dihapus.',
+            before: $before,
+        );
 
         // render view
         return back();

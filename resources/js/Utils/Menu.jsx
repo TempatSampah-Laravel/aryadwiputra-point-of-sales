@@ -25,6 +25,8 @@ import {
     IconFileInvoice,
     IconBuildingWarehouse,
     IconCurrencyDollar,
+    IconWallet,
+    IconFileSearch,
 } from "@tabler/icons-react";
 import hasAnyPermission from "./Permission";
 import React from "react";
@@ -65,6 +67,39 @@ export default function Menu() {
                     permissions: hasAnyPermission(["products-access"]),
                 },
                 {
+                    title: "Stock Opname",
+                    href: route("stock-opnames.index"),
+                    active: url.startsWith("/dashboard/stock-opnames"),
+                    icon: <IconFileDescription size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["stock-opnames-access"]),
+                },
+                {
+                    title: "Mutasi Stok",
+                    href: route("stock-mutations.index"),
+                    active: url.startsWith("/dashboard/stock-mutations"),
+                    icon: (
+                        <IconChartArrowsVertical
+                            size={20}
+                            strokeWidth={1.5}
+                        />
+                    ),
+                    permissions: hasAnyPermission(["stock-mutations-access"]),
+                },
+                {
+                    title: "Audit Log",
+                    href: route("audit-logs.index"),
+                    active: url.startsWith("/dashboard/audit-logs"),
+                    icon: <IconFileSearch size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["audit-logs-access"]),
+                },
+                {
+                    title: "Shift Kasir",
+                    href: route("cashier-shifts.index"),
+                    active: url.startsWith("/dashboard/cashier-shifts"),
+                    icon: <IconWallet size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["cashier-shifts-access"]),
+                },
+                {
                     title: "Pelanggan",
                     href: route("customers.index"),
                     active: url === "/dashboard/customers" ? true : false, // Update comparison here
@@ -92,6 +127,13 @@ export default function Menu() {
                             : false,
                     icon: <IconClockHour6 size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["transactions-access"]),
+                },
+                {
+                    title: "Retur Penjualan",
+                    href: route("sales-returns.index"),
+                    active: url.startsWith("/dashboard/sales-returns"),
+                    icon: <IconFileCertificate size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["sales-returns-access"]),
                 },
                 {
                     title: "Nota Barang (Piutang)",

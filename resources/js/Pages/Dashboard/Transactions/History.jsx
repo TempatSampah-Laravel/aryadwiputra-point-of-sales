@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Head, router, Link } from "@inertiajs/react";
+import { Head, router, Link, usePage } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import Button from "@/Components/Dashboard/Button";
 import Table from "@/Components/Dashboard/Table";
@@ -33,6 +33,9 @@ const formatCurrency = (value = 0) =>
     }).format(value);
 
 const History = ({ transactions, filters }) => {
+    const { auth } = usePage().props;
+    const canCreateSalesReturn =
+        auth?.super || auth?.permissions?.["sales-returns-create"];
     const [filterData, setFilterData] = useState({
         ...defaultFilters,
         ...filters,
@@ -320,6 +323,24 @@ const History = ({ transactions, filters }) => {
                                             </td>
                                             <td className="px-4 py-4">
                                                 <div className="flex items-center justify-center gap-2">
+                                                    {canCreateSalesReturn ? (
+                                                        transaction.can_create_sales_return ? (
+                                                        <Link
+                                                            href={route(
+                                                                "sales-returns.create",
+                                                                transaction.id
+                                                            )}
+                                                            className="inline-flex items-center justify-center rounded-lg bg-warning-50 px-3 py-2 text-xs font-semibold text-warning-700 hover:bg-warning-100 dark:bg-warning-950/30 dark:text-warning-300"
+                                                            title="Buat retur"
+                                                        >
+                                                            Retur
+                                                        </Link>
+                                                        ) : (
+                                                        <span className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                                            Retur selesai
+                                                        </span>
+                                                        )
+                                                    ) : null}
                                                     <a
                                                         href={`https://wa.me/?text=${encodeURIComponent(
                                                             `Invoice ${transaction.invoice}: ${route(
@@ -455,7 +476,24 @@ const History = ({ transactions, filters }) => {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {canCreateSalesReturn ? (
+                                            transaction.can_create_sales_return ? (
+                                            <Link
+                                                href={route(
+                                                    "sales-returns.create",
+                                                    transaction.id
+                                                )}
+                                                className="inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-semibold rounded-lg bg-warning-50 text-warning-700 hover:bg-warning-100 dark:bg-warning-950/30 dark:text-warning-300"
+                                            >
+                                                Retur
+                                            </Link>
+                                            ) : (
+                                            <div className="inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                                Retur selesai
+                                            </div>
+                                            )
+                                        ) : null}
                                         <Link
                                             href={route(
                                                 "transactions.print",

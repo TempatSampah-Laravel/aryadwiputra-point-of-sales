@@ -3,12 +3,18 @@ namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
 {
+    public function __construct(
+        private readonly AuditLogService $auditLogService
+    ) {
+    }
+
     /**
      * Show the target settings page
      */
@@ -76,13 +82,25 @@ class SettingController extends Controller
             'store_logo'    => 'nullable|image|max:2048',
         ]);
 
+        $before = [
+            'store_name' => Setting::get('store_name', ''),
+            'store_address' => Setting::get('store_address', ''),
+            'store_phone' => Setting::get('store_phone', ''),
+            'store_email' => Setting::get('store_email', ''),
+            'store_website' => Setting::get('store_website', ''),
+            'store_city' => Setting::get('store_city', ''),
+            'store_logo_changed' => false,
+        ];
+
         $logoPath = Setting::get('store_logo');
+        $logoChanged = false;
 
         if ($request->file('store_logo')) {
             if ($logoPath) {
                 Storage::disk('public')->delete($logoPath);
             }
             $logoPath = $request->file('store_logo')->store('store', 'public');
+            $logoChanged = true;
         }
 
         Setting::set('store_name', $request->store_name, 'Nama toko');
@@ -92,6 +110,23 @@ class SettingController extends Controller
         Setting::set('store_website', $request->store_website, 'Website toko');
         Setting::set('store_city', $request->store_city, 'Kota/Kabupaten toko');
         Setting::set('store_logo', $logoPath, 'Logo toko');
+
+        $this->auditLogService->log(
+            event: 'store.setting.updated',
+            module: 'store_settings',
+            auditable: ['target_label' => 'Store Profile'],
+            description: 'Profil toko diperbarui.',
+            before: $before,
+            after: [
+                'store_name' => $request->store_name,
+                'store_address' => $request->store_address,
+                'store_phone' => $request->store_phone,
+                'store_email' => $request->store_email,
+                'store_website' => $request->store_website,
+                'store_city' => $request->store_city,
+                'store_logo_changed' => $logoChanged,
+            ],
+        );
 
         return back()->with('success', 'Profil toko berhasil diperbarui');
     }

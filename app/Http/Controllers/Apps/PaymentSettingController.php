@@ -3,12 +3,18 @@ namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentSetting;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class PaymentSettingController extends Controller
 {
+    public function __construct(
+        private readonly AuditLogService $auditLogService
+    ) {
+    }
+
     public function edit()
     {
         $setting = PaymentSetting::firstOrCreate([], [
@@ -51,6 +57,7 @@ class PaymentSettingController extends Controller
         $setting = PaymentSetting::firstOrCreate([], [
             'default_gateway' => 'cash',
         ]);
+        $beforeState = $setting->replicate();
 
         $data = $request->validate([
             'default_gateway'       => [
@@ -113,6 +120,39 @@ class PaymentSettingController extends Controller
             'xendit_callback_token' => $data['xendit_callback_token'],
             'xendit_production'     => (bool) ($data['xendit_production'] ?? false),
         ]);
+
+        $this->auditLogService->log(
+            event: 'payment.setting.updated',
+            module: 'payment_settings',
+            auditable: $setting,
+            description: 'Konfigurasi payment gateway diperbarui.',
+            before: [
+                'default_gateway' => $beforeState->default_gateway,
+                'bank_transfer_enabled' => (bool) $beforeState->bank_transfer_enabled,
+                'midtrans_enabled' => (bool) $beforeState->midtrans_enabled,
+                'midtrans_production' => (bool) $beforeState->midtrans_production,
+                'xendit_enabled' => (bool) $beforeState->xendit_enabled,
+                'xendit_production' => (bool) $beforeState->xendit_production,
+                'midtrans_server_key' => filled($beforeState->midtrans_server_key) ? 'configured' : 'empty',
+                'midtrans_client_key' => filled($beforeState->midtrans_client_key) ? 'configured' : 'empty',
+                'xendit_secret_key' => filled($beforeState->xendit_secret_key) ? 'configured' : 'empty',
+                'xendit_public_key' => filled($beforeState->xendit_public_key) ? 'configured' : 'empty',
+                'xendit_callback_token' => filled($beforeState->xendit_callback_token) ? 'configured' : 'empty',
+            ],
+            after: [
+                'default_gateway' => $setting->default_gateway,
+                'bank_transfer_enabled' => (bool) $setting->bank_transfer_enabled,
+                'midtrans_enabled' => (bool) $setting->midtrans_enabled,
+                'midtrans_production' => (bool) $setting->midtrans_production,
+                'xendit_enabled' => (bool) $setting->xendit_enabled,
+                'xendit_production' => (bool) $setting->xendit_production,
+                'midtrans_server_key' => $this->auditLogService->credentialState($beforeState->midtrans_server_key, $setting->midtrans_server_key),
+                'midtrans_client_key' => $this->auditLogService->credentialState($beforeState->midtrans_client_key, $setting->midtrans_client_key),
+                'xendit_secret_key' => $this->auditLogService->credentialState($beforeState->xendit_secret_key, $setting->xendit_secret_key),
+                'xendit_public_key' => $this->auditLogService->credentialState($beforeState->xendit_public_key, $setting->xendit_public_key),
+                'xendit_callback_token' => $this->auditLogService->credentialState($beforeState->xendit_callback_token, $setting->xendit_callback_token),
+            ],
+        );
 
         return redirect()
             ->route('settings.payments.edit')

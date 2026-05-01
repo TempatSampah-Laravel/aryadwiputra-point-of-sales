@@ -10,6 +10,18 @@ class Transaction extends Model
 {
     use HasFactory;
 
+    protected $casts = [
+        'cashier_id' => 'integer',
+        'cashier_shift_id' => 'integer',
+        'customer_id' => 'integer',
+        'cash' => 'integer',
+        'change' => 'integer',
+        'discount' => 'integer',
+        'shipping_cost' => 'integer',
+        'grand_total' => 'integer',
+        'bank_account_id' => 'integer',
+    ];
+
     /**
      * fillable
      *
@@ -17,6 +29,7 @@ class Transaction extends Model
      */
     protected $fillable = [
         'cashier_id',
+        'cashier_shift_id',
         'customer_id',
         'invoice',
         'cash',
@@ -61,6 +74,11 @@ class Transaction extends Model
         return $this->belongsTo(User::class, 'cashier_id');
     }
 
+    public function cashierShift()
+    {
+        return $this->belongsTo(CashierShift::class);
+    }
+
     /**
      * bankAccount
      *
@@ -84,6 +102,11 @@ class Transaction extends Model
     public function receivable()
     {
         return $this->hasOne(Receivable::class);
+    }
+
+    public function salesReturns()
+    {
+        return $this->hasMany(SalesReturn::class);
     }
 
     /**

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
 {
@@ -13,6 +14,8 @@ class PermissionSeeder extends Seeder
      */
     public function run(): void
     {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         $create = fn ($name) => Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
 
         // dashboard permissions
@@ -70,5 +73,27 @@ class PermissionSeeder extends Seeder
 
         // payment settings
         $create('payment-settings-access');
+
+        // stock opnames
+        $create('stock-opnames-access');
+        $create('stock-opnames-create');
+        $create('stock-opnames-finalize');
+        $create('stock-mutations-access');
+
+        // sales returns
+        $create('sales-returns-access');
+        $create('sales-returns-create');
+        $create('sales-returns-complete');
+
+        // cashier shifts
+        $create('cashier-shifts-access');
+        $create('cashier-shifts-open');
+        $create('cashier-shifts-close');
+        $create('cashier-shifts-force-close');
+
+        // audit logs
+        $create('audit-logs-access');
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

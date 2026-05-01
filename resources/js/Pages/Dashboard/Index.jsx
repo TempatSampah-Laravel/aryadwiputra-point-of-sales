@@ -19,6 +19,7 @@ import {
     IconPackageOff,
     IconTarget,
     IconMapPin,
+    IconWallet,
 } from "@tabler/icons-react";
 
 const formatCurrency = (value = 0) =>
@@ -203,6 +204,7 @@ export default function Dashboard({
     topCustomers = [],
     topLocations = [],
     lowStockProducts = [],
+    activeShifts = [],
 }) {
     const chartRef = useRef(null);
     const chartInstance = useRef(null);
@@ -395,6 +397,38 @@ export default function Dashboard({
 
                 {/* 4-Column Bottom Widgets */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <ListCard
+                        title="Shift Aktif"
+                        subtitle="Pemantauan kasir"
+                        icon={IconWallet}
+                        emptyMessage="Tidak ada shift aktif"
+                    >
+                        {activeShifts.length > 0 && (
+                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {activeShifts.map((shift) => (
+                                    <div
+                                        key={shift.id}
+                                        className="py-3 first:pt-0 last:pb-0"
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                                    {shift.user?.name || "-"}
+                                                </p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                    {shift.transactions_count} transaksi
+                                                </p>
+                                            </div>
+                                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                                {formatCurrency(shift.expected_cash)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </ListCard>
+
                     {/* Top Products */}
                     <ListCard
                         title="Produk Terlaris"

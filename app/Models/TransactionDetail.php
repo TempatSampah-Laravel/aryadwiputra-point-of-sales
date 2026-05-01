@@ -37,4 +37,9 @@ class TransactionDetail extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    public function salesReturnItems()
+    {
+        return $this->hasMany(SalesReturnItem::class);
+    }
 }

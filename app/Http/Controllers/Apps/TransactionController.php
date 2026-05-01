@@ -9,15 +9,24 @@ use App\Models\PaymentSetting;
 use App\Models\Receivable;
 use App\Models\Product;
 use App\Models\Transaction;
+use App\Services\AuditLogService;
+use App\Services\CashierShiftService;
 use App\Services\Payments\PaymentGatewayManager;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class TransactionController extends Controller
 {
+    public function __construct(
+        private readonly CashierShiftService $cashierShiftService,
+        private readonly AuditLogService $auditLogService
+    ) {
+    }
+
     /**
      * index
      *
@@ -26,6 +35,7 @@ class TransactionController extends Controller
     public function index()
     {
         $userId = auth()->user()->id;
+        $activeShift = $this->cashierShiftService->getActiveShiftForUser($userId);
 
         // Get active cart items (not held)
         $carts = Cart::with('product')
@@ -95,6 +105,7 @@ class TransactionController extends Controller
             'paymentGateways'       => $paymentSetting?->enabledGateways() ?? [],
             'defaultPaymentGateway' => $defaultGateway,
             'bankAccounts'          => $bankAccounts,
+            'shiftSummary'          => $this->cashierShiftService->summarizeForDisplay($activeShift),
         ]);
     }
 
@@ -440,8 +451,14 @@ class TransactionController extends Controller
             $isCashPayment,
             $isPayLater
         ) {
+            $activeShift = $this->cashierShiftService->requireActiveShiftForUser(
+                auth()->user()->id,
+                lockForUpdate: true
+            );
+
             $transaction = Transaction::create([
                 'cashier_id'      => auth()->user()->id,
+                'cashier_shift_id' => $activeShift->id,
                 'customer_id'     => $request->customer_id,
                 'invoice'         => $invoice,
                 'cash'            => $cashAmount,
@@ -528,6 +545,8 @@ class TransactionController extends Controller
      */
     public function history(Request $request)
     {
+        $salesReturnTablesReady = Schema::hasTable('sales_returns') && Schema::hasTable('sales_return_items');
+
         $filters = [
             'invoice'    => $request->input('invoice'),
             'start_date' => $request->input('start_date'),
@@ -535,10 +554,19 @@ class TransactionController extends Controller
         ];
 
         $query = Transaction::query()
-            ->with(['cashier:id,name', 'customer:id,name', 'receivable'])
+            ->with([
+                'cashier:id,name',
+                'cashierShift:id,opened_at,status',
+                'customer:id,name',
+                'receivable',
+            ])
             ->withSum('details as total_items', 'qty')
             ->withSum('profits as total_profit', 'total')
             ->orderByDesc('created_at');
+
+        if ($salesReturnTablesReady) {
+            $query->with('details.salesReturnItems.salesReturn:id,status');
+        }
 
         if (! $request->user()->isSuperAdmin()) {
             $query->where('cashier_id', $request->user()->id);
@@ -556,10 +584,36 @@ class TransactionController extends Controller
             });
 
         $transactions = $query->paginate(10)->withQueryString();
+        $transactions->through(function (Transaction $transaction) use ($salesReturnTablesReady) {
+            $canCreateSalesReturn = false;
+
+            if ($salesReturnTablesReady) {
+                $allReturned = true;
+
+                foreach ($transaction->details as $detail) {
+                    $returnedQty = (int) $detail->salesReturnItems
+                        ->filter(fn ($item) => $item->salesReturn?->status === 'completed')
+                        ->sum('qty_return');
+
+                    if ($returnedQty < (int) $detail->qty) {
+                        $allReturned = false;
+                        break;
+                    }
+                }
+
+                $canCreateSalesReturn = $transaction->details->isNotEmpty() && ! $allReturned;
+            }
+
+            return [
+                ...$transaction->toArray(),
+                'can_create_sales_return' => $canCreateSalesReturn,
+            ];
+        });
 
         return Inertia::render('Dashboard/Transactions/History', [
             'transactions' => $transactions,
             'filters'      => $filters,
+            'salesReturnFeatureReady' => $salesReturnTablesReady,
         ]);
     }
 
@@ -574,9 +628,33 @@ class TransactionController extends Controller
                 ->with('error', 'Transaksi sudah dibayar.');
         }
 
+        $beforeStatus = $transaction->payment_status;
         $transaction->update([
             'payment_status' => 'paid',
         ]);
+
+        $this->auditLogService->log(
+            event: 'transaction.payment_confirmed',
+            module: 'transactions',
+            auditable: $transaction,
+            description: "Pembayaran untuk invoice {$transaction->invoice} dikonfirmasi.",
+            before: [
+                'invoice' => $transaction->invoice,
+                'payment_method' => $transaction->payment_method,
+                'payment_status' => $beforeStatus,
+                'bank_account_id' => $transaction->bank_account_id,
+            ],
+            after: [
+                'invoice' => $transaction->invoice,
+                'payment_method' => $transaction->payment_method,
+                'payment_status' => 'paid',
+                'bank_account_id' => $transaction->bank_account_id,
+            ],
+            meta: [
+                'invoice' => $transaction->invoice,
+                'bank_account_id' => $transaction->bank_account_id,
+            ],
+        );
 
         return redirect()
             ->back()

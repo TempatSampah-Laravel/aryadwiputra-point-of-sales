@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\CashierShift;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Profit;
@@ -11,10 +12,11 @@ use App\Models\Setting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use App\Services\CashierShiftService;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(CashierShiftService $cashierShiftService)
     {
         $totalCategories   = Category::count();
         $totalProducts     = Product::count();
@@ -139,6 +141,30 @@ class DashboardController extends Controller
                 ];
             });
 
+        $activeShifts = CashierShift::query()
+            ->with('user:id,name')
+            ->open()
+            ->latest('opened_at')
+            ->take(5)
+            ->get()
+            ->map(function (CashierShift $shift) use ($cashierShiftService) {
+                $summary = $cashierShiftService->calculateSummary($shift);
+
+                return [
+                    'id' => $shift->id,
+                    'opened_at' => optional($shift->opened_at)?->toISOString(),
+                    'opening_cash' => (int) $shift->opening_cash,
+                    'expected_cash' => $summary['expected_cash'],
+                    'transactions_count' => $summary['transactions_count'],
+                    'cash_sales_total' => $summary['cash_sales_total'],
+                    'user' => [
+                        'id' => $shift->user?->id,
+                        'name' => $shift->user?->name,
+                    ],
+                ];
+            })
+            ->values();
+
         return Inertia::render('Dashboard/Index', [
             'totalCategories'     => $totalCategories,
             'totalProducts'       => $totalProducts,
@@ -159,6 +185,7 @@ class DashboardController extends Controller
             'recentTransactions'  => $recentTransactions,
             'topCustomers'        => $topCustomers,
             'topLocations'        => $topLocations,
+            'activeShifts'        => $activeShifts,
         ]);
     }
 }

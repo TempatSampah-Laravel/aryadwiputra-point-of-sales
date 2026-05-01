@@ -27,7 +27,6 @@ export default function Edit({ categories, product }) {
         description: product.description,
         buy_price: product.buy_price,
         sell_price: product.sell_price,
-        stock: product.stock,
         _method: "PUT",
     });
 
@@ -191,9 +190,9 @@ export default function Edit({ categories, product }) {
                         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
                             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
                                 <IconCurrencyDollar size={18} />
-                                Harga & Stok
+                                Harga Produk
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Input
                                     type="number"
                                     label="Harga Beli"
@@ -214,16 +213,18 @@ export default function Edit({ categories, product }) {
                                     errors={errors.sell_price}
                                     placeholder="0"
                                 />
-                                <Input
-                                    type="number"
-                                    label="Stok"
-                                    value={data.stock}
-                                    onChange={(e) =>
-                                        setData("stock", e.target.value)
-                                    }
-                                    errors={errors.stock}
-                                    placeholder="0"
-                                />
+                            </div>
+
+                            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                    Stok Saat Ini
+                                </p>
+                                <p className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                                    {product.stock}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    Perubahan stok dilakukan melalui transaksi atau stock opname.
+                                </p>
                             </div>
 
                             {/* Profit Estimation */}

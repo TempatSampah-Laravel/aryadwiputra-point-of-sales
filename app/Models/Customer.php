@@ -27,4 +27,14 @@ class Customer extends Model
         'village_id',
         'village_name',
     ];
+
+    public function salesReturns()
+    {
+        return $this->hasMany(SalesReturn::class);
+    }
+
+    public function customerCredits()
+    {
+        return $this->hasMany(CustomerCredit::class);
+    }
 }
