@@ -45,6 +45,16 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function stockOpnameItems()
+    {
+        return $this->hasMany(StockOpnameItem::class);
+    }
+
+    public function stockMutations()
+    {
+        return $this->hasMany(StockMutation::class);
+    }
+
     /**
      * image
      *

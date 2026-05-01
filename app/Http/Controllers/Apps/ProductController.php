@@ -8,9 +8,15 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
+use App\Services\StockMutationService;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        private readonly StockMutationService $stockMutationService
+    ) {
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -64,14 +70,14 @@ class ProductController extends Controller
             'category_id' => 'required',
             'buy_price' => 'required',
             'sell_price' => 'required',
-            'stock' => 'required',
+            'stock' => 'required|integer|min:0',
         ]);
         //upload image
         $image = $request->file('image');
         $image->storeAs('public/products', $image->hashName());
 
         //create product
-        Product::create([
+        $product = Product::create([
             'image' => $image->hashName(),
             'barcode' => $request->barcode,
             'sku' => $request->sku,
@@ -82,6 +88,8 @@ class ProductController extends Controller
             'sell_price' => $request->sell_price,
             'stock' => $request->stock,
         ]);
+
+        $this->stockMutationService->recordInitialStock($product, $request->user()?->id);
 
         //redirect
         return to_route('products.index');
@@ -124,7 +132,6 @@ class ProductController extends Controller
             'category_id' => 'required',
             'buy_price' => 'required',
             'sell_price' => 'required',
-            'stock' => 'required',
         ]);
 
         //check image update
@@ -147,9 +154,9 @@ class ProductController extends Controller
                 'category_id' => $request->category_id,
                 'buy_price' => $request->buy_price,
                 'sell_price' => $request->sell_price,
-                'stock' => $request->stock,
             ]);
 
+            return to_route('products.index');
         }
 
         //update product without image
@@ -161,7 +168,6 @@ class ProductController extends Controller
             'category_id' => $request->category_id,
             'buy_price' => $request->buy_price,
             'sell_price' => $request->sell_price,
-            'stock' => $request->stock,
         ]);
 
         //redirect

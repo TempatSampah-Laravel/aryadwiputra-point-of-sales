@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Spatie\Permission\Exceptions\UnauthorizedException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
@@ -33,6 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (\Throwable $exception, Request $request) {
+            if ($exception instanceof ValidationException) {
+                return null;
+            }
+
             $status = match (true) {
                 $exception instanceof UnauthorizedException => Response::HTTP_FORBIDDEN,
                 $exception instanceof HttpExceptionInterface => $exception->getStatusCode(),

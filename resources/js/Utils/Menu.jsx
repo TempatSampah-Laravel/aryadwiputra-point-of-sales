@@ -65,6 +65,25 @@ export default function Menu() {
                     permissions: hasAnyPermission(["products-access"]),
                 },
                 {
+                    title: "Stock Opname",
+                    href: route("stock-opnames.index"),
+                    active: url.startsWith("/dashboard/stock-opnames"),
+                    icon: <IconFileDescription size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["stock-opnames-access"]),
+                },
+                {
+                    title: "Mutasi Stok",
+                    href: route("stock-mutations.index"),
+                    active: url.startsWith("/dashboard/stock-mutations"),
+                    icon: (
+                        <IconChartArrowsVertical
+                            size={20}
+                            strokeWidth={1.5}
+                        />
+                    ),
+                    permissions: hasAnyPermission(["stock-mutations-access"]),
+                },
+                {
                     title: "Pelanggan",
                     href: route("customers.index"),
                     active: url === "/dashboard/customers" ? true : false, // Update comparison here

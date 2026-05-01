@@ -70,5 +70,11 @@ class PermissionSeeder extends Seeder
 
         // payment settings
         $create('payment-settings-access');
+
+        // stock opnames
+        $create('stock-opnames-access');
+        $create('stock-opnames-create');
+        $create('stock-opnames-finalize');
+        $create('stock-mutations-access');
     }
 }
