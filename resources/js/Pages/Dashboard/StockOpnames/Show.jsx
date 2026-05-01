@@ -14,6 +14,7 @@ import {
     IconSearch,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
+import { useAuthorization } from "@/Utils/authorization";
 
 const formatDateTime = (value) =>
     value
@@ -48,7 +49,11 @@ export default function Show({
     availableProducts,
     productFilters,
 }) {
+    const { can } = useAuthorization();
+    const canEditStockOpname = can("stock-opnames-create");
+    const canFinalizeStockOpname = can("stock-opnames-finalize");
     const isDraft = stockOpname.status === "draft";
+    const canManageDraft = isDraft && canEditStockOpname;
     const [localItems, setLocalItems] = useState(stockOpname.items);
     const [savingItemId, setSavingItemId] = useState(null);
     const [showProductModal, setShowProductModal] = useState(false);
@@ -198,7 +203,7 @@ export default function Show({
     };
 
     const persistItem = (item) => {
-        if (!isDraft) {
+        if (!canManageDraft) {
             return;
         }
 
@@ -274,7 +279,7 @@ export default function Show({
                         )}
                     </div>
 
-                    {isDraft && (
+                    {isDraft && canFinalizeStockOpname && (
                         <Button
                             type="button"
                             icon={<IconCheck size={18} />}
@@ -319,7 +324,7 @@ export default function Show({
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                                 Item Stock Opname
                             </h2>
-                            {isDraft && (
+                            {canManageDraft && (
                                 <Button
                                     type="button"
                                     icon={<IconPlus size={18} />}
@@ -372,7 +377,7 @@ export default function Show({
                                                         type="number"
                                                         min="0"
                                                         value={item.physical_stock ?? ""}
-                                                        disabled={!isDraft}
+                                                        disabled={!canManageDraft}
                                                         onChange={(event) =>
                                                             setItemField(
                                                                 item.id,
@@ -404,7 +409,7 @@ export default function Show({
                                                     <input
                                                         type="text"
                                                         value={item.adjustment_reason || ""}
-                                                        disabled={!isDraft}
+                                                        disabled={!canManageDraft}
                                                         onChange={(event) =>
                                                             setItemField(
                                                                 item.id,
@@ -421,7 +426,7 @@ export default function Show({
                                                     />
                                                 </Table.Td>
                                                 <Table.Td className="text-center">
-                                                    {isDraft ? (
+                                                    {canManageDraft ? (
                                                         <button
                                                             type="button"
                                                             onClick={() => persistItem(item)}
@@ -466,7 +471,7 @@ export default function Show({
                         </h2>
                         <textarea
                             value={notesForm.data.notes}
-                            disabled={!isDraft}
+                            disabled={!canManageDraft}
                             onChange={(event) =>
                                 notesForm.setData("notes", event.target.value)
                             }
@@ -474,7 +479,7 @@ export default function Show({
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                             placeholder="Catatan sesi stock opname"
                         />
-                        {isDraft && (
+                        {canManageDraft && (
                             <div className="mt-4 flex justify-end">
                                 <Button
                                     type="submit"
@@ -508,7 +513,7 @@ export default function Show({
             </div>
 
             <Modal
-                show={showProductModal}
+                show={showProductModal && canManageDraft}
                 onClose={() => setShowProductModal(false)}
                 title={
                     <div className="flex items-center gap-2">

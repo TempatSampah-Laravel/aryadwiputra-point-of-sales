@@ -1,23 +1,14 @@
-import { usePage } from "@inertiajs/react";
+import { useAuthorization } from "./authorization";
 
 export default function hasAnyPermission(permissions, givenPermissions = null) {
-    // destruct auth from usepage props if not provided
-    const { auth } = usePage().props;
+    const { canAny, isSuperAdmin } = useAuthorization();
 
-    // get all permissions from props auth.permissions or provided map
-    let allPermissions = givenPermissions ?? auth.permissions;
+    if (givenPermissions) {
+        return (
+            isSuperAdmin() ||
+            permissions.some((permission) => givenPermissions?.[permission] === true)
+        );
+    }
 
-    // define has permission is false
-    let hasPermission = false;
-
-    // loop permissions
-    permissions.forEach(function (item) {
-        // do it if permission is match with key
-        if (allPermissions[item])
-            // assign hasPermission to true
-            hasPermission = true;
-    });
-
-    // return has permissions
-    return hasPermission;
+    return canAny(permissions);
 }

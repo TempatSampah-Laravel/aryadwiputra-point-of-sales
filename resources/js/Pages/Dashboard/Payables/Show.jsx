@@ -8,6 +8,7 @@ import {
     IconPrinter,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
+import { useAuthorization } from "@/Utils/authorization";
 
     const formatCurrency = (value = 0) =>
         new Intl.NumberFormat("id-ID", {
@@ -29,6 +30,7 @@ import toast from "react-hot-toast";
 
 export default function PayableShow({ payable, bankAccounts = [] }) {
     const { flash, storeProfile } = usePage().props;
+    const { can } = useAuthorization();
     const [showForm, setShowForm] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const printRef = useRef(null);
@@ -39,6 +41,7 @@ export default function PayableShow({ payable, bankAccounts = [] }) {
         bank_account_id: "",
         note: "",
     });
+    const canPayPayable = can("payables-pay");
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -163,7 +166,7 @@ export default function PayableShow({ payable, bankAccounts = [] }) {
                             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                                 Riwayat Pembayaran
                             </p>
-                            {payable.status !== "paid" && (
+                            {payable.status !== "paid" && canPayPayable && (
                                 <button
                                     onClick={() => setShowForm(!showForm)}
                                     className="px-3 py-2 rounded-xl text-sm font-semibold bg-primary-500 hover:bg-primary-600 text-white transition-colors"
@@ -228,7 +231,7 @@ export default function PayableShow({ payable, bankAccounts = [] }) {
                             </div>
                         </div>
 
-                        {showForm && (
+                        {showForm && canPayPayable && (
                             <form onSubmit={submitPayment} className="mt-4 space-y-3">
                                 <div>
                                     <label className="text-sm font-medium text-slate-700 dark:text-slate-200">

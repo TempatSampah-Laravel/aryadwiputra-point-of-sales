@@ -4,6 +4,7 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 import Button from "@/Components/Dashboard/Button";
 import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
+import { useAuthorization } from "@/Utils/authorization";
 import {
     IconDatabaseOff,
     IconSearch,
@@ -33,9 +34,9 @@ const formatCurrency = (value = 0) =>
     }).format(value);
 
 const History = ({ transactions, filters }) => {
-    const { auth } = usePage().props;
-    const canCreateSalesReturn =
-        auth?.super || auth?.permissions?.["sales-returns-create"];
+    const { can } = useAuthorization();
+    const canCreateSalesReturn = can("sales-returns-create");
+    const canConfirmPayment = can("transactions-access");
     const [filterData, setFilterData] = useState({
         ...defaultFilters,
         ...filters,
@@ -302,7 +303,8 @@ const History = ({ transactions, filters }) => {
                                                         Lunas
                                                     </span>
                                                 ) : transaction.payment_status ===
-                                                  "pending" ? (
+                                                      "pending" &&
+                                                  canConfirmPayment ? (
                                                     <button
                                                         onClick={() =>
                                                             setConfirmModal({
@@ -411,7 +413,8 @@ const History = ({ transactions, filters }) => {
                                                         Lunas
                                                     </span>
                                                 ) : transaction.payment_status ===
-                                                  "pending" ? (
+                                                      "pending" &&
+                                                  canConfirmPayment ? (
                                                     <button
                                                         onClick={() =>
                                                             setConfirmModal({

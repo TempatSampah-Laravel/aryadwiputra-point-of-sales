@@ -15,12 +15,15 @@ import ThermalReceipt, {
     ThermalReceipt58mm,
 } from "@/Components/Receipt/ThermalReceipt";
 import ShippingLabel from "@/Components/Receipt/ShippingLabel";
+import { useAuthorization } from "@/Utils/authorization";
 
 export default function Print({ transaction }) {
     const { storeProfile } = usePage().props;
+    const { can } = useAuthorization();
     const [printMode, setPrintMode] = useState("invoice"); // 'invoice' | 'thermal80' | 'thermal58'
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isConfirming, setIsConfirming] = useState(false);
+    const canConfirmPayment = can("transactions-access");
 
     const formatPrice = (price = 0) =>
         Number(price || 0).toLocaleString("id-ID", {
@@ -215,7 +218,8 @@ export default function Print({ transaction }) {
 
                             {/* Confirm Payment Button - Only for pending bank_transfer */}
                             {paymentMethodKey === "bank_transfer" &&
-                                paymentStatusKey === "pending" && (
+                                paymentStatusKey === "pending" &&
+                                canConfirmPayment && (
                                     <button
                                         onClick={() =>
                                             setShowConfirmModal(true)
@@ -613,7 +617,7 @@ export default function Print({ transaction }) {
             </div>
 
             {/* Confirmation Modal */}
-            {showConfirmModal && (
+            {showConfirmModal && canConfirmPayment && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 print:hidden">
                     {/* Backdrop */}
                     <div

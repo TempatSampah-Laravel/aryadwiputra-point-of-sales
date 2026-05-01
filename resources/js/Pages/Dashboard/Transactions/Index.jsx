@@ -19,6 +19,7 @@ import HeldTransactions, {
 } from "@/Components/POS/HeldTransactions";
 import useBarcodeScanner from "@/Hooks/useBarcodeScanner";
 import { getProductImageUrl } from "@/Utils/imageUrl";
+import { useAuthorization } from "@/Utils/authorization";
 import {
     IconUser,
     IconShoppingCart,
@@ -58,8 +59,8 @@ export default function Index({
         lowStockNotifications = [],
         activeCashierShift,
     } = usePage().props;
-    const canOpenShift =
-        auth?.super || auth?.permissions?.["cashier-shifts-open"];
+    const { can } = useAuthorization();
+    const canOpenShift = can("cashier-shifts-open");
 
     // State
     const [searchQuery, setSearchQuery] = useState("");

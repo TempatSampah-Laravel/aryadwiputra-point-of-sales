@@ -3,10 +3,13 @@ import { Head, useForm, usePage, router } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { IconBuildingStore, IconPencil, IconTrash, IconPlus } from "@tabler/icons-react";
 import toast from "react-hot-toast";
+import { useAuthorization } from "@/Utils/authorization";
 
 export default function SuppliersIndex({ suppliers = [] }) {
     const { flash } = usePage().props;
+    const { can } = useAuthorization();
     const [editing, setEditing] = useState(null);
+    const canManageSuppliers = can("suppliers-access");
     const { data, setData, post, put, delete: destroy, processing, reset } = useForm({
         name: "",
         phone: "",
@@ -66,19 +69,22 @@ export default function SuppliersIndex({ suppliers = [] }) {
                             Data pemasok untuk pencatatan hutang.
                         </p>
                     </div>
-                    <button
-                        onClick={cancel}
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold"
-                    >
-                        <IconPlus size={16} />
-                        Tambah Supplier
-                    </button>
+                    {canManageSuppliers && (
+                        <button
+                            onClick={cancel}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold"
+                        >
+                            <IconPlus size={16} />
+                            Tambah Supplier
+                        </button>
+                    )}
                 </div>
 
-                <form
-                    onSubmit={submit}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 grid grid-cols-1 md:grid-cols-4 gap-3"
-                >
+                {canManageSuppliers && (
+                    <form
+                        onSubmit={submit}
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 grid grid-cols-1 md:grid-cols-4 gap-3"
+                    >
                     <div className="md:col-span-1">
                         <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                             Nama
@@ -140,7 +146,8 @@ export default function SuppliersIndex({ suppliers = [] }) {
                             </button>
                         )}
                     </div>
-                </form>
+                    </form>
+                )}
 
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800">
                     {suppliers.length ? (
@@ -163,18 +170,22 @@ export default function SuppliersIndex({ suppliers = [] }) {
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => startEdit(sup)}
-                                        className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                                    >
-                                        <IconPencil size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => remove(sup.id)}
-                                        className="p-2 rounded-lg text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-900/30"
-                                    >
-                                        <IconTrash size={16} />
-                                    </button>
+                                    {canManageSuppliers && (
+                                        <>
+                                            <button
+                                                onClick={() => startEdit(sup)}
+                                                className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                            >
+                                                <IconPencil size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => remove(sup.id)}
+                                                className="p-2 rounded-lg text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-900/30"
+                                            >
+                                                <IconTrash size={16} />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))

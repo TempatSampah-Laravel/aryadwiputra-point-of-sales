@@ -7,6 +7,7 @@ import ListBox from "@/Components/Dashboard/ListBox";
 import Modal from "@/Components/Dashboard/Modal";
 import Search from "@/Components/Dashboard/Search";
 import Pagination from "@/Components/Dashboard/Pagination";
+import { useAuthorization } from "@/Utils/authorization";
 import {
     IconDatabaseOff,
     IconCirclePlus,
@@ -18,7 +19,7 @@ import {
 } from "@tabler/icons-react";
 
 // Role Card Component
-function RoleCard({ role, onEdit, onDelete }) {
+function RoleCard({ role, onEdit, onDelete, canUpdate, canDelete }) {
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-lg transition-all">
             {/* Header */}
@@ -59,29 +60,41 @@ function RoleCard({ role, onEdit, onDelete }) {
             </div>
 
             {/* Actions */}
-            <div className="flex border-t border-slate-100 dark:border-slate-800">
-                <button
-                    onClick={onEdit}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-warning-600 hover:bg-warning-50 dark:hover:bg-warning-950/50 text-sm font-medium transition-colors"
-                >
-                    <IconPencilCog size={16} />
-                    <span>Edit</span>
-                </button>
-                <div className="w-px bg-slate-100 dark:bg-slate-800" />
-                <button
-                    onClick={onDelete}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/50 text-sm font-medium transition-colors"
-                >
-                    <IconTrash size={16} />
-                    <span>Hapus</span>
-                </button>
-            </div>
+            {(canUpdate || canDelete) && (
+                <div className="flex border-t border-slate-100 dark:border-slate-800">
+                    {canUpdate && (
+                        <button
+                            onClick={onEdit}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-3 text-warning-600 hover:bg-warning-50 dark:hover:bg-warning-950/50 text-sm font-medium transition-colors"
+                        >
+                            <IconPencilCog size={16} />
+                            <span>Edit</span>
+                        </button>
+                    )}
+                    {canUpdate && canDelete && (
+                        <div className="w-px bg-slate-100 dark:bg-slate-800" />
+                    )}
+                    {canDelete && (
+                        <button
+                            onClick={onDelete}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-3 text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/50 text-sm font-medium transition-colors"
+                        >
+                            <IconTrash size={16} />
+                            <span>Hapus</span>
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
 
 export default function Index() {
     const { roles, permissions, errors } = usePage().props;
+    const { can } = useAuthorization();
+    const canCreateRoles = can("roles-create");
+    const canUpdateRoles = can("roles-update");
+    const canDeleteRoles = can("roles-delete");
 
     const {
         data,
@@ -166,15 +179,22 @@ export default function Index() {
                             terdaftar
                         </p>
                     </div>
-                    <Button
-                        type={"button"}
-                        icon={<IconCirclePlus size={18} strokeWidth={1.5} />}
-                        className={
-                            "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
-                        }
-                        label={"Tambah Group"}
-                        onClick={() => setData("isOpen", true)}
-                    />
+                    {canCreateRoles && (
+                        <Button
+                            type={"button"}
+                            icon={
+                                <IconCirclePlus
+                                    size={18}
+                                    strokeWidth={1.5}
+                                />
+                            }
+                            className={
+                                "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
+                            }
+                            label={"Tambah Group"}
+                            onClick={() => setData("isOpen", true)}
+                        />
+                    )}
                 </div>
             </div>
 
@@ -243,6 +263,8 @@ export default function Index() {
                             role={role}
                             onEdit={() => handleEdit(role)}
                             onDelete={() => handleDelete(role.id)}
+                            canUpdate={canUpdateRoles}
+                            canDelete={canDeleteRoles}
                         />
                     ))}
                 </div>

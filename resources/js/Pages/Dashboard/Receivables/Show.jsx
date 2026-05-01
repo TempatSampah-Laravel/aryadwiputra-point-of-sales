@@ -9,6 +9,7 @@ import {
     IconPrinter,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
+import { useAuthorization } from "@/Utils/authorization";
 
 const formatCurrency = (value = 0) =>
     new Intl.NumberFormat("id-ID", {
@@ -19,6 +20,7 @@ const formatCurrency = (value = 0) =>
 
 export default function ReceivableShow({ receivable, bankAccounts = [] }) {
     const { flash, storeProfile } = usePage().props;
+    const { can } = useAuthorization();
     const [showForm, setShowForm] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const printRef = useRef(null);
@@ -29,6 +31,7 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
         bank_account_id: "",
         note: "",
     });
+    const canPayReceivable = can("receivables-pay");
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -178,7 +181,7 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                                 Riwayat Pembayaran
                             </p>
-                            {receivable.status !== "paid" && (
+                            {receivable.status !== "paid" && canPayReceivable && (
                                 <button
                                     onClick={() => setShowForm(!showForm)}
                                     className="px-3 py-2 rounded-xl text-sm font-semibold bg-primary-500 hover:bg-primary-600 text-white transition-colors"
@@ -254,7 +257,7 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                             )}
                         </div>
 
-                        {showForm && (
+                        {showForm && canPayReceivable && (
                             <form onSubmit={submitPayment} className="mt-4 space-y-3">
                                 <div>
                                     <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
