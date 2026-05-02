@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Support\BotGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -25,7 +26,7 @@ class AuthenticationTest extends TestCase
         $response = $this->post('/login', [
             'email' => $user->email,
             'password' => 'password',
-        ]);
+        ] + $this->botGuardPayload());
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard.access', absolute: false));
@@ -38,7 +39,7 @@ class AuthenticationTest extends TestCase
         $response = $this->post('/login', [
             'email' => $user->email,
             'password' => 'password',
-        ]);
+        ] + $this->botGuardPayload());
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('verification.notice'));
@@ -51,7 +52,7 @@ class AuthenticationTest extends TestCase
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'wrong-password',
-        ]);
+        ] + $this->botGuardPayload());
 
         $this->assertGuest();
     }
@@ -64,6 +65,23 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
         $response->assertRedirect('/');
+    }
+
+    public function test_login_request_is_blocked_when_submitted_too_fast_without_valid_bot_guard_age(): void
+    {
+        $user = User::factory()->create();
+
+        $payload = BotGuard::payload();
+
+        $response = $this->from('/login')->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+            $payload['honeypot_field'] => '',
+            $payload['token_field'] => $payload['token'],
+        ]);
+
+        $response->assertSessionHasErrors('human');
+        $this->assertGuest();
     }
 
     public function test_security_headers_are_present_on_login_screen(): void
@@ -108,5 +126,20 @@ class AuthenticationTest extends TestCase
             ->has('security.warnings', 3)
             ->where('security.warnings.0.key', 'app_debug')
         );
+    }
+
+    public function test_absolute_session_lifetime_forces_reauthentication(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->withSession([
+                'security.session_started_at' => now()->subHours(13)->timestamp,
+            ])
+            ->actingAs($user)
+            ->get('/dashboard/access');
+
+        $response->assertRedirect(route('login'));
+        $this->assertGuest();
     }
 }

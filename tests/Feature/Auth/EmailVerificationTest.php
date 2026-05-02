@@ -55,4 +55,19 @@ class EmailVerificationTest extends TestCase
 
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
+
+    public function test_verification_resend_requires_valid_bot_guard(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/verify-email')
+            ->post('/email/verification-notification', [
+                config('security.bot_guard.honeypot_field') => '',
+                config('security.bot_guard.token_field') => 'invalid-token',
+            ]);
+
+        $response->assertSessionHasErrors('human');
+    }
 }

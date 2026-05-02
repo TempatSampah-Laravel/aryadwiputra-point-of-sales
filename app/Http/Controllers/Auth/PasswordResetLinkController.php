@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogService;
+use App\Support\BotGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -12,6 +14,11 @@ use Inertia\Response;
 
 class PasswordResetLinkController extends Controller
 {
+    public function __construct(
+        private readonly AuditLogService $auditLogService
+    ) {
+    }
+
     /**
      * Display the password reset link request view.
      */
@@ -19,6 +26,7 @@ class PasswordResetLinkController extends Controller
     {
         return Inertia::render('Auth/ForgotPassword', [
             'status' => session('status'),
+            'botGuard' => BotGuard::payload(),
         ]);
     }
 
@@ -38,6 +46,17 @@ class PasswordResetLinkController extends Controller
         // need to show to the user. Finally, we'll send out a proper response.
         $status = Password::sendResetLink(
             $request->only('email')
+        );
+
+        $this->auditLogService->log(
+            event: 'auth.password_reset_requested',
+            module: 'auth',
+            auditable: ['target_label' => $request->email],
+            description: 'Permintaan reset password dikirim.',
+            meta: [
+                'severity' => 'info',
+                'route' => $request->route()?->getName(),
+            ],
         );
 
         if ($status == Password::RESET_LINK_SENT) {

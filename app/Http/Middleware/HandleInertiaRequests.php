@@ -41,6 +41,7 @@ class HandleInertiaRequests extends Middleware
         $payableNotifications     = [];
         $activeCashierShift       = null;
         $securityWarnings         = [];
+        $stepUpFreshUntil         = null;
 
         if ($request->user()) {
             $userId = $request->user()->id;
@@ -111,6 +112,13 @@ class HandleInertiaRequests extends Middleware
             }
 
             $securityWarnings = ProductionSecurityBaseline::issues();
+
+            $confirmedAt = (int) $request->session()->get('auth.password_confirmed_at', 0);
+            if ($confirmedAt > 0) {
+                $stepUpFreshUntil = now()
+                    ->setTimestamp($confirmedAt + (int) config('auth.password_timeout', 900))
+                    ->toISOString();
+            }
         }
 
         $storeProfile = [
@@ -155,6 +163,7 @@ class HandleInertiaRequests extends Middleware
             'security' => [
                 'warnings' => $securityWarnings,
                 'publicRegistrationEnabled' => config('security.auth.public_registration'),
+                'stepUpFreshUntil' => $stepUpFreshUntil,
             ],
         ];
     }

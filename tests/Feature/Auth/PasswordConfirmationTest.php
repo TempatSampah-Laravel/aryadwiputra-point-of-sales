@@ -41,4 +41,30 @@ class PasswordConfirmationTest extends TestCase
 
         $response->assertSessionHasErrors();
     }
+
+    public function test_sensitive_routes_redirect_to_confirm_password_when_recent_confirmation_is_missing(): void
+    {
+        $user = User::factory()->create();
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'transactions-confirm-payment', 'guard_name' => 'web']);
+        $user->givePermissionTo('transactions-confirm-payment');
+
+        $transaction = \App\Models\Transaction::create([
+            'cashier_id' => $user->id,
+            'invoice' => 'TRX-CONFIRM',
+            'cash' => 0,
+            'change' => 0,
+            'discount' => 0,
+            'shipping_cost' => 0,
+            'grand_total' => 10000,
+            'payment_method' => 'bank_transfer',
+            'payment_status' => 'pending',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->from(route('transactions.history'))
+            ->patch(route('transactions.confirm-payment', $transaction));
+
+        $response->assertRedirect(route('password.confirm'));
+    }
 }

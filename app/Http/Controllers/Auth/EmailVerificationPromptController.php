@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\BotGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,6 +18,9 @@ class EmailVerificationPromptController extends Controller
     {
         return $request->user()->hasVerifiedEmail()
                     ? redirect()->intended(route('dashboard', absolute: false))
-                    : Inertia::render('Auth/VerifyEmail', ['status' => session('status')]);
+                    : Inertia::render('Auth/VerifyEmail', [
+                        'status' => session('status'),
+                        'botGuard' => BotGuard::payload(),
+                    ]);
     }
 }

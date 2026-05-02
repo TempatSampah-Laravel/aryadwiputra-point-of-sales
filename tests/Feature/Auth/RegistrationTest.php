@@ -36,7 +36,7 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-        ]);
+        ] + $this->botGuardPayload());
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('verification.notice'));
@@ -52,7 +52,7 @@ class RegistrationTest extends TestCase
                 'email' => "test{$attempt}@example.com",
                 'password' => 'password',
                 'password_confirmation' => 'password',
-            ]);
+            ] + $this->botGuardPayload());
             auth()->logout();
         }
 
@@ -61,9 +61,26 @@ class RegistrationTest extends TestCase
             'email' => 'test4@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-        ]);
+        ] + $this->botGuardPayload());
 
         $response->assertStatus(429);
+    }
+
+    public function test_register_request_is_blocked_when_bot_guard_is_invalid(): void
+    {
+        Config::set('security.auth.public_registration', true);
+
+        $response = $this->from('/register')->post('/register', [
+            'name' => 'Bot User',
+            'email' => 'bot@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            config('security.bot_guard.honeypot_field') => '',
+            config('security.bot_guard.token_field') => 'invalid-token',
+        ]);
+
+        $response->assertSessionHasErrors('human');
+        $this->assertGuest();
     }
 
     public function test_login_page_hides_register_link_when_public_registration_is_disabled(): void

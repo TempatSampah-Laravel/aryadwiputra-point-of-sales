@@ -17,18 +17,19 @@ Route::middleware('guest')->group(function () {
                 ->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store'])
-                ->middleware(['registration.enabled', 'throttle:' . config('security.auth.register_throttle')]);
+                ->middleware(['registration.enabled', 'bot.guard', 'throttle:' . config('security.auth.register_throttle')]);
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
                 ->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+                ->middleware('bot.guard');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
                 ->name('password.request');
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-                ->middleware('throttle:' . config('security.auth.forgot_password_throttle'))
+                ->middleware(['bot.guard', 'throttle:' . config('security.auth.forgot_password_throttle')])
                 ->name('password.email');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
@@ -47,7 +48,7 @@ Route::middleware('auth')->group(function () {
                 ->name('verification.verify');
 
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-                ->middleware('throttle:6,1')
+                ->middleware(['bot.guard', 'throttle:6,1'])
                 ->name('verification.send');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])

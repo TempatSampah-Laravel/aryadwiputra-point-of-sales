@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\BotGuard;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,9 @@ class RegisteredUserController extends Controller
     {
         abort_unless(config('security.auth.public_registration'), 404);
 
-        return Inertia::render('Auth/Register');
+        return Inertia::render('Auth/Register', [
+            'botGuard' => BotGuard::payload(),
+        ]);
     }
 
     /**

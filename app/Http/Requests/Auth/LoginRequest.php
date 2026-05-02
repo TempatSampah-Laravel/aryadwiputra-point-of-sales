@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -44,6 +46,18 @@ class LoginRequest extends FormRequest
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
+            app(AuditLogService::class)->log(
+                event: 'auth.login_failed',
+                module: 'auth',
+                auditable: User::query()->where('email', $this->string('email')->toString())->first(),
+                description: 'Login gagal.',
+                meta: [
+                    'severity' => 'warning',
+                    'route' => $this->route()?->getName(),
+                    'email' => $this->string('email')->toString(),
+                ],
+            );
+
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
@@ -64,6 +78,18 @@ class LoginRequest extends FormRequest
         }
 
         event(new Lockout($this));
+
+        app(AuditLogService::class)->log(
+            event: 'auth.locked_out',
+            module: 'auth',
+            auditable: User::query()->where('email', $this->string('email')->toString())->first(),
+            description: 'Permintaan login diblokir karena terlalu banyak percobaan.',
+            meta: [
+                'severity' => 'warning',
+                'route' => $this->route()?->getName(),
+                'email' => $this->string('email')->toString(),
+            ],
+        );
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 

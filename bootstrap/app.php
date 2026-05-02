@@ -8,8 +8,11 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Spatie\Permission\Exceptions\UnauthorizedException;
 use App\Http\Middleware\EnsureActiveCashierShift;
+use App\Http\Middleware\EnforceAbsoluteSessionLifetime;
+use App\Http\Middleware\EnsureBotGuard;
 use App\Http\Middleware\SecureHeaders;
 use App\Http\Middleware\EnsurePublicRegistrationEnabled;
+use App\Http\Middleware\EnsureRecentPasswordConfirmation;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
@@ -26,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             SecureHeaders::class,
+            EnforceAbsoluteSessionLifetime::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
@@ -36,6 +40,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'active_shift'       => EnsureActiveCashierShift::class,
             'registration.enabled' => EnsurePublicRegistrationEnabled::class,
+            'bot.guard' => EnsureBotGuard::class,
+            'step_up' => EnsureRecentPasswordConfirmation::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
