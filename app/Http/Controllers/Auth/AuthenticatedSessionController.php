@@ -20,6 +20,7 @@ class AuthenticatedSessionController extends Controller
     {
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
+            'canRegister' => config('security.auth.public_registration'),
             'status' => session('status'),
         ]);
     }
@@ -34,6 +35,11 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = $request->user();
+
+        if ($user && method_exists($user, 'hasVerifiedEmail') && ! $user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+
         $routePriority = [
             'transactions-access' => 'transactions.index',
             'receivables-access'  => 'receivables.index',

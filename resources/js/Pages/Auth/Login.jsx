@@ -10,7 +10,7 @@ import {
 } from "@tabler/icons-react";
 import { useState } from "react";
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status, canResetPassword, canRegister }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
@@ -192,15 +192,17 @@ export default function Login({ status, canResetPassword }) {
                             </button>
 
                             {/* Register Link */}
-                            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
-                                Belum punya akun?{" "}
-                                <Link
-                                    href="/register"
-                                    className="text-primary-500 hover:text-primary-600 font-semibold"
-                                >
-                                    Daftar Sekarang
-                                </Link>
-                            </p>
+                            {canRegister && (
+                                <p className="text-center text-sm text-slate-600 dark:text-slate-400">
+                                    Belum punya akun?{" "}
+                                    <Link
+                                        href="/register"
+                                        className="text-primary-500 hover:text-primary-600 font-semibold"
+                                    >
+                                        Daftar Sekarang
+                                    </Link>
+                                </p>
+                            )}
                         </form>
                     </div>
                 </div>

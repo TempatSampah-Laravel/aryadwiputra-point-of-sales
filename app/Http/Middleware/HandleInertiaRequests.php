@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Receivable;
 use App\Models\Payable;
 use App\Services\CashierShiftService;
+use App\Support\ProductionSecurityBaseline;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
@@ -39,6 +40,7 @@ class HandleInertiaRequests extends Middleware
         $receivableNotifications  = [];
         $payableNotifications     = [];
         $activeCashierShift       = null;
+        $securityWarnings         = [];
 
         if ($request->user()) {
             $userId = $request->user()->id;
@@ -107,6 +109,8 @@ class HandleInertiaRequests extends Middleware
             if ($activeShift) {
                 $activeCashierShift = app(CashierShiftService::class)->summarizeForDisplay($activeShift);
             }
+
+            $securityWarnings = ProductionSecurityBaseline::issues();
         }
 
         $storeProfile = [
@@ -148,6 +152,10 @@ class HandleInertiaRequests extends Middleware
             'payableNotifications'    => $payableNotifications,
             'activeCashierShift'      => $activeCashierShift,
             'storeProfile'            => $storeProfile,
+            'security' => [
+                'warnings' => $securityWarnings,
+                'publicRegistrationEnabled' => config('security.auth.public_registration'),
+            ],
         ];
     }
 }

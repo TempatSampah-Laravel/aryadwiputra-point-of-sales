@@ -70,4 +70,17 @@ class PasswordResetTest extends TestCase
             return true;
         });
     }
+
+    public function test_forgot_password_request_is_throttled(): void
+    {
+        $user = User::factory()->create();
+
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $this->post('/forgot-password', ['email' => $user->email]);
+        }
+
+        $response = $this->post('/forgot-password', ['email' => $user->email]);
+
+        $response->assertStatus(429);
+    }
 }

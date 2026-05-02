@@ -15,8 +15,6 @@ class PaymentWebhookController extends Controller
      */
     public function midtrans(Request $request)
     {
-        Log::info('Midtrans Webhook Received', $request->all());
-
         try {
             $paymentSetting = PaymentSetting::first();
 
@@ -36,9 +34,10 @@ class PaymentWebhookController extends Controller
 
             if ($signatureKey !== $expectedSignature) {
                 Log::warning('Midtrans Webhook: Invalid signature', [
+                    'provider' => 'midtrans',
                     'order_id' => $orderId,
-                    'received' => $signatureKey,
-                    'expected' => $expectedSignature,
+                    'verification_result' => 'invalid',
+                    'error_category' => 'invalid_signature',
                 ]);
                 return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 403);
             }
@@ -47,7 +46,12 @@ class PaymentWebhookController extends Controller
             $transaction = Transaction::where('invoice', $orderId)->first();
 
             if (! $transaction) {
-                Log::warning('Midtrans Webhook: Transaction not found', ['order_id' => $orderId]);
+                Log::warning('Midtrans Webhook: Transaction not found', [
+                    'provider' => 'midtrans',
+                    'order_id' => $orderId,
+                    'verification_result' => 'valid',
+                    'error_category' => 'transaction_not_found',
+                ]);
                 return response()->json(['status' => 'error', 'message' => 'Transaction not found'], 404);
             }
 
@@ -63,16 +67,22 @@ class PaymentWebhookController extends Controller
             ]);
 
             Log::info('Midtrans Webhook: Transaction updated', [
+                'provider' => 'midtrans',
                 'order_id' => $orderId,
-                'status'   => $newStatus,
+                'payment_reference' => $request->input('transaction_id'),
+                'normalized_status' => $newStatus,
+                'verification_result' => 'valid',
             ]);
 
             return response()->json(['status' => 'success']);
 
         } catch (\Exception $e) {
             Log::error('Midtrans Webhook Error', [
+                'provider' => 'midtrans',
+                'order_id' => $request->input('order_id'),
+                'verification_result' => 'unknown',
+                'error_category' => 'exception',
                 'message' => $e->getMessage(),
-                'trace'   => $e->getTraceAsString(),
             ]);
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
@@ -84,8 +94,6 @@ class PaymentWebhookController extends Controller
      */
     public function xendit(Request $request)
     {
-        Log::info('Xendit Webhook Received', $request->all());
-
         try {
             $paymentSetting = PaymentSetting::first();
 
@@ -97,13 +105,21 @@ class PaymentWebhookController extends Controller
             $expectedToken = $paymentSetting->xendit_callback_token ?: config('services.xendit.callback_token');
 
             if (blank($expectedToken)) {
-                Log::warning('Xendit Webhook: Callback token is not configured.');
+                Log::warning('Xendit Webhook: Callback token is not configured.', [
+                    'provider' => 'xendit',
+                    'external_id' => $request->input('external_id'),
+                    'verification_result' => 'misconfigured',
+                    'error_category' => 'missing_callback_token',
+                ]);
                 return response()->json(['status' => 'error', 'message' => 'Xendit callback token is not configured'], 400);
             }
 
             if (! is_string($callbackToken) || ! hash_equals($expectedToken, $callbackToken)) {
                 Log::warning('Xendit Webhook: Invalid callback token', [
+                    'provider' => 'xendit',
                     'external_id' => $request->input('external_id'),
+                    'verification_result' => 'invalid',
+                    'error_category' => 'invalid_callback_token',
                 ]);
                 return response()->json(['status' => 'error', 'message' => 'Invalid callback token'], 403);
             }
@@ -120,7 +136,12 @@ class PaymentWebhookController extends Controller
             $transaction = Transaction::where('invoice', $externalId)->first();
 
             if (! $transaction) {
-                Log::warning('Xendit Webhook: Transaction not found', ['external_id' => $externalId]);
+                Log::warning('Xendit Webhook: Transaction not found', [
+                    'provider' => 'xendit',
+                    'external_id' => $externalId,
+                    'verification_result' => 'valid',
+                    'error_category' => 'transaction_not_found',
+                ]);
                 return response()->json(['status' => 'error', 'message' => 'Transaction not found'], 404);
             }
 
@@ -133,16 +154,22 @@ class PaymentWebhookController extends Controller
             ]);
 
             Log::info('Xendit Webhook: Transaction updated', [
+                'provider' => 'xendit',
                 'external_id' => $externalId,
-                'status'      => $newStatus,
+                'payment_reference' => $paymentId,
+                'normalized_status' => $newStatus,
+                'verification_result' => 'valid',
             ]);
 
             return response()->json(['status' => 'success']);
 
         } catch (\Exception $e) {
             Log::error('Xendit Webhook Error', [
+                'provider' => 'xendit',
+                'external_id' => $request->input('external_id'),
+                'verification_result' => 'unknown',
+                'error_category' => 'exception',
                 'message' => $e->getMessage(),
-                'trace'   => $e->getTraceAsString(),
             ]);
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
