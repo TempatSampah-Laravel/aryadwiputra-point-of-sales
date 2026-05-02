@@ -9,9 +9,12 @@ import {
     IconGripVertical,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
+import { useAuthorization } from "@/Utils/authorization";
 
 export default function BankAccounts({ bankAccounts = [] }) {
     const { flash } = usePage().props;
+    const { can } = useAuthorization();
+    const canUpdatePaymentSettings = can("payment-settings-update");
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -48,13 +51,15 @@ export default function BankAccounts({ bankAccounts = [] }) {
                         <h3 className="font-semibold text-slate-800 dark:text-white">
                             Daftar Rekening ({bankAccounts.length})
                         </h3>
-                        <Link
-                            href={route("settings.bank-accounts.create")}
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors"
-                        >
-                            <IconPlus size={18} />
-                            Tambah Bank
-                        </Link>
+                        {canUpdatePaymentSettings && (
+                            <Link
+                                href={route("settings.bank-accounts.create")}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors"
+                            >
+                                <IconPlus size={18} />
+                                Tambah Bank
+                            </Link>
+                        )}
                     </div>
 
                     {bankAccounts.length > 0 ? (
@@ -92,28 +97,32 @@ export default function BankAccounts({ bankAccounts = [] }) {
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => handleToggle(bank)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                                                bank.is_active
-                                                    ? "bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400"
-                                                    : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-                                            }`}
-                                        >
-                                            {bank.is_active ? "Aktif" : "Nonaktif"}
-                                        </button>
-                                        <Link
-                                            href={route("settings.bank-accounts.edit", bank.id)}
-                                            className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                                        >
-                                            <IconPencil size={18} />
-                                        </Link>
-                                        <button
-                                            onClick={() => handleDelete(bank)}
-                                            className="p-2 rounded-lg text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-900/20 transition-colors"
-                                        >
-                                            <IconTrash size={18} />
-                                        </button>
+                                        {canUpdatePaymentSettings && (
+                                            <>
+                                                <button
+                                                    onClick={() => handleToggle(bank)}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                                        bank.is_active
+                                                            ? "bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400"
+                                                            : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                                                    }`}
+                                                >
+                                                    {bank.is_active ? "Aktif" : "Nonaktif"}
+                                                </button>
+                                                <Link
+                                                    href={route("settings.bank-accounts.edit", bank.id)}
+                                                    className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                                >
+                                                    <IconPencil size={18} />
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleDelete(bank)}
+                                                    className="p-2 rounded-lg text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-900/20 transition-colors"
+                                                >
+                                                    <IconTrash size={18} />
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             ))}

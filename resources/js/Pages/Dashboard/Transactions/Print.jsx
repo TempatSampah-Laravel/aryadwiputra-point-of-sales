@@ -23,7 +23,7 @@ export default function Print({ transaction }) {
     const [printMode, setPrintMode] = useState("invoice"); // 'invoice' | 'thermal80' | 'thermal58'
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isConfirming, setIsConfirming] = useState(false);
-    const canConfirmPayment = can("transactions-access");
+    const canConfirmPayment = can("transactions-confirm-payment");
 
     const formatPrice = (price = 0) =>
         Number(price || 0).toLocaleString("id-ID", {

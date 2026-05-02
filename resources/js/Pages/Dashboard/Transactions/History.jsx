@@ -36,7 +36,7 @@ const formatCurrency = (value = 0) =>
 const History = ({ transactions, filters }) => {
     const { can } = useAuthorization();
     const canCreateSalesReturn = can("sales-returns-create");
-    const canConfirmPayment = can("transactions-access");
+    const canConfirmPayment = can("transactions-confirm-payment");
     const [filterData, setFilterData] = useState({
         ...defaultFilters,
         ...filters,

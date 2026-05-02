@@ -1,4 +1,5 @@
 import { Head, Link, useForm } from "@inertiajs/react";
+import AuthBotGuardFields from "@/Components/AuthBotGuardFields";
 import {
     IconShoppingCart,
     IconMailCheck,
@@ -7,8 +8,13 @@ import {
     IconRefresh,
 } from "@tabler/icons-react";
 
-export default function VerifyEmail({ status }) {
-    const { post, processing } = useForm({});
+export default function VerifyEmail({ status, botGuard }) {
+    const honeypotField = botGuard?.honeypot_field || "company_website";
+    const tokenField = botGuard?.token_field || "bot_guard_token";
+    const { data, setData, post, processing, errors } = useForm({
+        [honeypotField]: "",
+        [tokenField]: botGuard?.token || "",
+    });
 
     const submit = (event) => {
         event.preventDefault();
@@ -67,8 +73,18 @@ export default function VerifyEmail({ status }) {
                                 Pastikan juga memeriksa folder spam atau
                                 promotion jika email belum terlihat di inbox.
                             </div>
+                            {errors.human && (
+                                <div className="mb-5 rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-600 dark:bg-danger-950/40 dark:text-danger-300">
+                                    {errors.human}
+                                </div>
+                            )}
 
                             <form onSubmit={submit} className="space-y-3">
+                                <AuthBotGuardFields
+                                    botGuard={botGuard}
+                                    data={data}
+                                    setData={setData}
+                                />
                                 <button
                                     type="submit"
                                     disabled={processing}
