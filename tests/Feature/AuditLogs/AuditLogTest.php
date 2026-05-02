@@ -36,7 +36,9 @@ class AuditLogTest extends TestCase
             'products-edit',
             'products-delete',
             'payment-settings-access',
+            'payment-settings-update',
             'transactions-access',
+            'transactions-confirm-payment',
             'stock-opnames-access',
             'stock-opnames-create',
             'stock-opnames-finalize',
@@ -149,7 +151,7 @@ class AuditLogTest extends TestCase
 
     public function test_payment_setting_update_masks_secrets_in_audit_log(): void
     {
-        $user = $this->createUserWithPermissions(['payment-settings-access']);
+        $user = $this->createUserWithPermissions(['payment-settings-access', 'payment-settings-update']);
 
         PaymentSetting::create([
             'default_gateway' => 'cash',
@@ -157,7 +159,7 @@ class AuditLogTest extends TestCase
             'midtrans_client_key' => 'old-client-key',
         ]);
 
-        $this->actingAs($user)->put(route('settings.payments.update'), [
+        $this->withSession($this->recentlyConfirmedSession())->actingAs($user)->put(route('settings.payments.update'), [
             'default_gateway' => 'cash',
             'bank_transfer_enabled' => true,
             'midtrans_enabled' => true,
@@ -186,12 +188,13 @@ class AuditLogTest extends TestCase
     {
         $user = $this->createUserWithPermissions([
             'payment-settings-access',
+            'payment-settings-update',
             'cashier-shifts-access',
             'cashier-shifts-open',
             'cashier-shifts-close',
         ]);
 
-        $this->actingAs($user)->post(route('settings.bank-accounts.store'), [
+        $this->withSession($this->recentlyConfirmedSession())->actingAs($user)->post(route('settings.bank-accounts.store'), [
             'bank_name' => 'BCA',
             'account_number' => '1234567890',
             'account_name' => 'PT Audit',
@@ -234,6 +237,7 @@ class AuditLogTest extends TestCase
             'stock-opnames-create',
             'stock-opnames-finalize',
             'transactions-access',
+            'transactions-confirm-payment',
         ]);
 
         $product = $this->createProduct(stock: 10);
@@ -279,7 +283,7 @@ class AuditLogTest extends TestCase
             'payment_status' => 'pending',
         ]);
 
-        $this->actingAs($user)
+        $this->withSession($this->recentlyConfirmedSession())->actingAs($user)
             ->patch(route('transactions.confirm-payment', $transaction))
             ->assertRedirect();
 

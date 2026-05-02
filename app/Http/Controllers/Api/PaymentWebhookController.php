@@ -26,7 +26,7 @@ class PaymentWebhookController extends Controller
             $orderId     = $request->input('order_id');
             $statusCode  = $request->input('status_code');
             $grossAmount = $request->input('gross_amount');
-            $serverKey   = $paymentSetting->midtrans_server_key;
+            $serverKey   = $paymentSetting->resolvedSecret('midtrans_server_key');
 
             // Verify signature
             $signatureKey      = $request->input('signature_key');
@@ -102,7 +102,7 @@ class PaymentWebhookController extends Controller
             }
 
             $callbackToken = $request->header('X-CALLBACK-TOKEN');
-            $expectedToken = $paymentSetting->xendit_callback_token ?: config('services.xendit.callback_token');
+            $expectedToken = $paymentSetting->resolvedSecret('xendit_callback_token');
 
             if (blank($expectedToken)) {
                 Log::warning('Xendit Webhook: Callback token is not configured.', [

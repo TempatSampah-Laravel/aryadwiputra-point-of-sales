@@ -240,6 +240,7 @@ class CashierShiftTest extends TestCase
         ]);
 
         $response = $this
+            ->withSession($this->recentlyConfirmedSession())
             ->actingAs($admin)
             ->post(route('cashier-shifts.close', $shift), [
                 'actual_cash' => 80000,
@@ -251,6 +252,32 @@ class CashierShiftTest extends TestCase
             'closed_by' => $admin->id,
             'status' => CashierShift::STATUS_FORCE_CLOSED,
         ]);
+    }
+
+    public function test_force_close_redirects_to_confirm_password_when_confirmation_is_stale(): void
+    {
+        $cashier = $this->createUserWithPermissions(['cashier-shifts-access']);
+        $admin = $this->createUserWithPermissions([
+            'cashier-shifts-access',
+            'cashier-shifts-close',
+            'cashier-shifts-force-close',
+        ]);
+
+        $shift = CashierShift::create([
+            'user_id' => $cashier->id,
+            'opened_by' => $cashier->id,
+            'opened_at' => now(),
+            'opening_cash' => 80000,
+            'expected_cash' => 80000,
+            'status' => CashierShift::STATUS_OPEN,
+        ]);
+
+        $this->actingAs($admin)
+            ->from(route('cashier-shifts.show', $shift))
+            ->post(route('cashier-shifts.close', $shift), [
+                'actual_cash' => 80000,
+            ])
+            ->assertRedirect(route('password.confirm'));
     }
 
     private function createUserWithPermissions(array $permissions): User

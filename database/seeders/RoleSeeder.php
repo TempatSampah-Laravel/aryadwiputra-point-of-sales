@@ -26,12 +26,14 @@ class RoleSeeder extends Seeder
         $this->createRoleWithPermissions('products-access', '%products%');
         $this->createRoleWithPermissions('customers-access', '%customers%');
         $this->createRoleWithPermissions('transactions-access', '%transactions%');
+        $this->createRoleWithPermissions('transactions-confirm-payment', 'transactions-confirm-payment');
         $this->createRoleWithPermissions('receivables-access', '%receivables%');
         $this->createRoleWithPermissions('payables-access', '%payables%');
         $this->createRoleWithPermissions('suppliers-access', '%suppliers%');
         $this->createRoleWithPermissions('reports-access', '%reports%');
         $this->createRoleWithPermissions('profits-access', '%profits%');
         $this->createRoleWithPermissions('payment-settings-access', '%payment-settings%');
+        $this->createRoleWithPermissions('payment-settings-update', 'payment-settings-update');
         $this->createRoleWithPermissions('stock-opnames-access', '%stock-opnames%');
         $this->createRoleWithPermissions('stock-mutations-access', '%stock-mutations%');
         $this->createRoleWithPermissions('sales-returns-access', '%sales-returns%');

@@ -59,6 +59,7 @@ class PermissionSeeder extends Seeder
 
         //permission transactions
         $create('transactions-access');
+        $create('transactions-confirm-payment');
 
         // permission receivables & payables
         $create('receivables-access');
@@ -73,6 +74,7 @@ class PermissionSeeder extends Seeder
 
         // payment settings
         $create('payment-settings-access');
+        $create('payment-settings-update');
 
         // stock opnames
         $create('stock-opnames-access');
