@@ -38,8 +38,23 @@ function CustomerCard({ customer, canUpdate, canDelete }) {
                     )}
                     <div>
                         <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">
-                            {customer.name}
+                            <Link
+                                href={route("customers.show", customer.id)}
+                                className="hover:text-primary-600"
+                            >
+                                {customer.name}
+                            </Link>
                         </h3>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                            <span className="inline-flex rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-semibold text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">
+                                {customer.is_loyalty_member
+                                    ? customer.loyalty_tier
+                                    : "non-member"}
+                            </span>
+                            <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                {customer.loyalty_points || 0} poin
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -190,6 +205,7 @@ export default function Index({ customers }) {
                                 <tr>
                                     <Table.Th className="w-10">No</Table.Th>
                                     <Table.Th>Pelanggan</Table.Th>
+                                    <Table.Th>Loyalty</Table.Th>
                                     <Table.Th>No. Telepon</Table.Th>
                                     <Table.Th>Alamat</Table.Th>
                                     <Table.Th></Table.Th>
@@ -222,8 +238,30 @@ export default function Index({ customers }) {
                                                     </div>
                                                 )}
                                                 <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                                                    {customer.name}
+                                                    <Link
+                                                        href={route(
+                                                            "customers.show",
+                                                            customer.id
+                                                        )}
+                                                        className="hover:text-primary-600"
+                                                    >
+                                                        {customer.name}
+                                                    </Link>
                                                 </p>
+                                            </div>
+                                        </Table.Td>
+                                        <Table.Td>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-semibold text-primary-600 dark:text-primary-300">
+                                                    {customer.is_loyalty_member
+                                                        ? customer.loyalty_tier
+                                                        : "non-member"}
+                                                </span>
+                                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                    {customer.loyalty_points ||
+                                                        0}{" "}
+                                                    poin
+                                                </span>
                                             </div>
                                         </Table.Td>
                                         <Table.Td>

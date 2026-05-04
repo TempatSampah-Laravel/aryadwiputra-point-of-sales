@@ -4,6 +4,7 @@ import {
     IconBox,
     IconCategory,
     IconChartArrowsVertical,
+    IconChartBar,
     IconChartBarPopular,
     IconChartInfographic,
     IconCirclePlus,
@@ -70,6 +71,13 @@ export default function Menu() {
                     permissions: hasAnyPermission(["products-access"]),
                 },
                 {
+                    title: "Promo Harga",
+                    href: route("pricing-rules.index"),
+                    active: url.startsWith("/dashboard/pricing-rules"),
+                    icon: <IconChartInfographic size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["pricing-rules-access"]),
+                },
+                {
                     title: "Stock Opname",
                     href: route("stock-opnames.index"),
                     active: url.startsWith("/dashboard/stock-opnames"),
@@ -129,6 +137,13 @@ export default function Menu() {
                     active: url === "/dashboard/customers" ? true : false, // Update comparison here
                     icon: <IconUsersPlus size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["customers-access"]),
+                },
+                {
+                    title: "Voucher Customer",
+                    href: route("customer-vouchers.index"),
+                    active: url.startsWith("/dashboard/customer-vouchers"),
+                    icon: <IconCreditCard size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["customer-vouchers-access"]),
                 },
             ],
         },
