@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
@@ -12,8 +13,7 @@ class PaymentSettingController extends Controller
 {
     public function __construct(
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     public function edit()
     {
@@ -22,9 +22,9 @@ class PaymentSettingController extends Controller
         ]);
 
         $midtransWebhookUrl = route('webhooks.midtrans');
-        $xenditWebhookUrl   = route('webhooks.xendit');
-        $appUrl             = (string) config('app.url');
-        $webhookWarnings    = [];
+        $xenditWebhookUrl = route('webhooks.xendit');
+        $appUrl = (string) config('app.url');
+        $webhookWarnings = [];
 
         if (blank($appUrl)) {
             $webhookWarnings[] = 'APP_URL belum diatur. Webhook URL yang dihasilkan bisa tidak valid untuk Midtrans/Xendit.';
@@ -54,7 +54,7 @@ class PaymentSettingController extends Controller
         }
 
         return Inertia::render('Dashboard/Settings/Payment', [
-            'setting'           => [
+            'setting' => [
                 'default_gateway' => $setting->default_gateway,
                 'bank_transfer_enabled' => (bool) $setting->bank_transfer_enabled,
                 'midtrans_enabled' => (bool) $setting->midtrans_enabled,
@@ -71,11 +71,11 @@ class PaymentSettingController extends Controller
                 ['value' => PaymentSetting::GATEWAY_MIDTRANS, 'label' => 'Midtrans'],
                 ['value' => PaymentSetting::GATEWAY_XENDIT, 'label' => 'Xendit'],
             ],
-            'webhookUrls'       => [
+            'webhookUrls' => [
                 'midtrans' => $midtransWebhookUrl,
-                'xendit'   => $xenditWebhookUrl,
+                'xendit' => $xenditWebhookUrl,
             ],
-            'webhookWarnings'   => $webhookWarnings,
+            'webhookWarnings' => $webhookWarnings,
         ]);
     }
 
@@ -87,24 +87,24 @@ class PaymentSettingController extends Controller
         $beforeState = $setting->replicate();
 
         $data = $request->validate([
-            'default_gateway'       => [
+            'default_gateway' => [
                 'required',
                 Rule::in(['cash', PaymentSetting::GATEWAY_BANK_TRANSFER, PaymentSetting::GATEWAY_MIDTRANS, PaymentSetting::GATEWAY_XENDIT]),
             ],
             'bank_transfer_enabled' => ['boolean'],
-            'midtrans_enabled'      => ['boolean'],
-            'midtrans_server_key'   => ['nullable', 'string'],
-            'midtrans_client_key'   => ['nullable', 'string'],
-            'midtrans_production'   => ['boolean'],
-            'xendit_enabled'        => ['boolean'],
-            'xendit_secret_key'     => ['nullable', 'string'],
-            'xendit_public_key'     => ['nullable', 'string'],
+            'midtrans_enabled' => ['boolean'],
+            'midtrans_server_key' => ['nullable', 'string'],
+            'midtrans_client_key' => ['nullable', 'string'],
+            'midtrans_production' => ['boolean'],
+            'xendit_enabled' => ['boolean'],
+            'xendit_secret_key' => ['nullable', 'string'],
+            'xendit_public_key' => ['nullable', 'string'],
             'xendit_callback_token' => ['nullable', 'string', 'max:255'],
-            'xendit_production'     => ['boolean'],
+            'xendit_production' => ['boolean'],
         ]);
 
         $midtransEnabled = (bool) ($data['midtrans_enabled'] ?? false);
-        $xenditEnabled   = (bool) ($data['xendit_enabled'] ?? false);
+        $xenditEnabled = (bool) ($data['xendit_enabled'] ?? false);
         $resolvedMidtransServerKey = $setting->secretManagedByEnvironment('midtrans_server_key')
             ? $setting->resolvedSecret('midtrans_server_key')
             : ($data['midtrans_server_key'] ?: $setting->getAttributeValue('midtrans_server_key'));
@@ -144,23 +144,23 @@ class PaymentSettingController extends Controller
         }
 
         $setting->update([
-            'default_gateway'       => $data['default_gateway'],
+            'default_gateway' => $data['default_gateway'],
             'bank_transfer_enabled' => (bool) ($data['bank_transfer_enabled'] ?? false),
-            'midtrans_enabled'      => $midtransEnabled,
-            'midtrans_server_key'   => $setting->secretManagedByEnvironment('midtrans_server_key')
+            'midtrans_enabled' => $midtransEnabled,
+            'midtrans_server_key' => $setting->secretManagedByEnvironment('midtrans_server_key')
                 ? $setting->getRawOriginal('midtrans_server_key')
                 : ($data['midtrans_server_key'] ?: $setting->getAttributeValue('midtrans_server_key')),
-            'midtrans_client_key'   => $data['midtrans_client_key'],
-            'midtrans_production'   => (bool) ($data['midtrans_production'] ?? false),
-            'xendit_enabled'        => $xenditEnabled,
-            'xendit_secret_key'     => $setting->secretManagedByEnvironment('xendit_secret_key')
+            'midtrans_client_key' => $data['midtrans_client_key'],
+            'midtrans_production' => (bool) ($data['midtrans_production'] ?? false),
+            'xendit_enabled' => $xenditEnabled,
+            'xendit_secret_key' => $setting->secretManagedByEnvironment('xendit_secret_key')
                 ? $setting->getRawOriginal('xendit_secret_key')
                 : ($data['xendit_secret_key'] ?: $setting->getAttributeValue('xendit_secret_key')),
-            'xendit_public_key'     => $data['xendit_public_key'],
+            'xendit_public_key' => $data['xendit_public_key'],
             'xendit_callback_token' => $setting->secretManagedByEnvironment('xendit_callback_token')
                 ? $setting->getRawOriginal('xendit_callback_token')
                 : ($data['xendit_callback_token'] ?: $setting->getAttributeValue('xendit_callback_token')),
-            'xendit_production'     => (bool) ($data['xendit_production'] ?? false),
+            'xendit_production' => (bool) ($data['xendit_production'] ?? false),
         ]);
 
         $this->auditLogService->log(

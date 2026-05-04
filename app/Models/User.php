@@ -4,19 +4,19 @@ namespace App\Models;
 
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use MustVerifyEmailTrait;
-    use HasFactory, Notifiable, HasRoles {
+    use HasFactory, HasRoles, Notifiable {
         hasPermissionTo as protected spatieHasPermissionTo;
         checkPermissionTo as protected spatieCheckPermissionTo;
     }
+    use MustVerifyEmailTrait;
 
     /**
      * The attributes that are mass assignable.
@@ -72,7 +72,7 @@ class User extends Authenticatable implements MustVerifyEmail
                     return $value;
                 }
 
-                return asset('storage/' . ltrim($value, '/'));
+                return asset('storage/'.ltrim($value, '/'));
             }
         );
     }
@@ -84,7 +84,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->getAllPermissions()->mapWithKeys(function ($permission) {
             return [
-                $permission['name'] => true
+                $permission['name'] => true,
             ];
         });
     }

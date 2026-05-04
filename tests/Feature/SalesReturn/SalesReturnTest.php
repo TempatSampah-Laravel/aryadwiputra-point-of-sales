@@ -351,7 +351,7 @@ class SalesReturnTest extends TestCase
         bool $withReceivable = false
     ): array {
         $category = Category::create([
-            'name' => 'Kategori ' . Str::upper(Str::random(5)),
+            'name' => 'Kategori '.Str::upper(Str::random(5)),
             'description' => 'Kategori pengujian',
             'image' => 'category.png',
         ]);
@@ -359,9 +359,9 @@ class SalesReturnTest extends TestCase
         $product = Product::create([
             'category_id' => $category->id,
             'image' => 'product.png',
-            'barcode' => 'BRCD-' . Str::upper(Str::random(10)),
-            'sku' => 'SKU-' . Str::upper(Str::random(10)),
-            'title' => 'Produk Uji ' . Str::upper(Str::random(4)),
+            'barcode' => 'BRCD-'.Str::upper(Str::random(10)),
+            'sku' => 'SKU-'.Str::upper(Str::random(10)),
+            'title' => 'Produk Uji '.Str::upper(Str::random(4)),
             'description' => 'Deskripsi produk uji.',
             'buy_price' => 45000,
             'sell_price' => 60000,
@@ -380,7 +380,7 @@ class SalesReturnTest extends TestCase
             'cashier_id' => $user->id,
             'cashier_shift_id' => null,
             'customer_id' => $customer?->id,
-            'invoice' => 'TRX-' . Str::upper(Str::random(8)),
+            'invoice' => 'TRX-'.Str::upper(Str::random(8)),
             'cash' => 60000 * $qty,
             'change' => 0,
             'discount' => 0,

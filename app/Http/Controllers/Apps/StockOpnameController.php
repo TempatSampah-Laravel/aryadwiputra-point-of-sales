@@ -25,8 +25,7 @@ class StockOpnameController extends Controller
     public function __construct(
         private readonly StockMutationService $stockMutationService,
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -42,8 +41,8 @@ class StockOpnameController extends Controller
             ->when($filters['search'], function ($query, $search) {
                 $query->where(function ($builder) use ($search) {
                     $builder
-                        ->where('code', 'like', '%' . $search . '%')
-                        ->orWhere('notes', 'like', '%' . $search . '%');
+                        ->where('code', 'like', '%'.$search.'%')
+                        ->orWhere('notes', 'like', '%'.$search.'%');
                 });
             })
             ->when($filters['status'], fn ($query, $status) => $query->where('status', $status))
@@ -97,9 +96,9 @@ class StockOpnameController extends Controller
                 ->with('category:id,name')
                 ->where(function ($builder) use ($productFilters) {
                     $builder
-                        ->where('title', 'like', '%' . $productFilters['search'] . '%')
-                        ->orWhere('barcode', 'like', '%' . $productFilters['search'] . '%')
-                        ->orWhere('sku', 'like', '%' . $productFilters['search'] . '%');
+                        ->where('title', 'like', '%'.$productFilters['search'].'%')
+                        ->orWhere('barcode', 'like', '%'.$productFilters['search'].'%')
+                        ->orWhere('sku', 'like', '%'.$productFilters['search'].'%');
                 })
                 ->whereNotIn('id', $selectedProductIds)
                 ->orderBy('title')
@@ -275,7 +274,7 @@ class StockOpnameController extends Controller
     private function generateCode(): string
     {
         do {
-            $code = 'SO-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4));
+            $code = 'SO-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4));
         } while (StockOpname::where('code', $code)->exists());
 
         return $code;

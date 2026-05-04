@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
@@ -6,9 +7,9 @@ use App\Models\Customer;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Laravolt\Indonesia\Models\Province;
 use Laravolt\Indonesia\Models\City;
 use Laravolt\Indonesia\Models\District;
+use Laravolt\Indonesia\Models\Province;
 use Laravolt\Indonesia\Models\Village;
 
 class CustomerController extends Controller
@@ -20,12 +21,12 @@ class CustomerController extends Controller
      */
     public function index()
     {
-        //get customers
+        // get customers
         $customers = Customer::when(request()->search, function ($customers) {
-            $customers = $customers->where('name', 'like', '%' . request()->search . '%');
+            $customers = $customers->where('name', 'like', '%'.request()->search.'%');
         })->latest()->paginate(5);
 
-        //return inertia
+        // return inertia
         return Inertia::render('Dashboard/Customers/Index', [
             'customers' => $customers,
         ]);
@@ -48,7 +49,6 @@ class CustomerController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
@@ -57,23 +57,23 @@ class CustomerController extends Controller
          * validate
          */
         $request->validate([
-            'name'    => 'required',
+            'name' => 'required',
             'no_telp' => 'required|unique:customers',
             'address' => 'required',
             'province_id' => 'required|string',
-            'regency_id'  => 'required|string',
+            'regency_id' => 'required|string',
             'district_id' => 'required|string',
-            'village_id'  => 'required|string',
+            'village_id' => 'required|string',
         ]);
 
         $province = Province::where('code', $request->province_id)->first();
-        $regency  = City::where('code', $request->regency_id)->first();
+        $regency = City::where('code', $request->regency_id)->first();
         $district = District::where('code', $request->district_id)->first();
-        $village  = Village::where('code', $request->village_id)->first();
+        $village = Village::where('code', $request->village_id)->first();
 
-        //create customer
+        // create customer
         Customer::create([
-            'name'    => $request->name,
+            'name' => $request->name,
             'no_telp' => $request->no_telp,
             'address' => $request->address,
             'province_id' => $request->province_id,
@@ -86,55 +86,54 @@ class CustomerController extends Controller
             'village_name' => $village?->name,
         ]);
 
-        //redirect
+        // redirect
         return to_route('customers.index');
     }
 
     /**
      * Store a newly created customer via AJAX (returns JSON, no redirect)
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function storeAjax(Request $request)
     {
         $validated = $request->validate([
-            'name'    => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'no_telp' => 'required|string|unique:customers,no_telp',
             'address' => 'required|string',
             'province_id' => 'nullable|string',
-            'regency_id'  => 'nullable|string',
+            'regency_id' => 'nullable|string',
             'district_id' => 'nullable|string',
-            'village_id'  => 'nullable|string',
+            'village_id' => 'nullable|string',
         ]);
 
         try {
             $province = $validated['province_id'] ? Province::where('code', $validated['province_id'])->first() : null;
-            $regency  = $validated['regency_id'] ? City::where('code', $validated['regency_id'])->first() : null;
+            $regency = $validated['regency_id'] ? City::where('code', $validated['regency_id'])->first() : null;
             $district = $validated['district_id'] ? District::where('code', $validated['district_id'])->first() : null;
-            $village  = $validated['village_id'] ? Village::where('code', $validated['village_id'])->first() : null;
+            $village = $validated['village_id'] ? Village::where('code', $validated['village_id'])->first() : null;
 
             $customer = Customer::create([
-                'name'           => $validated['name'],
-                'no_telp'        => $validated['no_telp'],
-                'address'        => $validated['address'],
-                'province_id'    => $validated['province_id'] ?? null,
-                'province_name'  => $province?->name,
-                'regency_id'     => $validated['regency_id'] ?? null,
-                'regency_name'   => $regency?->name,
-                'district_id'    => $validated['district_id'] ?? null,
-                'district_name'  => $district?->name,
-                'village_id'     => $validated['village_id'] ?? null,
-                'village_name'   => $village?->name,
+                'name' => $validated['name'],
+                'no_telp' => $validated['no_telp'],
+                'address' => $validated['address'],
+                'province_id' => $validated['province_id'] ?? null,
+                'province_name' => $province?->name,
+                'regency_id' => $validated['regency_id'] ?? null,
+                'regency_name' => $regency?->name,
+                'district_id' => $validated['district_id'] ?? null,
+                'district_name' => $district?->name,
+                'village_id' => $validated['village_id'] ?? null,
+                'village_name' => $village?->name,
             ]);
 
             return response()->json([
-                'success'  => true,
-                'message'  => 'Pelanggan berhasil ditambahkan',
+                'success' => true,
+                'message' => 'Pelanggan berhasil ditambahkan',
                 'customer' => [
-                    'id'      => $customer->id,
-                    'name'    => $customer->name,
-                    'phone'   => $customer->no_telp,
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'phone' => $customer->no_telp,
                     'address' => $customer->address,
                 ],
             ]);
@@ -142,7 +141,7 @@ class CustomerController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambahkan pelanggan',
-                'errors'  => [],
+                'errors' => [],
             ], 500);
         }
     }
@@ -178,7 +177,6 @@ class CustomerController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
@@ -188,23 +186,23 @@ class CustomerController extends Controller
          * validate
          */
         $request->validate([
-            'name'    => 'required',
-            'no_telp' => 'required|unique:customers,no_telp,' . $customer->id,
+            'name' => 'required',
+            'no_telp' => 'required|unique:customers,no_telp,'.$customer->id,
             'address' => 'required',
             'province_id' => 'required|string',
-            'regency_id'  => 'required|string',
+            'regency_id' => 'required|string',
             'district_id' => 'required|string',
-            'village_id'  => 'required|string',
+            'village_id' => 'required|string',
         ]);
 
         $province = Province::where('code', $request->province_id)->first();
-        $regency  = City::where('code', $request->regency_id)->first();
+        $regency = City::where('code', $request->regency_id)->first();
         $district = District::where('code', $request->district_id)->first();
-        $village  = Village::where('code', $request->village_id)->first();
+        $village = Village::where('code', $request->village_id)->first();
 
-        //update customer
+        // update customer
         $customer->update([
-            'name'    => $request->name,
+            'name' => $request->name,
             'no_telp' => $request->no_telp,
             'address' => $request->address,
             'province_id' => $request->province_id,
@@ -217,7 +215,7 @@ class CustomerController extends Controller
             'village_name' => $village?->name,
         ]);
 
-        //redirect
+        // redirect
         return to_route('customers.index');
     }
 
@@ -229,20 +227,19 @@ class CustomerController extends Controller
      */
     public function destroy($id)
     {
-        //find customer by ID
+        // find customer by ID
         $customer = Customer::findOrFail($id);
 
-        //delete customer
+        // delete customer
         $customer->delete();
 
-        //redirect
+        // redirect
         return back();
     }
 
     /**
      * Get customer purchase history
      *
-     * @param  Customer $customer
      * @return \Illuminate\Http\JsonResponse
      */
     public function getHistory(Customer $customer)
@@ -262,12 +259,12 @@ class CustomerController extends Controller
             ->orderByDesc('created_at')
             ->limit(5)
             ->get()
-            ->map(fn($t) => [
-                'id'             => $t->id,
-                'invoice'        => $t->invoice,
-                'total'          => $t->grand_total,
+            ->map(fn ($t) => [
+                'id' => $t->id,
+                'invoice' => $t->invoice,
+                'total' => $t->grand_total,
                 'payment_method' => $t->payment_method,
-                'date'           => \Carbon\Carbon::parse($t->created_at)->format('d M Y H:i'),
+                'date' => \Carbon\Carbon::parse($t->created_at)->format('d M Y H:i'),
             ]);
 
         // Get frequently purchased products
@@ -281,19 +278,19 @@ class CustomerController extends Controller
             ->get();
 
         return response()->json([
-            'success'             => true,
-            'customer'            => [
-                'id'    => $customer->id,
-                'name'  => $customer->name,
+            'success' => true,
+            'customer' => [
+                'id' => $customer->id,
+                'name' => $customer->name,
                 'phone' => $customer->no_telp,
             ],
-            'stats'               => [
+            'stats' => [
                 'total_transactions' => (int) ($stats->total_transactions ?? 0),
-                'total_spent'        => (int) ($stats->total_spent ?? 0),
-                'last_visit'         => $stats->last_visit ? \Carbon\Carbon::parse($stats->last_visit)->format('d M Y') : null,
+                'total_spent' => (int) ($stats->total_spent ?? 0),
+                'last_visit' => $stats->last_visit ? \Carbon\Carbon::parse($stats->last_visit)->format('d M Y') : null,
             ],
             'recent_transactions' => $recentTransactions,
-            'frequent_products'   => $frequentProducts,
+            'frequent_products' => $frequentProducts,
         ]);
     }
 }

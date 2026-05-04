@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -23,14 +24,14 @@ class PaymentWebhookController extends Controller
             }
 
             // Get notification data
-            $orderId     = $request->input('order_id');
-            $statusCode  = $request->input('status_code');
+            $orderId = $request->input('order_id');
+            $statusCode = $request->input('status_code');
             $grossAmount = $request->input('gross_amount');
-            $serverKey   = $paymentSetting->resolvedSecret('midtrans_server_key');
+            $serverKey = $paymentSetting->resolvedSecret('midtrans_server_key');
 
             // Verify signature
-            $signatureKey      = $request->input('signature_key');
-            $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+            $signatureKey = $request->input('signature_key');
+            $expectedSignature = hash('sha512', $orderId.$statusCode.$grossAmount.$serverKey);
 
             if ($signatureKey !== $expectedSignature) {
                 Log::warning('Midtrans Webhook: Invalid signature', [
@@ -39,6 +40,7 @@ class PaymentWebhookController extends Controller
                     'verification_result' => 'invalid',
                     'error_category' => 'invalid_signature',
                 ]);
+
                 return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 403);
             }
 
@@ -52,17 +54,18 @@ class PaymentWebhookController extends Controller
                     'verification_result' => 'valid',
                     'error_category' => 'transaction_not_found',
                 ]);
+
                 return response()->json(['status' => 'error', 'message' => 'Transaction not found'], 404);
             }
 
             // Map Midtrans status to our status
             $transactionStatus = $request->input('transaction_status');
-            $fraudStatus       = $request->input('fraud_status');
+            $fraudStatus = $request->input('fraud_status');
 
             $newStatus = $this->mapMidtransStatus($transactionStatus, $fraudStatus);
 
             $transaction->update([
-                'payment_status'    => $newStatus,
+                'payment_status' => $newStatus,
                 'payment_reference' => $request->input('transaction_id') ?: $transaction->payment_reference,
             ]);
 
@@ -84,6 +87,7 @@ class PaymentWebhookController extends Controller
                 'error_category' => 'exception',
                 'message' => $e->getMessage(),
             ]);
+
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
@@ -111,6 +115,7 @@ class PaymentWebhookController extends Controller
                     'verification_result' => 'misconfigured',
                     'error_category' => 'missing_callback_token',
                 ]);
+
                 return response()->json(['status' => 'error', 'message' => 'Xendit callback token is not configured'], 400);
             }
 
@@ -121,12 +126,13 @@ class PaymentWebhookController extends Controller
                     'verification_result' => 'invalid',
                     'error_category' => 'invalid_callback_token',
                 ]);
+
                 return response()->json(['status' => 'error', 'message' => 'Invalid callback token'], 403);
             }
 
             $externalId = $request->input('external_id'); // This is our invoice number
-            $status     = $request->input('status');
-            $paymentId  = $request->input('id');
+            $status = $request->input('status');
+            $paymentId = $request->input('id');
 
             if (blank($externalId) || blank($status) || blank($paymentId)) {
                 return response()->json(['status' => 'error', 'message' => 'Invalid payload'], 422);
@@ -142,6 +148,7 @@ class PaymentWebhookController extends Controller
                     'verification_result' => 'valid',
                     'error_category' => 'transaction_not_found',
                 ]);
+
                 return response()->json(['status' => 'error', 'message' => 'Transaction not found'], 404);
             }
 
@@ -149,7 +156,7 @@ class PaymentWebhookController extends Controller
             $newStatus = $this->mapXenditStatus($status);
 
             $transaction->update([
-                'payment_status'    => $newStatus,
+                'payment_status' => $newStatus,
                 'payment_reference' => $paymentId ?: $transaction->payment_reference,
             ]);
 
@@ -171,6 +178,7 @@ class PaymentWebhookController extends Controller
                 'error_category' => 'exception',
                 'message' => $e->getMessage(),
             ]);
+
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
@@ -186,10 +194,10 @@ class PaymentWebhookController extends Controller
         }
 
         return match ($transactionStatus) {
-            'capture', 'settlement'    => 'paid',
+            'capture', 'settlement' => 'paid',
             'pending' => 'pending',
             'deny', 'cancel', 'expire' => 'failed',
-            default   => 'pending',
+            default => 'pending',
         };
     }
 
@@ -199,10 +207,10 @@ class PaymentWebhookController extends Controller
     private function mapXenditStatus(string $status): string
     {
         return match (strtoupper($status)) {
-            'PAID', 'SETTLED'   => 'paid',
+            'PAID', 'SETTLED' => 'paid',
             'PENDING' => 'pending',
             'EXPIRED', 'FAILED' => 'failed',
-            default   => 'pending',
+            default => 'pending',
         };
     }
 }

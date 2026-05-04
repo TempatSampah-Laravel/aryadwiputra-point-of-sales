@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
@@ -12,8 +13,7 @@ class BankAccountController extends Controller
 {
     public function __construct(
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     /**
      * Display listing of bank accounts
@@ -57,18 +57,18 @@ class BankAccountController extends Controller
         }
 
         $validated = $request->validate([
-            'bank_name'      => 'required|string|max:100',
+            'bank_name' => 'required|string|max:100',
             'account_number' => 'required|string|max:50',
-            'account_name'   => 'required|string|max:100',
-            'logo'           => 'nullable|image|mimes:png,jpg,jpeg,svg|max:1024',
-            'is_active'      => 'nullable|boolean',
+            'account_name' => 'required|string|max:100',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:1024',
+            'is_active' => 'nullable|boolean',
         ]);
 
         if ($request->hasFile('logo')) {
             $validated['logo'] = $request->file('logo')->store('bank-logos', 'public');
         }
 
-        $validated['is_active']  = $request->boolean('is_active');
+        $validated['is_active'] = $request->boolean('is_active');
         $validated['sort_order'] = BankAccount::max('sort_order') + 1;
 
         $bankAccount = BankAccount::create($validated);
@@ -98,11 +98,11 @@ class BankAccountController extends Controller
         }
 
         $validated = $request->validate([
-            'bank_name'      => 'required|string|max:100',
+            'bank_name' => 'required|string|max:100',
             'account_number' => 'required|string|max:50',
-            'account_name'   => 'required|string|max:100',
-            'logo'           => 'nullable|image|mimes:png,jpg,jpeg,svg|max:1024',
-            'is_active'      => 'nullable|boolean',
+            'account_name' => 'required|string|max:100',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:1024',
+            'is_active' => 'nullable|boolean',
         ]);
 
         if ($request->hasFile('logo')) {
@@ -197,7 +197,7 @@ class BankAccountController extends Controller
     public function updateOrder(Request $request)
     {
         $validated = $request->validate([
-            'order'   => 'required|array',
+            'order' => 'required|array',
             'order.*' => 'integer|exists:bank_accounts,id',
         ]);
 

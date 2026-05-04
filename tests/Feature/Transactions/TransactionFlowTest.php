@@ -5,13 +5,13 @@ namespace Tests\Feature\Transactions;
 use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Customer;
-use App\Models\Product;
 use App\Models\PaymentSetting;
+use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -121,7 +121,7 @@ class TransactionFlowTest extends TestCase
             'cashier_id' => $cashier->id,
             'cashier_shift_id' => $shift->id,
             'customer_id' => $customer->id,
-            'invoice' => 'TRX-' . Str::upper(Str::random(8)),
+            'invoice' => 'TRX-'.Str::upper(Str::random(8)),
             'cash' => 200000,
             'change' => 50000,
             'discount' => 10000,
@@ -311,7 +311,7 @@ class TransactionFlowTest extends TestCase
         return Product::create([
             'category_id' => $category->id,
             'image' => 'product.png',
-            'barcode' => 'BRCD-' . Str::upper(Str::random(10)),
+            'barcode' => 'BRCD-'.Str::upper(Str::random(10)),
             'title' => 'Produk Uji',
             'description' => 'Deskripsi produk uji.',
             'buy_price' => 45000,

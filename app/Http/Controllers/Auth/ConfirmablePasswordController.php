@@ -15,8 +15,7 @@ class ConfirmablePasswordController extends Controller
 {
     public function __construct(
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     /**
      * Show the confirm password view.

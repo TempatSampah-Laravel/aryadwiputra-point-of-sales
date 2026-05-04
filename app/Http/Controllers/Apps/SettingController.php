@@ -1,19 +1,19 @@
 <?php
+
 namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class SettingController extends Controller
 {
     public function __construct(
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     /**
      * Show the target settings page
@@ -53,13 +53,13 @@ class SettingController extends Controller
     public function storeProfile()
     {
         $settings = [
-            'store_name'    => Setting::get('store_name', ''),
-            'store_logo'    => Setting::get('store_logo', ''),
+            'store_name' => Setting::get('store_name', ''),
+            'store_logo' => Setting::get('store_logo', ''),
             'store_address' => Setting::get('store_address', ''),
-            'store_phone'   => Setting::get('store_phone', ''),
-            'store_email'   => Setting::get('store_email', ''),
+            'store_phone' => Setting::get('store_phone', ''),
+            'store_email' => Setting::get('store_email', ''),
             'store_website' => Setting::get('store_website', ''),
-            'store_city'    => Setting::get('store_city', ''),
+            'store_city' => Setting::get('store_city', ''),
         ];
 
         return Inertia::render('Dashboard/Settings/Store', [
@@ -73,13 +73,13 @@ class SettingController extends Controller
     public function updateStoreProfile(Request $request)
     {
         $request->validate([
-            'store_name'    => 'required|string|max:255',
+            'store_name' => 'required|string|max:255',
             'store_address' => 'required|string|max:500',
-            'store_phone'   => 'nullable|string|max:50',
-            'store_email'   => 'nullable|email|max:255',
+            'store_phone' => 'nullable|string|max:50',
+            'store_email' => 'nullable|email|max:255',
             'store_website' => 'nullable|string|max:255',
-            'store_city'    => 'nullable|string|max:255',
-            'store_logo'    => 'nullable|image|max:2048',
+            'store_city' => 'nullable|string|max:255',
+            'store_logo' => 'nullable|image|max:2048',
         ]);
 
         $before = [

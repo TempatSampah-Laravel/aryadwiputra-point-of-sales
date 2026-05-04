@@ -16,8 +16,7 @@ class PasswordResetLinkController extends Controller
 {
     public function __construct(
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     /**
      * Display the password reset link request view.

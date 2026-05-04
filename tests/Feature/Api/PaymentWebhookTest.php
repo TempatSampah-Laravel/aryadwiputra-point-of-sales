@@ -33,7 +33,7 @@ class PaymentWebhookTest extends TestCase
         ];
         $payload['signature_key'] = hash(
             'sha512',
-            $payload['order_id'] . $payload['status_code'] . $payload['gross_amount'] . 'server-key'
+            $payload['order_id'].$payload['status_code'].$payload['gross_amount'].'server-key'
         );
 
         $response = $this->postJson(route('webhooks.midtrans'), $payload);
@@ -143,7 +143,7 @@ class PaymentWebhookTest extends TestCase
     {
         return Transaction::create([
             'cashier_id' => User::factory()->create()->id,
-            'invoice' => 'TRX-WEBHOOK-' . strtoupper($paymentMethod),
+            'invoice' => 'TRX-WEBHOOK-'.strtoupper($paymentMethod),
             'cash' => 0,
             'change' => 0,
             'discount' => 0,

@@ -275,8 +275,8 @@ class StockOpnameTest extends TestCase
             ->actingAs($user)
             ->post(route('products.store'), [
                 'image' => UploadedFile::fake()->image('product.png'),
-                'barcode' => 'BRCD-' . Str::upper(Str::random(8)),
-                'sku' => 'SKU-' . Str::upper(Str::random(8)),
+                'barcode' => 'BRCD-'.Str::upper(Str::random(8)),
+                'sku' => 'SKU-'.Str::upper(Str::random(8)),
                 'title' => 'Produk Baru',
                 'description' => 'Deskripsi produk baru',
                 'category_id' => $category->id,
@@ -312,7 +312,7 @@ class StockOpnameTest extends TestCase
     private function createProduct(int $stock = 10): Product
     {
         $category = Category::create([
-            'name' => 'Kategori ' . Str::upper(Str::random(5)),
+            'name' => 'Kategori '.Str::upper(Str::random(5)),
             'description' => 'Kategori pengujian',
             'image' => 'category.png',
         ]);
@@ -320,9 +320,9 @@ class StockOpnameTest extends TestCase
         return Product::create([
             'category_id' => $category->id,
             'image' => 'product.png',
-            'barcode' => 'BRCD-' . Str::upper(Str::random(10)),
-            'sku' => 'SKU-' . Str::upper(Str::random(10)),
-            'title' => 'Produk Uji ' . Str::upper(Str::random(4)),
+            'barcode' => 'BRCD-'.Str::upper(Str::random(10)),
+            'sku' => 'SKU-'.Str::upper(Str::random(10)),
+            'title' => 'Produk Uji '.Str::upper(Str::random(4)),
             'description' => 'Deskripsi produk uji.',
             'buy_price' => 45000,
             'sell_price' => 60000,

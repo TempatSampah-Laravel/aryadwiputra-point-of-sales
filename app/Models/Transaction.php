@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Carbon\Carbon;
@@ -111,13 +112,11 @@ class Transaction extends Model
 
     /**
      * createdAt
-     *
-     * @return Attribute
      */
     protected function createdAt(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Carbon::parse($value)->format('d-M-Y H:i:s'),
+            get: fn ($value) => Carbon::parse($value)->format('d-M-Y H:i:s'),
         );
     }
 }

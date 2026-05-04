@@ -51,7 +51,6 @@ export default function Index({
     paymentGateways = [],
     defaultPaymentGateway = "cash",
     bankAccounts = [],
-    shiftSummary = null,
 }) {
     const {
         auth,
@@ -492,23 +491,6 @@ export default function Index({
             <Head title="Transaksi" />
 
             <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row">
-                {shiftSummary && (
-                    <div className="hidden lg:block absolute left-6 top-20 z-10">
-                        <div className="rounded-2xl border border-emerald-200 bg-white/95 p-4 shadow-lg backdrop-blur dark:border-emerald-900/50 dark:bg-slate-900/95">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                                Shift Aktif
-                            </p>
-                            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                                {shiftSummary.user?.name}
-                            </p>
-                            <div className="mt-3 space-y-1 text-xs text-slate-500 dark:text-slate-400">
-                                <p>Modal: {formatPrice(shiftSummary.opening_cash)}</p>
-                                <p>Expected: {formatPrice(shiftSummary.expected_cash)}</p>
-                                <p>Transaksi: {shiftSummary.transactions_count}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
                 {/* Mobile Tab Switcher */}
                 <div className="lg:hidden flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                     <button

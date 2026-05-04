@@ -2,20 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Http\Requests\RoleRequest;
-use Inertia\Inertia;
-use Spatie\Permission\Models\Role;
-use App\Http\Controllers\Controller;
 use App\Services\AuditLogService;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
     public function __construct(
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     /**
      * Display a listing of the resource.
@@ -25,7 +23,7 @@ class RoleController extends Controller
         // get all role data
         $roles = Role::query()
             ->with('permissions')
-            ->when(request()->search, fn($query) => $query->where('name', 'like', '%' . request()->search . '%'))
+            ->when(request()->search, fn ($query) => $query->where('name', 'like', '%'.request()->search.'%'))
             ->select('id', 'name')
             ->latest()
             ->paginate(7)
@@ -40,7 +38,7 @@ class RoleController extends Controller
         // render view
         return Inertia::render('Dashboard/Roles/Index', [
             'roles' => $roles,
-            'permissions' => $permissions
+            'permissions' => $permissions,
         ]);
     }
 

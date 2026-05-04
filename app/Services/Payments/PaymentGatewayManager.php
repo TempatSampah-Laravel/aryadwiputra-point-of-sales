@@ -11,8 +11,7 @@ class PaymentGatewayManager
     public function __construct(
         private MidtransGateway $midtransGateway,
         private XenditGateway $xenditGateway
-    ) {
-    }
+    ) {}
 
     public function createPayment(Transaction $transaction, string $gateway, PaymentSetting $setting): array
     {

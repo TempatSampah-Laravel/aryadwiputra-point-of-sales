@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use Illuminate\Http\Request;
 use App\Http\Requests\UserRequest;
+use App\Models\User;
+use App\Services\AuditLogService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
-use App\Http\Controllers\Controller;
-use App\Services\AuditLogService;
-use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
     public function __construct(
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     /**
      * Display a listing of the resource.
@@ -26,7 +24,7 @@ class UserController extends Controller
         // get all users data
         $users = User::query()
             ->with('roles')
-            ->when(request()->search, fn($query) => $query->where('name', 'like', '%' . request()->search . '%'))
+            ->when(request()->search, fn ($query) => $query->where('name', 'like', '%'.request()->search.'%'))
             ->select('id', 'name', 'avatar', 'email')
             ->latest()
             ->paginate(7)
@@ -34,7 +32,7 @@ class UserController extends Controller
 
         // render view
         return Inertia::render('Dashboard/Users/Index', [
-            'users' => $users
+            'users' => $users,
         ]);
     }
 
@@ -51,7 +49,7 @@ class UserController extends Controller
 
         // render view
         return Inertia::render('Dashboard/Users/Create', [
-            'roles' => $roles
+            'roles' => $roles,
         ]);
     }
 
@@ -105,12 +103,12 @@ class UserController extends Controller
             ->get();
 
         // load relationship
-        $user->load(['roles' => fn($query) => $query->select('id', 'name'), 'roles.permissions' => fn($query) => $query->select('id', 'name')]);
+        $user->load(['roles' => fn ($query) => $query->select('id', 'name'), 'roles.permissions' => fn ($query) => $query->select('id', 'name')]);
 
         // render view
         return Inertia::render('Dashboard/Users/Edit', [
             'roles' => $roles,
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -134,11 +132,12 @@ class UserController extends Controller
         }
 
         // check if user send request password
-        if ($request->password)
+        if ($request->password) {
             // update user data password
             $user->update([
                 'password' => bcrypt($request->password),
             ]);
+        }
 
         // update user data name
         $user->update([

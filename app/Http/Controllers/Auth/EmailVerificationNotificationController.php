@@ -11,8 +11,7 @@ class EmailVerificationNotificationController extends Controller
 {
     public function __construct(
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     /**
      * Send a new email verification notification.

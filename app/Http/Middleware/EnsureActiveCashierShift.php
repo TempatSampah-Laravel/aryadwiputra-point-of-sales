@@ -11,8 +11,7 @@ class EnsureActiveCashierShift
 {
     public function __construct(
         private readonly CashierShiftService $cashierShiftService
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,10 +9,13 @@ class PaymentSetting extends Model
 {
     use HasFactory;
 
-    public const GATEWAY_MIDTRANS      = 'midtrans';
-    public const GATEWAY_XENDIT        = 'xendit';
+    public const GATEWAY_MIDTRANS = 'midtrans';
+
+    public const GATEWAY_XENDIT = 'xendit';
+
     public const GATEWAY_BANK_TRANSFER = 'bank_transfer';
-    public const SECRET_FIELDS         = [
+
+    public const SECRET_FIELDS = [
         'midtrans_server_key',
         'xendit_secret_key',
         'xendit_callback_token',
@@ -33,12 +37,12 @@ class PaymentSetting extends Model
 
     protected $casts = [
         'bank_transfer_enabled' => 'boolean',
-        'midtrans_enabled'      => 'boolean',
-        'midtrans_production'   => 'boolean',
-        'xendit_enabled'        => 'boolean',
-        'xendit_production'     => 'boolean',
-        'midtrans_server_key'   => 'encrypted',
-        'xendit_secret_key'     => 'encrypted',
+        'midtrans_enabled' => 'boolean',
+        'midtrans_production' => 'boolean',
+        'xendit_enabled' => 'boolean',
+        'xendit_production' => 'boolean',
+        'midtrans_server_key' => 'encrypted',
+        'xendit_secret_key' => 'encrypted',
         'xendit_callback_token' => 'encrypted',
     ];
 
@@ -49,24 +53,24 @@ class PaymentSetting extends Model
         // Bank Transfer
         if ($this->isBankTransferReady()) {
             $gateways[] = [
-                'value'       => self::GATEWAY_BANK_TRANSFER,
-                'label'       => 'Transfer Bank',
+                'value' => self::GATEWAY_BANK_TRANSFER,
+                'label' => 'Transfer Bank',
                 'description' => 'Pembayaran manual via transfer bank.',
             ];
         }
 
         if ($this->isGatewayReady(self::GATEWAY_MIDTRANS)) {
             $gateways[] = [
-                'value'       => self::GATEWAY_MIDTRANS,
-                'label'       => 'Midtrans',
+                'value' => self::GATEWAY_MIDTRANS,
+                'label' => 'Midtrans',
                 'description' => 'Bagikan tautan pembayaran Snap Midtrans ke pelanggan.',
             ];
         }
 
         if ($this->isGatewayReady(self::GATEWAY_XENDIT)) {
             $gateways[] = [
-                'value'       => self::GATEWAY_XENDIT,
-                'label'       => 'Xendit',
+                'value' => self::GATEWAY_XENDIT,
+                'label' => 'Xendit',
                 'description' => 'Buat invoice otomatis menggunakan Xendit.',
             ];
         }
@@ -86,22 +90,22 @@ class PaymentSetting extends Model
     {
         return match ($gateway) {
             self::GATEWAY_BANK_TRANSFER => $this->isBankTransferReady(),
-            self::GATEWAY_MIDTRANS      => $this->midtrans_enabled
+            self::GATEWAY_MIDTRANS => $this->midtrans_enabled
             && filled($this->resolvedSecret('midtrans_server_key'))
             && filled($this->midtrans_client_key),
-            self::GATEWAY_XENDIT        => $this->xendit_enabled
+            self::GATEWAY_XENDIT => $this->xendit_enabled
             && filled($this->resolvedSecret('xendit_secret_key'))
             && filled($this->xendit_public_key),
-            default                     => false,
+            default => false,
         };
     }
 
     public function midtransConfig(): array
     {
         return [
-            'enabled'       => $this->isGatewayReady(self::GATEWAY_MIDTRANS),
-            'server_key'    => $this->resolvedSecret('midtrans_server_key'),
-            'client_key'    => $this->midtrans_client_key,
+            'enabled' => $this->isGatewayReady(self::GATEWAY_MIDTRANS),
+            'server_key' => $this->resolvedSecret('midtrans_server_key'),
+            'client_key' => $this->midtrans_client_key,
             'is_production' => $this->midtrans_production,
         ];
     }
@@ -109,9 +113,9 @@ class PaymentSetting extends Model
     public function xenditConfig(): array
     {
         return [
-            'enabled'       => $this->isGatewayReady(self::GATEWAY_XENDIT),
-            'secret_key'    => $this->resolvedSecret('xendit_secret_key'),
-            'public_key'    => $this->xendit_public_key,
+            'enabled' => $this->isGatewayReady(self::GATEWAY_XENDIT),
+            'secret_key' => $this->resolvedSecret('xendit_secret_key'),
+            'public_key' => $this->xendit_public_key,
             'callback_token' => $this->resolvedSecret('xendit_callback_token'),
             'is_production' => $this->xendit_production,
         ];
@@ -165,7 +169,7 @@ class PaymentSetting extends Model
             return str_repeat('•', $length);
         }
 
-        return str_repeat('•', max($length - 4, 4)) . substr($value, -4);
+        return str_repeat('•', max($length - 4, 4)).substr($value, -4);
     }
 
     public function paymentSettingSources(): array

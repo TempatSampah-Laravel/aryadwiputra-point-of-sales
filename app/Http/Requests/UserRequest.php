@@ -26,11 +26,11 @@ class UserRequest extends FormRequest
         $isCreate = $this->isMethod('post');
 
         return [
-            'name'            => ['required', 'string', 'max:255'],
-            'email'           => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
-            'password'        => [$isCreate ? 'required' : 'nullable', 'string', 'min:8', 'confirmed'],
-            'avatar'          => ['nullable', 'image', 'max:2048'],
-            'selectedRoles'   => ['required', 'array', 'min:1'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
+            'password' => [$isCreate ? 'required' : 'nullable', 'string', 'min:8', 'confirmed'],
+            'avatar' => ['nullable', 'image', 'max:2048'],
+            'selectedRoles' => ['required', 'array', 'min:1'],
             'selectedRoles.*' => ['string'],
         ];
     }

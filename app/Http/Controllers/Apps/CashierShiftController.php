@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ConfirmPasswordForForceCloseRequest;
 use App\Http\Requests\CloseCashierShiftRequest;
+use App\Http\Requests\ConfirmPasswordForForceCloseRequest;
 use App\Http\Requests\StoreCashierShiftRequest;
 use App\Models\CashierShift;
 use App\Models\User;
@@ -21,8 +21,7 @@ class CashierShiftController extends Controller
     public function __construct(
         private readonly CashierShiftService $cashierShiftService,
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {

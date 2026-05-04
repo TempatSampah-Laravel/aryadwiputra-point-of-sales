@@ -22,7 +22,7 @@ class DocumentController extends Controller
     {
         $logo = \App\Models\Setting::get('store_logo');
         if ($logo && ! str_starts_with($logo, 'http') && ! str_starts_with($logo, '/storage')) {
-            $logo = asset('storage/' . ltrim($logo, '/'));
+            $logo = asset('storage/'.ltrim($logo, '/'));
         }
 
         $logoData = null;
@@ -35,26 +35,27 @@ class DocumentController extends Controller
             }
 
             if ($localPath && file_exists($localPath)) {
-                $logoData = 'data:image/png;base64,' . base64_encode(file_get_contents($localPath));
+                $logoData = 'data:image/png;base64,'.base64_encode(file_get_contents($localPath));
             }
         }
 
         return [
-            'name'    => \App\Models\Setting::get('store_name', 'Toko Anda'),
-            'logo'    => $logo,
+            'name' => \App\Models\Setting::get('store_name', 'Toko Anda'),
+            'logo' => $logo,
             'logo_data' => $logoData,
             'address' => \App\Models\Setting::get('store_address', ''),
-            'phone'   => \App\Models\Setting::get('store_phone', ''),
-            'email'   => \App\Models\Setting::get('store_email', ''),
+            'phone' => \App\Models\Setting::get('store_phone', ''),
+            'email' => \App\Models\Setting::get('store_email', ''),
             'website' => \App\Models\Setting::get('store_website', ''),
         ];
     }
 
     private function barcode(string $code): string
     {
-        $generator = new BarcodeGeneratorPNG();
-        $data      = $generator->getBarcode($code, $generator::TYPE_CODE_128);
-        return 'data:image/png;base64,' . base64_encode($data);
+        $generator = new BarcodeGeneratorPNG;
+        $data = $generator->getBarcode($code, $generator::TYPE_CODE_128);
+
+        return 'data:image/png;base64,'.base64_encode($data);
     }
 
     public function invoice(string $invoice)
@@ -67,8 +68,8 @@ class DocumentController extends Controller
 
         $pdf = Pdf::loadView('pdf.invoice', [
             'transaction' => $transaction,
-            'store'       => $this->storeProfile(),
-            'barcode'     => $this->barcode($transaction->invoice),
+            'store' => $this->storeProfile(),
+            'barcode' => $this->barcode($transaction->invoice),
         ])->setPaper('a4');
 
         return $pdf->stream("invoice-{$transaction->invoice}.pdf");
@@ -91,11 +92,11 @@ class DocumentController extends Controller
             ->firstOrFail();
 
         $template = $size === '58' ? 'pdf.receipt_58' : 'pdf.receipt_80';
-        $width    = $size === '58' ? 164.4 : 226.8; // points (mm*2.8346)
-        $pdf      = Pdf::loadView($template, [
+        $width = $size === '58' ? 164.4 : 226.8; // points (mm*2.8346)
+        $pdf = Pdf::loadView($template, [
             'transaction' => $transaction,
-            'store'       => $this->storeProfile(),
-            'barcode'     => $this->barcode($transaction->invoice),
+            'store' => $this->storeProfile(),
+            'barcode' => $this->barcode($transaction->invoice),
         ])->setPaper([0, 0, $width, 800], 'portrait');
 
         return $pdf->stream("receipt-{$transaction->invoice}-{$size}.pdf");
@@ -111,8 +112,8 @@ class DocumentController extends Controller
 
         $pdf = Pdf::loadView('pdf.shipping_label', [
             'transaction' => $transaction,
-            'store'       => $this->storeProfile(),
-            'barcode'     => $this->barcode($transaction->invoice),
+            'store' => $this->storeProfile(),
+            'barcode' => $this->barcode($transaction->invoice),
         ]);
 
         // Set kertas 150mm x 100mm (dalam Points: 1mm = 2.83465pt)
@@ -130,8 +131,8 @@ class DocumentController extends Controller
 
         $pdf = Pdf::loadView('pdf.receivable', [
             'receivable' => $receivable,
-            'store'      => $this->storeProfile(),
-            'barcode'    => $this->barcode($receivable->invoice),
+            'store' => $this->storeProfile(),
+            'barcode' => $this->barcode($receivable->invoice),
         ])->setPaper('a5', 'portrait');
 
         return $pdf->stream("piutang-{$receivable->invoice}.pdf");
@@ -145,7 +146,7 @@ class DocumentController extends Controller
 
         $pdf = Pdf::loadView('pdf.payable', [
             'payable' => $payable,
-            'store'   => $this->storeProfile(),
+            'store' => $this->storeProfile(),
             'barcode' => $this->barcode($payable->document_number),
         ])->setPaper('a5', 'portrait');
 

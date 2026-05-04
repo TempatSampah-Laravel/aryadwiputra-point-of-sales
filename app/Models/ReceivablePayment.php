@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +21,7 @@ class ReceivablePayment extends Model
 
     protected $casts = [
         'paid_at' => 'date',
-        'amount'  => 'float',
+        'amount' => 'float',
     ];
 
     public function receivable()

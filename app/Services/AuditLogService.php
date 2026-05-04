@@ -82,7 +82,7 @@ class AuditLogService
             return str_repeat('*', max($length, 1));
         }
 
-        return str_repeat('*', $length - 4) . substr($digits, -4);
+        return str_repeat('*', $length - 4).substr($digits, -4);
     }
 
     public function credentialState(?string $before, ?string $after): ?string
@@ -146,7 +146,7 @@ class AuditLogService
                 }
             }
 
-            return class_basename($auditable) . ' #' . $auditable->getKey();
+            return class_basename($auditable).' #'.$auditable->getKey();
         }
 
         if (is_array($auditable)) {

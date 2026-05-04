@@ -144,8 +144,8 @@ class CashierShiftTest extends TestCase
         $product = Product::create([
             'category_id' => $category->id,
             'image' => 'shift-product.png',
-            'barcode' => 'BRCD-' . Str::upper(Str::random(8)),
-            'sku' => 'SKU-' . Str::upper(Str::random(8)),
+            'barcode' => 'BRCD-'.Str::upper(Str::random(8)),
+            'sku' => 'SKU-'.Str::upper(Str::random(8)),
             'title' => 'Produk Shift',
             'description' => 'Produk Shift',
             'buy_price' => 40000,
@@ -157,7 +157,7 @@ class CashierShiftTest extends TestCase
             'cashier_id' => $cashier->id,
             'cashier_shift_id' => $shift->id,
             'customer_id' => $customer->id,
-            'invoice' => 'TRX-' . Str::upper(Str::random(8)),
+            'invoice' => 'TRX-'.Str::upper(Str::random(8)),
             'cash' => 60000,
             'change' => 0,
             'discount' => 0,
@@ -175,7 +175,7 @@ class CashierShiftTest extends TestCase
             'cashier_id' => $cashier->id,
             'cashier_shift_id' => $shift->id,
             'customer_id' => $customer->id,
-            'invoice' => 'TRX-' . Str::upper(Str::random(8)),
+            'invoice' => 'TRX-'.Str::upper(Str::random(8)),
             'cash' => 0,
             'change' => 0,
             'discount' => 0,
@@ -186,7 +186,7 @@ class CashierShiftTest extends TestCase
         ]);
 
         SalesReturn::create([
-            'code' => 'SR-' . Str::upper(Str::random(6)),
+            'code' => 'SR-'.Str::upper(Str::random(6)),
             'transaction_id' => Transaction::first()->id,
             'customer_id' => $customer->id,
             'cashier_id' => $cashier->id,

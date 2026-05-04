@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Apps;
 
-use Inertia\Inertia;
+use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
@@ -17,12 +17,12 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        //get categories
+        // get categories
         $categories = Category::when(request()->search, function ($categories) {
-            $categories = $categories->where('name', 'like', '%' . request()->search . '%');
+            $categories = $categories->where('name', 'like', '%'.request()->search.'%');
         })->latest()->paginate(2);
 
-        //return inertia
+        // return inertia
         return Inertia::render('Dashboard/Categories/Index', [
             'categories' => $categories,
         ]);
@@ -41,7 +41,6 @@ class CategoryController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
@@ -52,21 +51,21 @@ class CategoryController extends Controller
         $request->validate([
             'image' => 'required|image|mimes:jpeg,jpg,png|max:2048',
             'name' => 'required',
-            'description' => 'required'
+            'description' => 'required',
         ]);
 
-        //upload image
+        // upload image
         $image = $request->file('image');
         $image->storeAs('public/category', $image->hashName());
 
-        //create category
+        // create category
         Category::create([
             'image' => $image->hashName(),
             'name' => $request->name,
-            'description' => $request->description
+            'description' => $request->description,
         ]);
 
-        //redirect
+        // redirect
         return to_route('categories.index');
     }
 
@@ -86,7 +85,6 @@ class CategoryController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
@@ -97,34 +95,34 @@ class CategoryController extends Controller
          */
         $request->validate([
             'name' => 'required',
-            'description' => 'required'
+            'description' => 'required',
         ]);
 
-        //check image update
+        // check image update
         if ($request->file('image')) {
 
-            //remove old image
-            Storage::disk('local')->delete('public/category/' . basename($category->image));
+            // remove old image
+            Storage::disk('local')->delete('public/category/'.basename($category->image));
 
-            //upload new image
+            // upload new image
             $image = $request->file('image');
             $image->storeAs('public/category', $image->hashName());
 
-            //update category with new image
+            // update category with new image
             $category->update([
                 'image' => $image->hashName(),
                 'name' => $request->name,
-                'description' => $request->description
+                'description' => $request->description,
             ]);
         }
 
-        //update category without image
+        // update category without image
         $category->update([
             'name' => $request->name,
-            'description' => $request->description
+            'description' => $request->description,
         ]);
 
-        //redirect
+        // redirect
         return to_route('categories.index');
     }
 
@@ -136,16 +134,16 @@ class CategoryController extends Controller
      */
     public function destroy($id)
     {
-        //find by ID
+        // find by ID
         $category = Category::findOrFail($id);
 
-        //remove image
-        Storage::disk('local')->delete('public/category/' . basename($category->image));
+        // remove image
+        Storage::disk('local')->delete('public/category/'.basename($category->image));
 
-        //delete
+        // delete
         $category->delete();
 
-        //redirect
+        // redirect
         return to_route('categories.index');
     }
 }

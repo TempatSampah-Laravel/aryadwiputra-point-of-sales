@@ -31,8 +31,7 @@ class SalesReturnController extends Controller
         private readonly StockMutationService $stockMutationService,
         private readonly CashierShiftService $cashierShiftService,
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -53,9 +52,9 @@ class SalesReturnController extends Controller
                     $builder->where('cashier_id', $request->user()->id);
                 });
             })
-            ->when($filters['code'], fn (Builder $query, $code) => $query->where('code', 'like', '%' . $code . '%'))
+            ->when($filters['code'], fn (Builder $query, $code) => $query->where('code', 'like', '%'.$code.'%'))
             ->when($filters['invoice'], function (Builder $query, $invoice) {
-                $query->whereHas('transaction', fn (Builder $builder) => $builder->where('invoice', 'like', '%' . $invoice . '%'));
+                $query->whereHas('transaction', fn (Builder $builder) => $builder->where('invoice', 'like', '%'.$invoice.'%'));
             })
             ->when($filters['date_from'], fn (Builder $query, $date) => $query->whereDate('created_at', '>=', $date))
             ->when($filters['date_to'], fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date))
@@ -297,7 +296,7 @@ class SalesReturnController extends Controller
                     'sales_return_id' => $salesReturn->id,
                     'amount' => $salesReturn->credited_amount,
                     'balance' => $salesReturn->credited_amount,
-                    'notes' => 'Saldo toko dari retur penjualan ' . $salesReturn->code,
+                    'notes' => 'Saldo toko dari retur penjualan '.$salesReturn->code,
                 ]);
             }
         });
@@ -654,7 +653,7 @@ class SalesReturnController extends Controller
     private function generateCode(): string
     {
         do {
-            $code = 'SR-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4));
+            $code = 'SR-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4));
         } while (SalesReturn::where('code', $code)->exists());
 
         return $code;
