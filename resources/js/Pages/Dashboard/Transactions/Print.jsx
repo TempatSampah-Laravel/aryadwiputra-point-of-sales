@@ -538,7 +538,8 @@ export default function Print({ transaction }) {
                                                             </p>
                                                             {hasPromo && (
                                                                 <p className="text-xs font-medium text-rose-500 dark:text-rose-400">
-                                                                    {item.pricing_rule_name ||
+                                                                    {item.pricing_group_label ||
+                                                                        item.pricing_rule_name ||
                                                                         "Promo aktif"}
                                                                 </p>
                                                             )}

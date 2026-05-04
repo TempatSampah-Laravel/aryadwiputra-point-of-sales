@@ -22,6 +22,7 @@ function ProductCard({ product, onAddToCart, isAdding }) {
     const promoPrice = Number(promoBadge?.promo_price || 0);
     const basePrice = Number(promoBadge?.base_price || product.sell_price || 0);
     const showPromo = promoBadge && promoPrice > 0 && promoPrice < basePrice;
+    const showBadge = Boolean(promoBadge?.label);
 
     return (
         <button
@@ -63,7 +64,7 @@ function ProductCard({ product, onAddToCart, isAdding }) {
                     </span>
                 )}
 
-                {showPromo && (
+                {showBadge && (
                     <span className="absolute left-2 top-2 max-w-[70%] truncate rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-lg">
                         {promoBadge.label}
                     </span>
@@ -102,6 +103,11 @@ function ProductCard({ product, onAddToCart, isAdding }) {
                     <p className="text-base font-bold text-primary-600 dark:text-primary-400">
                         {formatPrice(showPromo ? promoPrice : product.sell_price)}
                     </p>
+                    {showBadge && !showPromo && (
+                        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            Promo tersedia
+                        </p>
+                    )}
                 </div>
             </div>
 

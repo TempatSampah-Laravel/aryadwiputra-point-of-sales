@@ -24,6 +24,9 @@ class TransactionDetail extends Model
         'discount_total',
         'pricing_rule_id',
         'pricing_rule_name',
+        'pricing_rule_kind',
+        'pricing_group_key',
+        'pricing_group_label',
     ];
 
     protected $casts = [
@@ -33,6 +36,7 @@ class TransactionDetail extends Model
         'price' => 'integer',
         'discount_total' => 'integer',
         'pricing_rule_id' => 'integer',
+        'pricing_rule_kind' => 'string',
     ];
 
     /**

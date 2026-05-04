@@ -145,7 +145,9 @@ export default function ThermalReceipt({
                                     <div className="flex justify-between text-[10px] text-slate-500">
                                         <span>
                                             Promo:{" "}
-                                            {item.pricing_rule_name || "Promo"}
+                                            {item.pricing_group_label ||
+                                                item.pricing_rule_name ||
+                                                "Promo"}
                                         </span>
                                         <span>{formatPrice(baseUnitPrice)}</span>
                                     </div>

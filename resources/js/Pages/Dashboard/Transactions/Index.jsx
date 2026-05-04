@@ -1309,6 +1309,30 @@ export default function Index({
                                 </span>
                             </div>
                         )}
+                        {(pricingPreview?.applied_groups || []).length > 0 && (
+                            <div className="mb-3 rounded-xl border border-slate-200 bg-white/70 p-2 dark:border-slate-700 dark:bg-slate-900/60">
+                                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                    Grup Promo Aktif
+                                </div>
+                                <div className="space-y-1.5">
+                                    {(pricingPreview?.applied_groups || []).map(
+                                        (group) => (
+                                            <div
+                                                key={group.key}
+                                                className="flex items-center justify-between text-xs"
+                                            >
+                                                <span className="truncate pr-3 text-slate-600 dark:text-slate-300">
+                                                    {group.label}
+                                                </span>
+                                                <span className="font-medium text-emerald-600">
+                                                    -{formatPrice(group.discount_total)}
+                                                </span>
+                                            </div>
+                                        )
+                                    )}
+                                </div>
+                            </div>
+                        )}
                         {voucherDiscount > 0 && (
                             <div className="flex justify-between items-center mb-2 text-sm">
                                 <span className="text-slate-500">Voucher</span>

@@ -90,8 +90,11 @@ class TransactionController extends Controller
                 ...$product->toArray(),
                 'pricing_badge' => $pricing && ! empty($pricing['pricing_rule']) ? [
                     'label' => $pricing['pricing_rule']['label'],
-                    'promo_price' => $pricing['effective_unit_price'],
+                    'promo_price' => $pricing['pricing_rule']['price_context']
+                        ? $pricing['effective_unit_price']
+                        : null,
                     'base_price' => $pricing['base_unit_price'],
+                    'kind' => $pricing['pricing_rule']['kind'],
                 ] : null,
             ];
         });
@@ -591,6 +594,9 @@ class TransactionController extends Controller
                     'discount_total' => $linePromoDiscount,
                     'pricing_rule_id' => data_get($pricingItem, 'pricing_rule.id'),
                     'pricing_rule_name' => data_get($pricingItem, 'pricing_rule.name'),
+                    'pricing_rule_kind' => data_get($pricingItem, 'pricing_rule.kind'),
+                    'pricing_group_key' => data_get($pricingItem, 'pricing_group_key'),
+                    'pricing_group_label' => data_get($pricingItem, 'pricing_group_label'),
                 ]);
 
                 $total_buy_price = $cart->product->buy_price * $cart->qty;
