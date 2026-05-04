@@ -57,4 +57,25 @@ class CustomerVoucher extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function currentStatusLabel(): string
+    {
+        if ($this->is_used) {
+            return 'used';
+        }
+
+        if (! $this->is_active) {
+            return 'inactive';
+        }
+
+        if ($this->starts_at && $this->starts_at->isFuture()) {
+            return 'scheduled';
+        }
+
+        if ($this->expires_at && $this->expires_at->isPast()) {
+            return 'expired';
+        }
+
+        return 'active';
+    }
 }

@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\CustomerVoucher;
 use App\Models\LoyaltyPointHistory;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\LoyaltyService;
@@ -171,6 +172,69 @@ class LoyaltyFlowTest extends TestCase
             ],
             LoyaltyPointHistory::query()->orderBy('id')->pluck('type')->all()
         );
+    }
+
+    public function test_loyalty_settings_can_disable_redeem_and_recalculate_tier(): void
+    {
+        Setting::set('loyalty_enable_redeem', '0');
+        Setting::set('loyalty_tier_silver_threshold', '100000');
+        Setting::set('loyalty_tier_gold_threshold', '200000');
+        Setting::set('loyalty_tier_platinum_threshold', '300000');
+
+        $cashier = $this->createUserWithPermissions([
+            'transactions-access',
+            'cashier-shifts-access',
+            'cashier-shifts-open',
+            'cashier-shifts-close',
+        ]);
+        $this->openShiftFor($cashier);
+        $product = $this->createProduct();
+        $customer = Customer::create([
+            'name' => 'Member Settings',
+            'no_telp' => '628777000333',
+            'address' => 'Jl. Settings',
+            'is_loyalty_member' => true,
+            'member_code' => 'MEM-SETTINGS',
+            'loyalty_tier' => LoyaltyService::TIER_REGULAR,
+            'loyalty_points' => 50,
+            'loyalty_member_since' => now()->subMonths(2),
+        ]);
+
+        Cart::create([
+            'cashier_id' => $cashier->id,
+            'product_id' => $product->id,
+            'qty' => 4,
+            'price' => $product->sell_price * 4,
+        ]);
+
+        $previewResponse = $this
+            ->actingAs($cashier)
+            ->postJson(route('transactions.pricing-preview'), [
+                'customer_id' => $customer->id,
+                'redeem_points' => 10,
+            ]);
+
+        $previewResponse->assertOk();
+        $this->assertSame(
+            0,
+            data_get($previewResponse->json(), 'data.summary.loyalty_discount_total')
+        );
+
+        $this
+            ->actingAs($cashier)
+            ->post(route('transactions.store'), [
+                'customer_id' => $customer->id,
+                'discount' => 0,
+                'redeem_points' => 10,
+                'shipping_cost' => 0,
+                'grand_total' => 999999,
+                'cash' => 300000,
+            ]);
+
+        $customer->refresh();
+
+        $this->assertSame(74, (int) $customer->loyalty_points);
+        $this->assertSame(LoyaltyService::TIER_GOLD, $customer->loyalty_tier);
     }
 
     private function createUserWithPermissions(array $permissions): User

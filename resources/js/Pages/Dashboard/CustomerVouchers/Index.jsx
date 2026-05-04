@@ -1,6 +1,6 @@
 import React from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import Button from "@/Components/Dashboard/Button";
 import Search from "@/Components/Dashboard/Search";
 import Table from "@/Components/Dashboard/Table";
@@ -21,9 +21,61 @@ const formatPrice = (value = 0) =>
         minimumFractionDigits: 0,
     });
 
-export default function Index({ vouchers }) {
+const statusBadge = (voucher) => {
+    if (voucher.is_used) {
+        return {
+            label: "Sudah Dipakai",
+            className:
+                "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+        };
+    }
+
+    const startsAt = voucher.starts_at ? new Date(voucher.starts_at) : null;
+    const expiresAt = voucher.expires_at ? new Date(voucher.expires_at) : null;
+    const now = new Date();
+
+    if (!voucher.is_active) {
+        return {
+            label: "Nonaktif",
+            className:
+                "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300",
+        };
+    }
+
+    if (startsAt && startsAt > now) {
+        return {
+            label: "Terjadwal",
+            className:
+                "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+        };
+    }
+
+    if (expiresAt && expiresAt < now) {
+        return {
+            label: "Expired",
+            className:
+                "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+        };
+    }
+
+    return {
+        label: "Aktif",
+        className:
+            "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+    };
+};
+
+export default function Index({ vouchers, filters = {} }) {
     const { can } = useAuthorization();
     const hasData = vouchers.data.length > 0;
+
+    const handleFilterChange = (key, value) => {
+        router.get(
+            route("customer-vouchers.index"),
+            { ...filters, [key]: value },
+            { preserveState: true, replace: true }
+        );
+    };
 
     return (
         <>
@@ -51,11 +103,26 @@ export default function Index({ vouchers }) {
                 </div>
 
                 <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                    <div className="w-full sm:w-80">
+                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
                         <Search
                             url={route("customer-vouchers.index")}
                             placeholder="Cari kode, voucher, pelanggan..."
+                            query={filters.search || ""}
                         />
+                        <select
+                            value={filters.status || ""}
+                            onChange={(event) =>
+                                handleFilterChange("status", event.target.value)
+                            }
+                            className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                        >
+                            <option value="">Semua Status</option>
+                            <option value="active">Aktif</option>
+                            <option value="scheduled">Terjadwal</option>
+                            <option value="expired">Expired</option>
+                            <option value="used">Sudah Dipakai</option>
+                            <option value="inactive">Nonaktif</option>
+                        </select>
                     </div>
                 </div>
 
@@ -114,21 +181,17 @@ export default function Index({ vouchers }) {
                                             </p>
                                         </Table.Td>
                                         <Table.Td>
+                                            {(() => {
+                                                const badge = statusBadge(voucher);
+
+                                                return (
                                             <span
-                                                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                                    voucher.is_used
-                                                        ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                                        : voucher.is_active
-                                                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                                                          : "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
-                                                }`}
+                                                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${badge.className}`}
                                             >
-                                                {voucher.is_used
-                                                    ? "Sudah Dipakai"
-                                                    : voucher.is_active
-                                                      ? "Aktif"
-                                                      : "Nonaktif"}
+                                                {badge.label}
                                             </span>
+                                                );
+                                            })()}
                                         </Table.Td>
                                         <Table.Td>
                                             <span className="text-sm text-slate-600 dark:text-slate-400">

@@ -37,6 +37,8 @@ class CustomerVoucherController extends Controller
             ->when($filters['status'], function ($query, $status) {
                 match ($status) {
                     'active' => $query->where('is_active', true)->where('is_used', false),
+                    'scheduled' => $query->where('is_active', true)->where('is_used', false)->whereNotNull('starts_at')->where('starts_at', '>', now()),
+                    'expired' => $query->whereNotNull('expires_at')->where('expires_at', '<', now()),
                     'used' => $query->where('is_used', true),
                     'inactive' => $query->where('is_active', false),
                     default => null,

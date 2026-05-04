@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\CustomerVoucher;
 use App\Models\LoyaltyPointHistory;
+use App\Models\Setting;
 use App\Models\Transaction;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -12,10 +13,6 @@ use Illuminate\Support\Str;
 
 class LoyaltyService
 {
-    public const EARN_RATE_AMOUNT = 10000;
-
-    public const REDEEM_POINT_VALUE = 100;
-
     public const TIER_REGULAR = 'regular';
 
     public const TIER_SILVER = 'silver';
@@ -24,24 +21,35 @@ class LoyaltyService
 
     public const TIER_PLATINUM = 'platinum';
 
+    public function settings(): array
+    {
+        return [
+            'enable_earn' => Setting::getBool('loyalty_enable_earn', true),
+            'enable_redeem' => Setting::getBool('loyalty_enable_redeem', true),
+            'earn_rate_amount' => max(1, Setting::getInt('loyalty_earn_rate_amount', 10000)),
+            'redeem_point_value' => max(1, Setting::getInt('loyalty_redeem_point_value', 100)),
+            'tiers' => $this->tiers(),
+        ];
+    }
+
     public function tiers(): array
     {
         return [
             self::TIER_REGULAR => [
                 'label' => 'Regular',
-                'minimum_total_spent' => 0,
+                'minimum_total_spent' => Setting::getInt('loyalty_tier_regular_threshold', 0),
             ],
             self::TIER_SILVER => [
                 'label' => 'Silver',
-                'minimum_total_spent' => 500000,
+                'minimum_total_spent' => Setting::getInt('loyalty_tier_silver_threshold', 500000),
             ],
             self::TIER_GOLD => [
                 'label' => 'Gold',
-                'minimum_total_spent' => 1500000,
+                'minimum_total_spent' => Setting::getInt('loyalty_tier_gold_threshold', 1500000),
             ],
             self::TIER_PLATINUM => [
                 'label' => 'Platinum',
-                'minimum_total_spent' => 3000000,
+                'minimum_total_spent' => Setting::getInt('loyalty_tier_platinum_threshold', 3000000),
             ],
         ];
     }
@@ -55,6 +63,63 @@ class LoyaltyService
             ])
             ->values()
             ->all();
+    }
+
+    public function settingsPayload(): array
+    {
+        $settings = $this->settings();
+
+        return [
+            'enable_earn' => $settings['enable_earn'],
+            'enable_redeem' => $settings['enable_redeem'],
+            'earn_rate_amount' => $settings['earn_rate_amount'],
+            'redeem_point_value' => $settings['redeem_point_value'],
+            'tiers' => collect($settings['tiers'])
+                ->map(fn (array $config, string $key) => [
+                    'key' => $key,
+                    ...$config,
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    public function updateSettings(array $payload): void
+    {
+        Setting::setMany([
+            'loyalty_enable_earn' => [
+                'value' => $payload['enable_earn'] ? '1' : '0',
+                'description' => 'Aktifkan perolehan poin loyalty',
+            ],
+            'loyalty_enable_redeem' => [
+                'value' => $payload['enable_redeem'] ? '1' : '0',
+                'description' => 'Aktifkan redeem poin loyalty',
+            ],
+            'loyalty_earn_rate_amount' => [
+                'value' => (string) $payload['earn_rate_amount'],
+                'description' => 'Nominal belanja untuk mendapatkan 1 poin',
+            ],
+            'loyalty_redeem_point_value' => [
+                'value' => (string) $payload['redeem_point_value'],
+                'description' => 'Nilai rupiah untuk 1 poin redeem',
+            ],
+            'loyalty_tier_regular_threshold' => [
+                'value' => (string) $payload['tiers'][self::TIER_REGULAR],
+                'description' => 'Ambang total belanja tier Regular',
+            ],
+            'loyalty_tier_silver_threshold' => [
+                'value' => (string) $payload['tiers'][self::TIER_SILVER],
+                'description' => 'Ambang total belanja tier Silver',
+            ],
+            'loyalty_tier_gold_threshold' => [
+                'value' => (string) $payload['tiers'][self::TIER_GOLD],
+                'description' => 'Ambang total belanja tier Gold',
+            ],
+            'loyalty_tier_platinum_threshold' => [
+                'value' => (string) $payload['tiers'][self::TIER_PLATINUM],
+                'description' => 'Ambang total belanja tier Platinum',
+            ],
+        ]);
     }
 
     public function ensureMembership(Customer $customer, bool $force = false): Customer
@@ -85,11 +150,12 @@ class LoyaltyService
 
     public function syncTier(Customer $customer): Customer
     {
+        $tiers = $this->tiers();
         $tier = self::TIER_REGULAR;
         $totalSpent = (int) $customer->loyalty_total_spent;
 
-        foreach ($this->tiers() as $key => $config) {
-            if ($totalSpent >= $config['minimum_total_spent']) {
+        foreach ($tiers as $key => $config) {
+            if ($totalSpent >= (int) $config['minimum_total_spent']) {
                 $tier = $key;
             }
         }
@@ -108,6 +174,7 @@ class LoyaltyService
         ?CarbonInterface $at = null
     ): array {
         $at = $at ?? now();
+        $settings = $this->settings();
         $subtotalAfterPromo = max(0, (int) data_get($pricingPreview, 'summary.subtotal_after_promo', 0));
         $manualDiscountRequested = max(0, (int) ($options['manual_discount'] ?? 0));
         $shippingCost = max(0, (int) ($options['shipping_cost'] ?? 0));
@@ -121,16 +188,29 @@ class LoyaltyService
             : 0;
 
         $afterVoucher = max(0, $subtotalAfterPromo - $voucherDiscount);
-        $maxRedeemPoints = (int) floor($afterVoucher / self::REDEEM_POINT_VALUE);
-        $appliedRedeemPoints = min($requestedRedeemPoints, $availablePoints, $maxRedeemPoints);
-        $pointsDiscount = $appliedRedeemPoints * self::REDEEM_POINT_VALUE;
+        $redeemPointValue = (int) $settings['redeem_point_value'];
+        $maxRedeemPoints = $settings['enable_redeem']
+            ? (int) floor($afterVoucher / max(1, $redeemPointValue))
+            : 0;
+        $appliedRedeemPoints = $settings['enable_redeem']
+            ? min($requestedRedeemPoints, $availablePoints, $maxRedeemPoints)
+            : 0;
+        $pointsDiscount = $appliedRedeemPoints * $redeemPointValue;
 
         $afterLoyalty = max(0, $afterVoucher - $pointsDiscount);
         $manualDiscountApplied = min($manualDiscountRequested, $afterLoyalty);
         $grandTotal = max(0, $afterLoyalty - $manualDiscountApplied + $shippingCost);
+        $pointsEarnedPreview = $this->calculateEarnPoints(
+            $customer,
+            max(0, $grandTotal - $shippingCost),
+            $settings
+        );
 
         return [
             'items' => data_get($pricingPreview, 'items', []),
+            'applied_groups' => data_get($pricingPreview, 'applied_groups', []),
+            'consumed_quantities' => data_get($pricingPreview, 'consumed_quantities', []),
+            'unmatched_items' => data_get($pricingPreview, 'unmatched_items', []),
             'summary' => [
                 'base_subtotal' => (int) data_get($pricingPreview, 'summary.base_subtotal', 0),
                 'promo_discount_total' => (int) data_get($pricingPreview, 'summary.promo_discount_total', 0),
@@ -143,7 +223,8 @@ class LoyaltyService
                 'available_loyalty_points' => $availablePoints,
                 'requested_redeem_points' => $requestedRedeemPoints,
                 'applied_redeem_points' => $appliedRedeemPoints,
-                'points_value' => self::REDEEM_POINT_VALUE,
+                'points_value' => $redeemPointValue,
+                'points_earned_preview' => $pointsEarnedPreview,
             ],
             'customer' => $customer ? [
                 'id' => $customer->id,
@@ -159,6 +240,7 @@ class LoyaltyService
                     ->values()
                     ->all()
                 : [],
+            'settings' => $this->settingsPayload(),
         ];
     }
 
@@ -193,6 +275,7 @@ class LoyaltyService
             return null;
         }
 
+        $settings = $this->settings();
         $customer = $customer->fresh();
 
         if ($customer->is_loyalty_member) {
@@ -208,7 +291,7 @@ class LoyaltyService
             : null;
 
         $redeemedPoints = (int) ($transaction->loyalty_points_redeemed ?? 0);
-        if ($redeemedPoints > 0 && $customer->is_loyalty_member) {
+        if ($redeemedPoints > 0 && $customer->is_loyalty_member && $settings['enable_redeem']) {
             $customer->decrement('loyalty_points', $redeemedPoints);
 
             $this->recordHistory(
@@ -242,9 +325,7 @@ class LoyaltyService
             0,
             (int) $transaction->grand_total - (int) $transaction->shipping_cost
         );
-        $earnedPoints = $customer->is_loyalty_member
-            ? (int) floor($eligibleSpendForPoints / self::EARN_RATE_AMOUNT)
-            : 0;
+        $earnedPoints = $this->calculateEarnPoints($customer, $eligibleSpendForPoints, $settings);
 
         $transaction->forceFill([
             'loyalty_points_earned' => $earnedPoints,
@@ -328,7 +409,30 @@ class LoyaltyService
             'minimum_order' => (int) $voucher->minimum_order,
             'expires_at' => optional($voucher->expires_at)?->toIso8601String(),
             'starts_at' => optional($voucher->starts_at)?->toIso8601String(),
+            'used_at' => optional($voucher->used_at)?->toIso8601String(),
+            'status' => $voucher->currentStatusLabel(),
         ];
+    }
+
+    public function syncAllMemberTiers(): void
+    {
+        Customer::query()
+            ->where('is_loyalty_member', true)
+            ->orderBy('id')
+            ->chunkById(100, function ($customers) {
+                foreach ($customers as $customer) {
+                    $this->syncTier($customer);
+                }
+            });
+    }
+
+    private function calculateEarnPoints(?Customer $customer, int $eligibleSpend, array $settings): int
+    {
+        if (! $customer?->is_loyalty_member || ! $settings['enable_earn']) {
+            return 0;
+        }
+
+        return (int) floor($eligibleSpend / max(1, (int) $settings['earn_rate_amount']));
     }
 
     private function recordHistory(

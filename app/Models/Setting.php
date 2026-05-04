@@ -25,6 +25,16 @@ class Setting extends Model
         return $setting ? $setting->value : $default;
     }
 
+    public static function getInt(string $key, int $default = 0): int
+    {
+        return (int) static::get($key, $default);
+    }
+
+    public static function getBool(string $key, bool $default = false): bool
+    {
+        return filter_var(static::get($key, $default ? '1' : '0'), FILTER_VALIDATE_BOOL);
+    }
+
     /**
      * Set a setting value by key
      */
@@ -34,5 +44,16 @@ class Setting extends Model
             ['key' => $key],
             ['value' => $value, 'description' => $description]
         );
+    }
+
+    public static function setMany(array $settings): void
+    {
+        foreach ($settings as $key => $payload) {
+            static::set(
+                $key,
+                $payload['value'] ?? null,
+                $payload['description'] ?? null
+            );
+        }
     }
 }
