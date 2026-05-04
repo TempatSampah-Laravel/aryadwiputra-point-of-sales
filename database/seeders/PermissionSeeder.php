@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -39,25 +38,25 @@ class PermissionSeeder extends Seeder
         $create('permissions-update');
         $create('permissions-delete');
 
-        //permission categories
+        // permission categories
         $create('categories-access');
         $create('categories-create');
         $create('categories-edit');
         $create('categories-delete');
 
-        //permission products
+        // permission products
         $create('products-access');
         $create('products-create');
         $create('products-edit');
         $create('products-delete');
 
-        //permission customers
+        // permission customers
         $create('customers-access');
         $create('customers-create');
         $create('customers-edit');
         $create('customers-delete');
 
-        //permission transactions
+        // permission transactions
         $create('transactions-access');
         $create('transactions-confirm-payment');
 
@@ -95,6 +94,21 @@ class PermissionSeeder extends Seeder
 
         // audit logs
         $create('audit-logs-access');
+
+        // purchase orders
+        $create('purchase-orders-access');
+        $create('purchase-orders-create');
+        $create('purchase-orders-update');
+        $create('purchase-orders-delete');
+
+        // goods receivings
+        $create('goods-receivings-access');
+        $create('goods-receivings-create');
+
+        // supplier returns
+        $create('supplier-returns-access');
+        $create('supplier-returns-create');
+        $create('supplier-returns-update');
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

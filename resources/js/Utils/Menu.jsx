@@ -8,6 +8,7 @@ import {
     IconChartInfographic,
     IconCirclePlus,
     IconClockHour6,
+    IconClipboardCheck,
     IconCreditCard,
     IconFileCertificate,
     IconFileDescription,
@@ -27,6 +28,8 @@ import {
     IconCurrencyDollar,
     IconWallet,
     IconFileSearch,
+    IconTruckDelivery,
+    IconTruckReturn,
 } from "@tabler/icons-react";
 import hasAnyPermission from "./Permission";
 import React from "react";
@@ -84,6 +87,27 @@ export default function Menu() {
                         />
                     ),
                     permissions: hasAnyPermission(["stock-mutations-access"]),
+                },
+                {
+                    title: "Purchase Order",
+                    href: route("purchase-orders.index"),
+                    active: url.startsWith("/dashboard/purchase-orders"),
+                    icon: <IconClipboardCheck size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["purchase-orders-access"]),
+                },
+                {
+                    title: "Penerimaan Barang",
+                    href: route("goods-receivings.index"),
+                    active: url.startsWith("/dashboard/goods-receivings"),
+                    icon: <IconTruckDelivery size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["goods-receivings-access"]),
+                },
+                {
+                    title: "Retur Supplier",
+                    href: route("supplier-returns.index"),
+                    active: url.startsWith("/dashboard/supplier-returns"),
+                    icon: <IconTruckReturn size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["supplier-returns-access"]),
                 },
                 {
                     title: "Audit Log",
@@ -177,11 +201,17 @@ export default function Menu() {
                     icon: <IconChartBarPopular size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["profits-access"]),
                 },
+                {
+                    title: "Aging & Pengingat",
+                    href: route("aging.index"),
+                    active: url.startsWith("/dashboard/aging"),
+                    icon: <IconChartBar size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["receivables-access"]),
+                },
             ],
-        },
-        {
-            title: "User Management",
-            details: [
+            }, {
+                title: "User Management",
+                details: [
                 {
                     title: "Hak Akses",
                     href: route("permissions.index"),

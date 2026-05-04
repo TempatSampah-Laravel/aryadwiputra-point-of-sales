@@ -1,14 +1,17 @@
 <?php
 
-use App\Http\Controllers\Apps\CategoryController;
 use App\Http\Controllers\Apps\AuditLogController;
 use App\Http\Controllers\Apps\CashierShiftController;
+use App\Http\Controllers\Apps\CategoryController;
 use App\Http\Controllers\Apps\CustomerController;
+use App\Http\Controllers\Apps\GoodsReceivingController;
 use App\Http\Controllers\Apps\PaymentSettingController;
 use App\Http\Controllers\Apps\ProductController;
+use App\Http\Controllers\Apps\PurchaseOrderController;
 use App\Http\Controllers\Apps\SalesReturnController;
 use App\Http\Controllers\Apps\StockMutationController;
 use App\Http\Controllers\Apps\StockOpnameController;
+use App\Http\Controllers\Apps\SupplierReturnController;
 use App\Http\Controllers\Apps\TransactionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
@@ -24,10 +27,10 @@ use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
-        'canLogin'       => Route::has('login'),
-        'canRegister'    => config('security.auth.public_registration'),
+        'canLogin' => Route::has('login'),
+        'canRegister' => config('security.auth.public_registration'),
         'laravelVersion' => Application::VERSION,
-        'phpVersion'     => PHP_VERSION,
+        'phpVersion' => PHP_VERSION,
     ]);
 });
 
@@ -95,34 +98,34 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth', 'verified']], fu
         ->middlewareFor(['edit', 'update'], 'permission:customers-edit')
         ->middlewareFor('destroy', 'permission:customers-delete');
 
-    //route customer history
+    // route customer history
     Route::get('/customers/{customer}/history', [CustomerController::class, 'getHistory'])->middleware('permission:transactions-access')->name('customers.history');
 
-    //route customer store via AJAX (no redirect)
+    // route customer store via AJAX (no redirect)
     Route::post('/customers/store-ajax', [CustomerController::class, 'storeAjax'])->middleware('permission:customers-create')->name('customers.storeAjax');
 
-    //route transaction
+    // route transaction
     Route::get('/transactions', [TransactionController::class, 'index'])->middleware('permission:transactions-access')->name('transactions.index');
 
-    //route transaction searchProduct
+    // route transaction searchProduct
     Route::post('/transactions/searchProduct', [TransactionController::class, 'searchProduct'])->middleware(['permission:transactions-access', 'active_shift'])->name('transactions.searchProduct');
 
-    //route transaction addToCart
+    // route transaction addToCart
     Route::post('/transactions/addToCart', [TransactionController::class, 'addToCart'])->middleware(['permission:transactions-access', 'active_shift'])->name('transactions.addToCart');
 
-    //route transaction destroyCart
+    // route transaction destroyCart
     Route::delete('/transactions/{cart_id}/destroyCart', [TransactionController::class, 'destroyCart'])->middleware(['permission:transactions-access', 'active_shift'])->name('transactions.destroyCart');
 
-    //route transaction updateCart
+    // route transaction updateCart
     Route::patch('/transactions/{cart_id}/updateCart', [TransactionController::class, 'updateCart'])->middleware(['permission:transactions-access', 'active_shift'])->name('transactions.updateCart');
 
-    //route hold transaction
+    // route hold transaction
     Route::post('/transactions/hold', [TransactionController::class, 'holdCart'])->middleware(['permission:transactions-access', 'active_shift'])->name('transactions.hold');
     Route::post('/transactions/{holdId}/resume', [TransactionController::class, 'resumeCart'])->middleware(['permission:transactions-access', 'active_shift'])->name('transactions.resume');
     Route::delete('/transactions/{holdId}/clearHold', [TransactionController::class, 'clearHold'])->middleware(['permission:transactions-access', 'active_shift'])->name('transactions.clearHold');
     Route::get('/transactions/held', [TransactionController::class, 'getHeldCarts'])->middleware(['permission:transactions-access', 'active_shift'])->name('transactions.held');
 
-    //route transaction store
+    // route transaction store
     Route::post('/transactions/store', [TransactionController::class, 'store'])->middleware(['permission:transactions-access', 'active_shift'])->name('transactions.store');
     Route::get('/transactions/{invoice}/print', [TransactionController::class, 'print'])->middleware('permission:transactions-access')->name('transactions.print');
     Route::get('/transactions/history', [TransactionController::class, 'history'])->middleware('permission:transactions-access')->name('transactions.history');
@@ -132,9 +135,34 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth', 'verified']], fu
     Route::get('/sales-returns/{salesReturn}', [SalesReturnController::class, 'show'])->middleware('permission:sales-returns-access')->name('sales-returns.show');
     Route::patch('/sales-returns/{salesReturn}', [SalesReturnController::class, 'update'])->middleware('permission:sales-returns-create')->name('sales-returns.update');
     Route::post('/sales-returns/{salesReturn}/complete', [SalesReturnController::class, 'complete'])->middleware('permission:sales-returns-complete')->name('sales-returns.complete');
+    // route purchase orders
+    Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->middleware('permission:purchase-orders-access')->name('purchase-orders.index');
+    Route::get('/purchase-orders/create', [PurchaseOrderController::class, 'create'])->middleware('permission:purchase-orders-create')->name('purchase-orders.create');
+    Route::post('/purchase-orders', [PurchaseOrderController::class, 'store'])->middleware('permission:purchase-orders-create')->name('purchase-orders.store');
+    Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->middleware('permission:purchase-orders-access')->name('purchase-orders.show');
+    Route::post('/purchase-orders/{purchaseOrder}/place', [PurchaseOrderController::class, 'placeOrder'])->middleware('permission:purchase-orders-update')->name('purchase-orders.place');
+    Route::post('/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->middleware('permission:purchase-orders-update')->name('purchase-orders.cancel');
+
+    // route goods receivings
+    Route::get('/goods-receivings', [GoodsReceivingController::class, 'index'])->middleware('permission:goods-receivings-access')->name('goods-receivings.index');
+    Route::get('/goods-receivings/create', [GoodsReceivingController::class, 'create'])->middleware('permission:goods-receivings-create')->name('goods-receivings.create');
+    Route::post('/goods-receivings', [GoodsReceivingController::class, 'store'])->middleware('permission:goods-receivings-create')->name('goods-receivings.store');
+    Route::get('/goods-receivings/{goodsReceiving}', [GoodsReceivingController::class, 'show'])->middleware('permission:goods-receivings-access')->name('goods-receivings.show');
+
+    // route supplier returns
+    Route::get('/supplier-returns', [SupplierReturnController::class, 'index'])->middleware('permission:supplier-returns-access')->name('supplier-returns.index');
+    Route::get('/supplier-returns/create', [SupplierReturnController::class, 'create'])->middleware('permission:supplier-returns-create')->name('supplier-returns.create');
+    Route::post('/supplier-returns', [SupplierReturnController::class, 'store'])->middleware('permission:supplier-returns-create')->name('supplier-returns.store');
+    Route::get('/supplier-returns/{supplierReturn}', [SupplierReturnController::class, 'show'])->middleware('permission:supplier-returns-access')->name('supplier-returns.show');
+    Route::post('/supplier-returns/{supplierReturn}/complete', [SupplierReturnController::class, 'complete'])->middleware('permission:supplier-returns-update')->name('supplier-returns.complete');
+    Route::post('/supplier-returns/{supplierReturn}/cancel', [SupplierReturnController::class, 'cancel'])->middleware('permission:supplier-returns-update')->name('supplier-returns.cancel');
+
     // receivables (nota barang)
     Route::get('/receivables', [\App\Http\Controllers\Apps\ReceivableController::class, 'index'])->middleware('permission:receivables-access')->name('receivables.index');
+    Route::get('/receivables/aging', [\App\Http\Controllers\Apps\ReceivableController::class, 'aging'])->middleware('permission:receivables-access')->name('receivables.aging');
+    Route::get('/receivables/customer-statement', [\App\Http\Controllers\Apps\ReceivableController::class, 'customerStatement'])->middleware('permission:receivables-access')->name('receivables.customer-statement');
     Route::get('/receivables/{receivable}', [\App\Http\Controllers\Apps\ReceivableController::class, 'show'])->middleware('permission:receivables-access')->name('receivables.show');
+    Route::patch('/receivables/{receivable}/collection-notes', [\App\Http\Controllers\Apps\ReceivableController::class, 'updateCollectionNotes'])->middleware('permission:receivables-access')->name('receivables.collection-notes');
     Route::post('/receivables/{receivable}/pay', [\App\Http\Controllers\Apps\ReceivableController::class, 'pay'])->middleware('permission:receivables-pay')->name('receivables.pay');
     // suppliers & payables
     Route::get('/suppliers', [\App\Http\Controllers\Apps\SupplierController::class, 'index'])->middleware('permission:suppliers-access')->name('suppliers.index');
@@ -143,6 +171,7 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth', 'verified']], fu
     Route::delete('/suppliers/{supplier}', [\App\Http\Controllers\Apps\SupplierController::class, 'destroy'])->middleware('permission:suppliers-access')->name('suppliers.destroy');
     Route::get('/payables', [\App\Http\Controllers\Apps\PayableController::class, 'index'])->middleware('permission:payables-access')->name('payables.index');
     Route::post('/payables', [\App\Http\Controllers\Apps\PayableController::class, 'store'])->middleware('permission:payables-access')->name('payables.store');
+    Route::get('/payables/supplier-statement', [\App\Http\Controllers\Apps\PayableController::class, 'supplierStatement'])->middleware('permission:payables-access')->name('payables.supplier-statement');
     Route::get('/payables/{payable}', [\App\Http\Controllers\Apps\PayableController::class, 'show'])->middleware('permission:payables-access')->name('payables.show');
     Route::post('/payables/{payable}/pay', [\App\Http\Controllers\Apps\PayableController::class, 'pay'])->middleware('permission:payables-pay')->name('payables.pay');
 
@@ -156,13 +185,13 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth', 'verified']], fu
     Route::get('/settings/payments', [PaymentSettingController::class, 'edit'])->middleware('permission:payment-settings-access')->name('settings.payments.edit');
     Route::put('/settings/payments', [PaymentSettingController::class, 'update'])->middleware(['permission:payment-settings-update', 'step_up'])->name('settings.payments.update');
 
-    //settings target penjualan
+    // settings target penjualan
     Route::get('/settings/target', [\App\Http\Controllers\Apps\SettingController::class, 'target'])->middleware('permission:dashboard-access')->name('settings.target');
     Route::post('/settings/target', [\App\Http\Controllers\Apps\SettingController::class, 'updateTarget'])->middleware('permission:dashboard-access')->name('settings.target.update');
     Route::get('/settings/store', [\App\Http\Controllers\Apps\SettingController::class, 'storeProfile'])->middleware('permission:dashboard-access')->name('settings.store');
     Route::post('/settings/store', [\App\Http\Controllers\Apps\SettingController::class, 'updateStoreProfile'])->middleware('permission:dashboard-access')->name('settings.store.update');
 
-    //settings bank accounts
+    // settings bank accounts
     Route::get('/settings/bank-accounts', [\App\Http\Controllers\Apps\BankAccountController::class, 'index'])->middleware('permission:payment-settings-access')->name('settings.bank-accounts.index');
     Route::get('/settings/bank-accounts/create', [\App\Http\Controllers\Apps\BankAccountController::class, 'create'])->middleware('permission:payment-settings-update')->name('settings.bank-accounts.create');
     Route::post('/settings/bank-accounts', [\App\Http\Controllers\Apps\BankAccountController::class, 'store'])->middleware(['permission:payment-settings-update', 'step_up'])->name('settings.bank-accounts.store');
@@ -172,16 +201,19 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth', 'verified']], fu
     Route::patch('/settings/bank-accounts/{bankAccount}/toggle', [\App\Http\Controllers\Apps\BankAccountController::class, 'toggleActive'])->middleware(['permission:payment-settings-update', 'step_up'])->name('settings.bank-accounts.toggle');
     Route::post('/settings/bank-accounts/order', [\App\Http\Controllers\Apps\BankAccountController::class, 'updateOrder'])->middleware(['permission:payment-settings-update', 'step_up'])->name('settings.bank-accounts.order');
 
-    //confirm payment for bank transfer
+    // confirm payment for bank transfer
     Route::patch('/transactions/{transaction}/confirm-payment', [TransactionController::class, 'confirmPayment'])->middleware(['permission:transactions-confirm-payment', 'step_up'])->name('transactions.confirm-payment');
 
-    //reports
+    // reports
     Route::get('/reports/sales', [SalesReportController::class, 'index'])->middleware('permission:reports-access')->name('reports.sales.index');
     Route::get('/reports/profits', [ProfitReportController::class, 'index'])->middleware('permission:profits-access')->name('reports.profits.index');
+
+    // aging & reminders
+    Route::get('/aging', [\App\Http\Controllers\Apps\AgingController::class, 'index'])->middleware('permission:receivables-access')->name('aging.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

@@ -2,17 +2,18 @@
 
 namespace App\Services;
 
+use App\Models\GoodsReceiving;
 use App\Models\Product;
 use App\Models\SalesReturn;
 use App\Models\StockMutation;
 use App\Models\StockOpname;
+use App\Models\SupplierReturn;
 
 class StockMutationService
 {
     public function __construct(
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     public function recordInitialStock(Product $product, ?int $userId = null): ?StockMutation
     {
@@ -45,7 +46,7 @@ class StockMutationService
                 'stock_after' => 0,
                 'difference' => 0,
                 'reason' => 'Initial stock saat produk dibuat.',
-                'reference' => 'product:' . $product->id,
+                'reference' => 'product:'.$product->id,
             ],
             after: [
                 'product_id' => $product->id,
@@ -53,7 +54,7 @@ class StockMutationService
                 'stock_after' => $initialStock,
                 'difference' => $initialStock,
                 'reason' => 'Initial stock saat produk dibuat.',
-                'reference' => 'product:' . $product->id,
+                'reference' => 'product:'.$product->id,
             ],
             meta: [
                 'stock_mutation_id' => $mutation->id,
@@ -175,6 +176,110 @@ class StockMutationService
                 'sales_return_code' => $salesReturn->code,
                 'mutation_type' => $mutation->mutation_type,
                 'qty' => (int) $mutation->qty,
+            ],
+        );
+
+        return $mutation;
+    }
+
+    public function recordPurchaseInbound(
+        Product $product,
+        GoodsReceiving $goodsReceiving,
+        int $qty,
+        int $stockBefore,
+        int $stockAfter,
+        ?string $notes = null,
+        ?int $userId = null
+    ): StockMutation {
+        $mutation = StockMutation::create([
+            'product_id' => $product->id,
+            'reference_type' => 'goods_receiving',
+            'reference_id' => $goodsReceiving->id,
+            'mutation_type' => 'in',
+            'qty' => $qty,
+            'stock_before' => $stockBefore,
+            'stock_after' => $stockAfter,
+            'notes' => $notes ?: 'Stok masuk dari penerimaan barang.',
+            'created_by' => $userId,
+        ]);
+
+        $this->auditLogService->log(
+            event: 'stock.adjusted',
+            module: 'stock',
+            auditable: $product,
+            description: 'Stok masuk dari penerimaan barang '.$goodsReceiving->document_number,
+            before: [
+                'product_id' => $product->id,
+                'stock_before' => $stockBefore,
+                'stock_after' => $stockBefore,
+                'difference' => 0,
+                'reference' => $goodsReceiving->document_number,
+            ],
+            after: [
+                'product_id' => $product->id,
+                'stock_before' => $stockBefore,
+                'stock_after' => $stockAfter,
+                'difference' => $stockAfter - $stockBefore,
+                'reference' => $goodsReceiving->document_number,
+            ],
+            meta: [
+                'stock_mutation_id' => $mutation->id,
+                'goods_receiving_id' => $goodsReceiving->id,
+                'document_number' => $goodsReceiving->document_number,
+                'mutation_type' => $mutation->mutation_type,
+                'qty' => $qty,
+            ],
+        );
+
+        return $mutation;
+    }
+
+    public function recordSupplierReturnOut(
+        Product $product,
+        SupplierReturn $supplierReturn,
+        int $qty,
+        int $stockBefore,
+        int $stockAfter,
+        ?string $notes = null,
+        ?int $userId = null
+    ): StockMutation {
+        $mutation = StockMutation::create([
+            'product_id' => $product->id,
+            'reference_type' => 'supplier_return',
+            'reference_id' => $supplierReturn->id,
+            'mutation_type' => 'out',
+            'qty' => $qty,
+            'stock_before' => $stockBefore,
+            'stock_after' => $stockAfter,
+            'notes' => $notes ?: 'Retur barang ke supplier.',
+            'created_by' => $userId,
+        ]);
+
+        $this->auditLogService->log(
+            event: 'stock.adjusted',
+            module: 'stock',
+            auditable: $product,
+            description: 'Stok keluar dari retur supplier '.$supplierReturn->document_number,
+            before: [
+                'product_id' => $product->id,
+                'stock_before' => $stockBefore,
+                'stock_after' => $stockBefore,
+                'difference' => 0,
+                'reference' => $supplierReturn->document_number,
+            ],
+            after: [
+                'product_id' => $product->id,
+                'stock_before' => $stockBefore,
+                'stock_after' => $stockAfter,
+                'difference' => $stockAfter - $stockBefore,
+                'reference' => $supplierReturn->document_number,
+            ],
+            meta: [
+                'stock_mutation_id' => $mutation->id,
+                'supplier_return_id' => $supplierReturn->id,
+                'document_number' => $supplierReturn->document_number,
+                'mutation_type' => $mutation->mutation_type,
+                'qty' => $qty,
             ],
         );
 
