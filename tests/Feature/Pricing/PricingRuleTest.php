@@ -55,6 +55,7 @@ class PricingRuleTest extends TestCase
             ->actingAs($user)
             ->post(route('pricing-rules.store'), [
                 'name' => 'Promo Minuman Pagi',
+                'kind' => PricingRule::KIND_STANDARD_DISCOUNT,
                 'is_active' => true,
                 'priority' => 120,
                 'target_type' => 'category',
@@ -131,6 +132,164 @@ class PricingRuleTest extends TestCase
         $this->assertSame(
             10000,
             data_get($registeredResponse->json(), 'data.summary.promo_discount_total')
+        );
+    }
+
+    public function test_qty_break_preview_applies_wholesale_rule(): void
+    {
+        $cashier = $this->createUserWithPermissions([
+            'transactions-access',
+            'cashier-shifts-access',
+            'cashier-shifts-open',
+            'cashier-shifts-close',
+        ]);
+        $this->openShiftFor($cashier);
+        $product = $this->createProduct();
+
+        Cart::create([
+            'cashier_id' => $cashier->id,
+            'product_id' => $product->id,
+            'qty' => 3,
+            'price' => $product->sell_price * 3,
+        ]);
+
+        $rule = PricingRule::create([
+            'name' => 'Harga Grosir Produk',
+            'kind' => PricingRule::KIND_QTY_BREAK,
+            'is_active' => true,
+            'priority' => 250,
+            'target_type' => 'product',
+            'product_id' => $product->id,
+            'customer_scope' => 'all',
+            'discount_type' => 'fixed_price',
+            'discount_value' => 0,
+        ]);
+        $rule->qtyBreaks()->create([
+            'min_qty' => 3,
+            'discount_type' => 'fixed_price',
+            'discount_value' => 50000,
+            'sort_order' => 0,
+        ]);
+
+        $response = $this
+            ->actingAs($cashier)
+            ->postJson(route('transactions.pricing-preview'), []);
+
+        $response->assertOk();
+        $this->assertSame(
+            30000,
+            data_get($response->json(), 'data.summary.promo_discount_total')
+        );
+        $this->assertSame(
+            'qty_break',
+            data_get($response->json(), 'data.items.0.pricing_rule.kind')
+        );
+    }
+
+    public function test_bundle_price_preview_returns_applied_group(): void
+    {
+        $cashier = $this->createUserWithPermissions([
+            'transactions-access',
+            'cashier-shifts-access',
+            'cashier-shifts-open',
+            'cashier-shifts-close',
+        ]);
+        $this->openShiftFor($cashier);
+        $productA = $this->createProduct('Produk Bundle A');
+        $productB = $this->createProduct('Produk Bundle B');
+
+        Cart::create([
+            'cashier_id' => $cashier->id,
+            'product_id' => $productA->id,
+            'qty' => 1,
+            'price' => $productA->sell_price,
+        ]);
+        Cart::create([
+            'cashier_id' => $cashier->id,
+            'product_id' => $productB->id,
+            'qty' => 1,
+            'price' => $productB->sell_price,
+        ]);
+
+        $rule = PricingRule::create([
+            'name' => 'Bundle Hemat',
+            'kind' => PricingRule::KIND_BUNDLE_PRICE,
+            'is_active' => true,
+            'priority' => 400,
+            'target_type' => 'all',
+            'customer_scope' => 'all',
+            'discount_type' => 'fixed_price',
+            'discount_value' => 100000,
+        ]);
+        $rule->bundleItems()->createMany([
+            ['product_id' => $productA->id, 'quantity' => 1, 'sort_order' => 0],
+            ['product_id' => $productB->id, 'quantity' => 1, 'sort_order' => 1],
+        ]);
+
+        $response = $this
+            ->actingAs($cashier)
+            ->postJson(route('transactions.pricing-preview'), []);
+
+        $response->assertOk();
+        $this->assertSame(
+            20000,
+            data_get($response->json(), 'data.summary.promo_discount_total')
+        );
+        $this->assertCount(1, data_get($response->json(), 'data.applied_groups', []));
+    }
+
+    public function test_buy_x_get_y_preview_discounts_reward_item(): void
+    {
+        $cashier = $this->createUserWithPermissions([
+            'transactions-access',
+            'cashier-shifts-access',
+            'cashier-shifts-open',
+            'cashier-shifts-close',
+        ]);
+        $this->openShiftFor($cashier);
+        $buyProduct = $this->createProduct('Produk Buy');
+        $getProduct = $this->createProduct('Produk Get');
+
+        Cart::create([
+            'cashier_id' => $cashier->id,
+            'product_id' => $buyProduct->id,
+            'qty' => 1,
+            'price' => $buyProduct->sell_price,
+        ]);
+        Cart::create([
+            'cashier_id' => $cashier->id,
+            'product_id' => $getProduct->id,
+            'qty' => 1,
+            'price' => $getProduct->sell_price,
+        ]);
+
+        $rule = PricingRule::create([
+            'name' => 'Buy 1 Get 1',
+            'kind' => PricingRule::KIND_BUY_X_GET_Y,
+            'is_active' => true,
+            'priority' => 450,
+            'target_type' => 'all',
+            'customer_scope' => 'all',
+            'discount_type' => 'fixed_amount',
+            'discount_value' => 0,
+        ]);
+        $rule->buyGetItems()->createMany([
+            ['product_id' => $buyProduct->id, 'role' => 'buy', 'quantity' => 1, 'sort_order' => 0],
+            ['product_id' => $getProduct->id, 'role' => 'get', 'quantity' => 1, 'sort_order' => 1],
+        ]);
+
+        $response = $this
+            ->actingAs($cashier)
+            ->postJson(route('transactions.pricing-preview'), []);
+
+        $response->assertOk();
+        $this->assertSame(
+            60000,
+            data_get($response->json(), 'data.summary.promo_discount_total')
+        );
+        $this->assertSame(
+            'buy_x_get_y',
+            data_get($response->json(), 'data.items.1.pricing_rule.kind')
         );
     }
 
@@ -224,10 +383,10 @@ class PricingRuleTest extends TestCase
         ]);
     }
 
-    private function createProduct(): Product
+    private function createProduct(?string $title = null): Product
     {
         $category = Category::create([
-            'name' => 'Snack Promo',
+            'name' => 'Snack Promo '.Str::upper(Str::random(4)),
             'description' => 'Kategori promo',
             'image' => 'category.png',
         ]);
@@ -237,7 +396,7 @@ class PricingRuleTest extends TestCase
             'image' => 'product.png',
             'barcode' => 'BRCD-'.Str::upper(Str::random(10)),
             'sku' => 'SKU-'.Str::upper(Str::random(8)),
-            'title' => 'Produk Promo',
+            'title' => $title ?? 'Produk Promo',
             'description' => 'Produk untuk pengujian promo.',
             'buy_price' => 45000,
             'sell_price' => 60000,
