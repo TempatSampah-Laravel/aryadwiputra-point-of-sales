@@ -29,7 +29,7 @@ export default function CustomerSelect({
     const filteredCustomers = customers.filter(
         (customer) =>
             customer.name.toLowerCase().includes(search.toLowerCase()) ||
-            customer.phone?.toLowerCase().includes(search.toLowerCase())
+            customer.no_telp?.toLowerCase().includes(search.toLowerCase())
     );
 
     // Close on click outside
@@ -121,11 +121,16 @@ export default function CustomerSelect({
                                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
                                         {selected.name}
                                     </p>
-                                    {selected.phone && (
+                                    {selected.no_telp && (
                                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                            {selected.phone}
+                                            {selected.no_telp}
                                         </p>
                                     )}
+                                    <p className="text-[11px] text-primary-500 dark:text-primary-300 truncate">
+                                        {selected.is_loyalty_member
+                                            ? `${selected.loyalty_tier} • ${selected.loyalty_points || 0} poin`
+                                            : "Non-member"}
+                                    </p>
                                 </>
                             ) : (
                                 <p className="text-sm text-slate-400 dark:text-slate-500">
@@ -237,9 +242,13 @@ export default function CustomerSelect({
                                                         {customer.name}
                                                     </p>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                                        {customer.phone ||
-                                                            customer.email ||
+                                                        {customer.no_telp ||
                                                             "-"}
+                                                    </p>
+                                                    <p className="text-[11px] text-primary-500 dark:text-primary-300 truncate">
+                                                        {customer.is_loyalty_member
+                                                            ? `${customer.loyalty_tier} • ${customer.loyalty_points || 0} poin`
+                                                            : "Non-member"}
                                                     </p>
                                                 </div>
                                             </button>

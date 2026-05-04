@@ -6,14 +6,18 @@ use App\Exceptions\PaymentGatewayException;
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\Customer;
+use App\Models\CustomerVoucher;
 use App\Models\PaymentSetting;
 use App\Models\Product;
 use App\Models\Receivable;
 use App\Models\Transaction;
 use App\Services\AuditLogService;
 use App\Services\CashierShiftService;
+use App\Services\LoyaltyService;
 use App\Services\Payments\PaymentGatewayManager;
+use App\Services\PricingService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -24,7 +28,9 @@ class TransactionController extends Controller
 {
     public function __construct(
         private readonly CashierShiftService $cashierShiftService,
-        private readonly AuditLogService $auditLogService
+        private readonly AuditLogService $auditLogService,
+        private readonly PricingService $pricingService,
+        private readonly LoyaltyService $loyaltyService
     ) {}
 
     /**
@@ -43,6 +49,10 @@ class TransactionController extends Controller
             ->active()
             ->latest()
             ->get();
+
+        $initialPricingPreview = $this->loyaltyService->previewCheckout(
+            $this->pricingService->previewCart($carts, null)
+        );
 
         // Get held carts grouped by hold_id
         $heldCarts = Cart::with('product:id,title,sell_price,image')
@@ -72,6 +82,19 @@ class TransactionController extends Controller
             ->where('stock', '>', 0)
             ->orderBy('title')
             ->get();
+        $pricingBadges = $this->pricingService->previewProducts($products, null);
+        $products = $products->map(function (Product $product) use ($pricingBadges) {
+            $pricing = $pricingBadges->get($product->id);
+
+            return [
+                ...$product->toArray(),
+                'pricing_badge' => $pricing && ! empty($pricing['pricing_rule']) ? [
+                    'label' => $pricing['pricing_rule']['label'],
+                    'promo_price' => $pricing['effective_unit_price'],
+                    'base_price' => $pricing['base_unit_price'],
+                ] : null,
+            ];
+        });
 
         // get all categories
         $categories = \App\Models\Category::select('id', 'name', 'image')
@@ -103,6 +126,7 @@ class TransactionController extends Controller
             'customers' => $customers,
             'products' => $products,
             'categories' => $categories,
+            'initialPricingPreview' => $initialPricingPreview,
             'paymentGateways' => $paymentSetting?->enabledGateways() ?? [],
             'defaultPaymentGateway' => $defaultGateway,
             'bankAccounts' => $bankAccounts,
@@ -131,6 +155,42 @@ class TransactionController extends Controller
         return response()->json([
             'success' => false,
             'data' => null,
+        ]);
+    }
+
+    public function previewPricing(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'customer_id' => ['nullable', 'exists:customers,id'],
+            'discount' => ['nullable', 'integer', 'min:0'],
+            'shipping_cost' => ['nullable', 'integer', 'min:0'],
+            'redeem_points' => ['nullable', 'integer', 'min:0'],
+            'customer_voucher_id' => ['nullable', 'integer', 'exists:customer_vouchers,id'],
+        ]);
+
+        $customer = isset($validated['customer_id'])
+            ? Customer::find($validated['customer_id'])
+            : null;
+        $voucher = isset($validated['customer_voucher_id'])
+            ? CustomerVoucher::find($validated['customer_voucher_id'])
+            : null;
+
+        $carts = Cart::with('product.category')
+            ->where('cashier_id', $request->user()->id)
+            ->active()
+            ->latest()
+            ->get();
+
+        $pricingPreview = $this->pricingService->previewCart($carts, $customer);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->loyaltyService->previewCheckout($pricingPreview, $customer, [
+                'manual_discount' => (int) ($validated['discount'] ?? 0),
+                'shipping_cost' => (int) ($validated['shipping_cost'] ?? 0),
+                'redeem_points' => (int) ($validated['redeem_points'] ?? 0),
+                'voucher' => $voucher,
+            ]),
         ]);
     }
 
@@ -441,22 +501,58 @@ class TransactionController extends Controller
 
         $invoice = 'TRX-'.Str::upper($random);
         $isCashPayment = empty($paymentGateway) && ! $isPayLater;
-        $cashAmount = $isCashPayment ? $request->cash : 0;
-        $changeAmount = $isCashPayment ? $request->change : 0;
+        $manualDiscount = max(0, (int) $request->input('discount', 0));
+        $shippingCost = max(0, (int) $request->input('shipping_cost', 0));
+        $requestedRedeemPoints = max(0, (int) $request->input('redeem_points', 0));
+        $cashAmount = $isCashPayment ? max(0, (int) $request->cash) : 0;
+        $customer = $request->filled('customer_id')
+            ? Customer::find($request->integer('customer_id'))
+            : null;
+        $voucher = $request->filled('customer_voucher_id')
+            ? CustomerVoucher::find($request->integer('customer_voucher_id'))
+            : null;
 
         $transaction = DB::transaction(function () use (
             $request,
             $invoice,
             $cashAmount,
-            $changeAmount,
             $paymentGateway,
             $isCashPayment,
-            $isPayLater
+            $isPayLater,
+            $manualDiscount,
+            $shippingCost,
+            $requestedRedeemPoints,
+            $customer,
+            $voucher
         ) {
             $activeShift = $this->cashierShiftService->requireActiveShiftForUser(
                 auth()->user()->id,
                 lockForUpdate: true
             );
+
+            $carts = Cart::with('product')
+                ->where('cashier_id', auth()->user()->id)
+                ->active()
+                ->get();
+
+            if ($carts->isEmpty()) {
+                abort(422, 'Keranjang kosong.');
+            }
+
+            $pricingPreview = $this->pricingService->previewCart($carts, $customer);
+            $checkoutPreview = $this->loyaltyService->previewCheckout($pricingPreview, $customer, [
+                'manual_discount' => $manualDiscount,
+                'shipping_cost' => $shippingCost,
+                'redeem_points' => $requestedRedeemPoints,
+                'voucher' => $voucher,
+            ]);
+            $pricingItems = collect($pricingPreview['items']);
+            $subtotalAfterPromo = (int) data_get($pricingPreview, 'summary.subtotal_after_promo', 0);
+            $voucherDiscount = (int) data_get($checkoutPreview, 'summary.voucher_discount_total', 0);
+            $loyaltyDiscount = (int) data_get($checkoutPreview, 'summary.loyalty_discount_total', 0);
+            $appliedManualDiscount = (int) data_get($checkoutPreview, 'summary.manual_discount_total', 0);
+            $grandTotal = (int) data_get($checkoutPreview, 'summary.grand_total', 0);
+            $changeAmount = $isCashPayment ? max(0, $cashAmount - $grandTotal) : 0;
 
             $transaction = Transaction::create([
                 'cashier_id' => auth()->user()->id,
@@ -465,27 +561,43 @@ class TransactionController extends Controller
                 'invoice' => $invoice,
                 'cash' => $cashAmount,
                 'change' => $changeAmount,
-                'discount' => $request->discount,
-                'shipping_cost' => $request->shipping_cost ?? 0,
-                'grand_total' => $request->grand_total,
+                'discount' => $appliedManualDiscount,
+                'loyalty_points_redeemed' => (int) data_get($checkoutPreview, 'summary.applied_redeem_points', 0),
+                'loyalty_discount_total' => $loyaltyDiscount,
+                'customer_voucher_discount' => $voucherDiscount,
+                'customer_voucher_code' => data_get($checkoutPreview, 'voucher.code'),
+                'customer_voucher_name' => data_get($checkoutPreview, 'voucher.name'),
+                'shipping_cost' => $shippingCost,
+                'grand_total' => $grandTotal,
                 'payment_method' => $isPayLater ? 'pay_later' : ($paymentGateway ?: 'cash'),
                 'payment_status' => $isCashPayment ? 'paid' : ($isPayLater ? 'unpaid' : 'pending'),
                 'bank_account_id' => $paymentGateway === 'bank_transfer' ? $request->bank_account_id : null,
             ]);
 
-            $carts = Cart::where('cashier_id', auth()->user()->id)->get();
-
             foreach ($carts as $cart) {
+                $pricingItem = $pricingItems->firstWhere('cart_id', $cart->id);
+                $lineTotal = (int) data_get($pricingItem, 'line_total', $cart->price);
+                $linePromoDiscount = (int) data_get($pricingItem, 'line_discount_total', 0);
+                $baseUnitPrice = (int) data_get($pricingItem, 'base_unit_price', $cart->product->sell_price);
+                $unitPrice = (int) data_get($pricingItem, 'effective_unit_price', $cart->product->sell_price);
+
                 $transaction->details()->create([
                     'transaction_id' => $transaction->id,
                     'product_id' => $cart->product_id,
                     'qty' => $cart->qty,
-                    'price' => $cart->price,
+                    'base_unit_price' => $baseUnitPrice,
+                    'unit_price' => $unitPrice,
+                    'price' => $lineTotal,
+                    'discount_total' => $linePromoDiscount,
+                    'pricing_rule_id' => data_get($pricingItem, 'pricing_rule.id'),
+                    'pricing_rule_name' => data_get($pricingItem, 'pricing_rule.name'),
                 ]);
 
                 $total_buy_price = $cart->product->buy_price * $cart->qty;
-                $total_sell_price = $cart->product->sell_price * $cart->qty;
-                $profits = $total_sell_price - $total_buy_price;
+                $lineShare = $subtotalAfterPromo > 0 ? $lineTotal / $subtotalAfterPromo : 0;
+                $allocatedManualDiscount = (int) round($appliedManualDiscount * $lineShare);
+                $netSellPrice = max(0, $lineTotal - $allocatedManualDiscount);
+                $profits = $netSellPrice - $total_buy_price;
 
                 $transaction->profits()->create([
                     'transaction_id' => $transaction->id,
@@ -497,14 +609,16 @@ class TransactionController extends Controller
                 $product->save();
             }
 
-            Cart::where('cashier_id', auth()->user()->id)->delete();
+            Cart::where('cashier_id', auth()->user()->id)->active()->delete();
+
+            $this->loyaltyService->finalizeTransaction($transaction, $customer, $checkoutPreview);
 
             if ($isPayLater) {
                 Receivable::create([
                     'customer_id' => $request->customer_id,
                     'transaction_id' => $transaction->id,
                     'invoice' => $invoice,
-                    'total' => $request->grand_total,
+                    'total' => $grandTotal,
                     'paid' => 0,
                     'due_date' => $request->due_date,
                     'status' => 'unpaid',
@@ -535,7 +649,9 @@ class TransactionController extends Controller
     public function print($invoice)
     {
         // get transaction
-        $transaction = Transaction::with('details.product', 'cashier', 'customer', 'receivable')->where('invoice', $invoice)->firstOrFail();
+        $transaction = Transaction::with('details.product', 'details.pricingRule', 'cashier', 'customer', 'receivable', 'bankAccount')
+            ->where('invoice', $invoice)
+            ->firstOrFail();
 
         return Inertia::render('Dashboard/Transactions/Print', [
             'transaction' => $transaction,

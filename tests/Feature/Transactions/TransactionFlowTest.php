@@ -99,7 +99,8 @@ class TransactionFlowTest extends TestCase
 
         $this->assertSame(1, $transaction->profits->count());
         $profit = $transaction->profits->first();
-        $expectedProfit = ($product->sell_price - $product->buy_price) * $quantity;
+        $expectedProfit = (($product->sell_price * $quantity) - $discount)
+            - ($product->buy_price * $quantity);
         $this->assertSame($expectedProfit, (int) $profit->total);
 
         $this->assertDatabaseMissing('carts', ['id' => $cart->id]);

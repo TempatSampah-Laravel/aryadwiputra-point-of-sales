@@ -1,0 +1,362 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Customer;
+use App\Models\CustomerVoucher;
+use App\Models\LoyaltyPointHistory;
+use App\Models\Transaction;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+
+class LoyaltyService
+{
+    public const EARN_RATE_AMOUNT = 10000;
+
+    public const REDEEM_POINT_VALUE = 100;
+
+    public const TIER_REGULAR = 'regular';
+
+    public const TIER_SILVER = 'silver';
+
+    public const TIER_GOLD = 'gold';
+
+    public const TIER_PLATINUM = 'platinum';
+
+    public function tiers(): array
+    {
+        return [
+            self::TIER_REGULAR => [
+                'label' => 'Regular',
+                'minimum_total_spent' => 0,
+            ],
+            self::TIER_SILVER => [
+                'label' => 'Silver',
+                'minimum_total_spent' => 500000,
+            ],
+            self::TIER_GOLD => [
+                'label' => 'Gold',
+                'minimum_total_spent' => 1500000,
+            ],
+            self::TIER_PLATINUM => [
+                'label' => 'Platinum',
+                'minimum_total_spent' => 3000000,
+            ],
+        ];
+    }
+
+    public function tierOptions(): array
+    {
+        return collect($this->tiers())
+            ->map(fn (array $tier, string $key) => [
+                'value' => $key,
+                'label' => $tier['label'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    public function ensureMembership(Customer $customer, bool $force = false): Customer
+    {
+        if (! $customer->is_loyalty_member && ! $force) {
+            return $customer;
+        }
+
+        $payload = [
+            'is_loyalty_member' => true,
+            'member_code' => $customer->member_code ?: $this->generateMemberCode(),
+            'loyalty_member_since' => $customer->loyalty_member_since ?: now(),
+        ];
+
+        $customer->fill($payload);
+
+        if ($customer->isDirty()) {
+            $customer->save();
+        }
+
+        return $customer->refresh();
+    }
+
+    public function issueMemberCode(): string
+    {
+        return $this->generateMemberCode();
+    }
+
+    public function syncTier(Customer $customer): Customer
+    {
+        $tier = self::TIER_REGULAR;
+        $totalSpent = (int) $customer->loyalty_total_spent;
+
+        foreach ($this->tiers() as $key => $config) {
+            if ($totalSpent >= $config['minimum_total_spent']) {
+                $tier = $key;
+            }
+        }
+
+        if ($customer->loyalty_tier !== $tier) {
+            $customer->forceFill(['loyalty_tier' => $tier])->save();
+        }
+
+        return $customer->refresh();
+    }
+
+    public function previewCheckout(
+        array $pricingPreview,
+        ?Customer $customer = null,
+        array $options = [],
+        ?CarbonInterface $at = null
+    ): array {
+        $at = $at ?? now();
+        $subtotalAfterPromo = max(0, (int) data_get($pricingPreview, 'summary.subtotal_after_promo', 0));
+        $manualDiscountRequested = max(0, (int) ($options['manual_discount'] ?? 0));
+        $shippingCost = max(0, (int) ($options['shipping_cost'] ?? 0));
+        $requestedRedeemPoints = max(0, (int) ($options['redeem_points'] ?? 0));
+        $voucher = $options['voucher'] ?? null;
+
+        $availablePoints = $customer?->is_loyalty_member ? (int) $customer->loyalty_points : 0;
+        $validatedVoucher = $this->validateVoucher($customer, $voucher, $subtotalAfterPromo, $at);
+        $voucherDiscount = $validatedVoucher
+            ? $this->calculateVoucherDiscount($validatedVoucher, $subtotalAfterPromo)
+            : 0;
+
+        $afterVoucher = max(0, $subtotalAfterPromo - $voucherDiscount);
+        $maxRedeemPoints = (int) floor($afterVoucher / self::REDEEM_POINT_VALUE);
+        $appliedRedeemPoints = min($requestedRedeemPoints, $availablePoints, $maxRedeemPoints);
+        $pointsDiscount = $appliedRedeemPoints * self::REDEEM_POINT_VALUE;
+
+        $afterLoyalty = max(0, $afterVoucher - $pointsDiscount);
+        $manualDiscountApplied = min($manualDiscountRequested, $afterLoyalty);
+        $grandTotal = max(0, $afterLoyalty - $manualDiscountApplied + $shippingCost);
+
+        return [
+            'items' => data_get($pricingPreview, 'items', []),
+            'summary' => [
+                'base_subtotal' => (int) data_get($pricingPreview, 'summary.base_subtotal', 0),
+                'promo_discount_total' => (int) data_get($pricingPreview, 'summary.promo_discount_total', 0),
+                'subtotal_after_promo' => $subtotalAfterPromo,
+                'voucher_discount_total' => $voucherDiscount,
+                'loyalty_discount_total' => $pointsDiscount,
+                'manual_discount_total' => $manualDiscountApplied,
+                'shipping_cost' => $shippingCost,
+                'grand_total' => $grandTotal,
+                'available_loyalty_points' => $availablePoints,
+                'requested_redeem_points' => $requestedRedeemPoints,
+                'applied_redeem_points' => $appliedRedeemPoints,
+                'points_value' => self::REDEEM_POINT_VALUE,
+            ],
+            'customer' => $customer ? [
+                'id' => $customer->id,
+                'is_loyalty_member' => (bool) $customer->is_loyalty_member,
+                'member_code' => $customer->member_code,
+                'loyalty_tier' => $customer->loyalty_tier,
+                'loyalty_points' => $availablePoints,
+            ] : null,
+            'voucher' => $validatedVoucher ? $this->serializeVoucher($validatedVoucher) : null,
+            'eligible_vouchers' => $customer
+                ? $this->eligibleVouchersForCustomer($customer, $subtotalAfterPromo, $at)
+                    ->map(fn (CustomerVoucher $eligibleVoucher) => $this->serializeVoucher($eligibleVoucher))
+                    ->values()
+                    ->all()
+                : [],
+        ];
+    }
+
+    public function eligibleVouchersForCustomer(
+        Customer $customer,
+        int $subtotalAfterPromo = 0,
+        ?CarbonInterface $at = null
+    ): Collection {
+        $at = $at ?? now();
+
+        return $customer->vouchers()
+            ->where('is_active', true)
+            ->where('is_used', false)
+            ->where(function ($query) use ($at) {
+                $query->whereNull('starts_at')->orWhere('starts_at', '<=', $at);
+            })
+            ->where(function ($query) use ($at) {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>=', $at);
+            })
+            ->orderBy('expires_at')
+            ->get()
+            ->filter(fn (CustomerVoucher $voucher) => $subtotalAfterPromo >= (int) $voucher->minimum_order)
+            ->values();
+    }
+
+    public function finalizeTransaction(
+        Transaction $transaction,
+        ?Customer $customer,
+        array $checkoutPreview
+    ): ?Customer {
+        if (! $customer) {
+            return null;
+        }
+
+        $customer = $customer->fresh();
+
+        if ($customer->is_loyalty_member) {
+            $customer = $this->ensureMembership($customer);
+        }
+
+        $voucherCode = (string) ($transaction->customer_voucher_code ?? '');
+        $voucher = $voucherCode !== ''
+            ? CustomerVoucher::query()
+                ->where('customer_id', $customer->id)
+                ->where('code', $voucherCode)
+                ->first()
+            : null;
+
+        $redeemedPoints = (int) ($transaction->loyalty_points_redeemed ?? 0);
+        if ($redeemedPoints > 0 && $customer->is_loyalty_member) {
+            $customer->decrement('loyalty_points', $redeemedPoints);
+
+            $this->recordHistory(
+                $customer->fresh(),
+                $transaction,
+                LoyaltyPointHistory::TYPE_REDEEM,
+                -$redeemedPoints,
+                (int) ($transaction->loyalty_discount_total ?? 0),
+                'Redeem poin pada transaksi '.$transaction->invoice
+            );
+        }
+
+        if ($voucher) {
+            $voucher->forceFill([
+                'is_used' => true,
+                'used_at' => now(),
+                'used_transaction_id' => $transaction->id,
+            ])->save();
+
+            $this->recordHistory(
+                $customer->fresh(),
+                $transaction,
+                LoyaltyPointHistory::TYPE_VOUCHER,
+                0,
+                (int) ($transaction->customer_voucher_discount ?? 0),
+                'Voucher '.$voucher->code.' digunakan'
+            );
+        }
+
+        $eligibleSpendForPoints = max(
+            0,
+            (int) $transaction->grand_total - (int) $transaction->shipping_cost
+        );
+        $earnedPoints = $customer->is_loyalty_member
+            ? (int) floor($eligibleSpendForPoints / self::EARN_RATE_AMOUNT)
+            : 0;
+
+        $transaction->forceFill([
+            'loyalty_points_earned' => $earnedPoints,
+        ])->save();
+
+        $customer->forceFill([
+            'loyalty_points' => max(0, (int) $customer->loyalty_points) + $earnedPoints,
+            'loyalty_total_spent' => (int) $customer->loyalty_total_spent + (int) $transaction->grand_total,
+            'loyalty_transaction_count' => (int) $customer->loyalty_transaction_count + 1,
+            'last_purchase_at' => now(),
+        ])->save();
+
+        if ($earnedPoints > 0) {
+            $this->recordHistory(
+                $customer->fresh(),
+                $transaction,
+                LoyaltyPointHistory::TYPE_EARN,
+                $earnedPoints,
+                (int) $transaction->grand_total,
+                'Poin transaksi '.$transaction->invoice
+            );
+        }
+
+        return $this->syncTier($customer->fresh());
+    }
+
+    public function validateVoucher(
+        ?Customer $customer,
+        mixed $voucher,
+        int $subtotalAfterPromo,
+        ?CarbonInterface $at = null
+    ): ?CustomerVoucher {
+        $at = $at ?? now();
+
+        if (! $customer || ! $voucher instanceof CustomerVoucher) {
+            return null;
+        }
+
+        if ((int) $voucher->customer_id !== (int) $customer->id) {
+            return null;
+        }
+
+        if (! $voucher->is_active || $voucher->is_used) {
+            return null;
+        }
+
+        if ($voucher->starts_at && $voucher->starts_at->gt($at)) {
+            return null;
+        }
+
+        if ($voucher->expires_at && $voucher->expires_at->lt($at)) {
+            return null;
+        }
+
+        if ($subtotalAfterPromo < (int) $voucher->minimum_order) {
+            return null;
+        }
+
+        return $voucher;
+    }
+
+    public function calculateVoucherDiscount(CustomerVoucher $voucher, int $subtotalAfterPromo): int
+    {
+        $discount = match ($voucher->discount_type) {
+            CustomerVoucher::TYPE_PERCENTAGE => (int) round($subtotalAfterPromo * ((float) $voucher->discount_value / 100)),
+            CustomerVoucher::TYPE_FIXED_AMOUNT => (int) round((float) $voucher->discount_value),
+            default => 0,
+        };
+
+        return min($subtotalAfterPromo, max(0, $discount));
+    }
+
+    public function serializeVoucher(CustomerVoucher $voucher): array
+    {
+        return [
+            'id' => $voucher->id,
+            'code' => $voucher->code,
+            'name' => $voucher->name,
+            'discount_type' => $voucher->discount_type,
+            'discount_value' => (float) $voucher->discount_value,
+            'minimum_order' => (int) $voucher->minimum_order,
+            'expires_at' => optional($voucher->expires_at)?->toIso8601String(),
+            'starts_at' => optional($voucher->starts_at)?->toIso8601String(),
+        ];
+    }
+
+    private function recordHistory(
+        Customer $customer,
+        Transaction $transaction,
+        string $type,
+        int $pointsDelta,
+        int $amountDelta,
+        string $notes
+    ): void {
+        LoyaltyPointHistory::create([
+            'customer_id' => $customer->id,
+            'transaction_id' => $transaction->id,
+            'type' => $type,
+            'points_delta' => $pointsDelta,
+            'balance_after' => max(0, (int) $customer->loyalty_points),
+            'amount_delta' => max(0, $amountDelta),
+            'reference' => $transaction->invoice,
+            'notes' => $notes,
+        ]);
+    }
+
+    private function generateMemberCode(): string
+    {
+        do {
+            $code = 'MEM-'.Str::upper(Str::random(8));
+        } while (Customer::query()->where('member_code', $code)->exists());
+
+        return $code;
+    }
+}

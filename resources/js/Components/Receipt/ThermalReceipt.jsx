@@ -33,11 +33,26 @@ export default function ThermalReceipt({
     };
 
     const items = transaction?.details ?? [];
+    const promoDiscount = items.reduce(
+        (sum, item) => sum + Number(item.discount_total || 0),
+        0
+    );
+    const loyaltyDiscount = Number(transaction?.loyalty_discount_total || 0);
+    const voucherDiscount = Number(
+        transaction?.customer_voucher_discount || 0
+    );
 
     // Calculate totals
-    const subtotal = transaction?.grand_total + (transaction?.discount || 0);
+    const subtotal =
+        (transaction?.grand_total || 0) +
+        (transaction?.discount || 0) -
+        (transaction?.shipping_cost || 0) +
+        promoDiscount +
+        loyaltyDiscount +
+        voucherDiscount;
     const discount = transaction?.discount || 0;
     const total = transaction?.grand_total || 0;
+    const shipping = transaction?.shipping_cost || 0;
     const cash = transaction?.cash || 0;
     const change = transaction?.change || 0;
 
@@ -115,13 +130,26 @@ export default function ThermalReceipt({
                 {items.map((item, index) => {
                     const qty = Number(item.qty) || 1;
                     const itemTotal = Number(item.price) || 0;
-                    const unitPrice = itemTotal / qty;
+                    const unitPrice =
+                        Number(item.unit_price || 0) || itemTotal / qty;
+                    const baseUnitPrice =
+                        Number(item.base_unit_price || 0) || unitPrice;
 
                     return (
                         <div key={item.id || index} className="mb-1">
                             <p className="font-medium truncate">
                                 {item.product?.title}
                             </p>
+                            {Number(item.discount_total || 0) > 0 &&
+                                baseUnitPrice > unitPrice && (
+                                    <div className="flex justify-between text-[10px] text-slate-500">
+                                        <span>
+                                            Promo:{" "}
+                                            {item.pricing_rule_name || "Promo"}
+                                        </span>
+                                        <span>{formatPrice(baseUnitPrice)}</span>
+                                    </div>
+                                )}
                             <div className="flex justify-between">
                                 <span>
                                     {qty}x @ {formatPrice(unitPrice)}
@@ -141,10 +169,34 @@ export default function ThermalReceipt({
                     <span>Subtotal</span>
                     <span>{formatPrice(subtotal)}</span>
                 </div>
+                {promoDiscount > 0 && (
+                    <div className="flex justify-between">
+                        <span>Promo</span>
+                        <span>-{formatPrice(promoDiscount)}</span>
+                    </div>
+                )}
                 {discount > 0 && (
                     <div className="flex justify-between">
-                        <span>Diskon</span>
+                        <span>Diskon Manual</span>
                         <span>-{formatPrice(discount)}</span>
+                    </div>
+                )}
+                {voucherDiscount > 0 && (
+                    <div className="flex justify-between">
+                        <span>Voucher</span>
+                        <span>-{formatPrice(voucherDiscount)}</span>
+                    </div>
+                )}
+                {loyaltyDiscount > 0 && (
+                    <div className="flex justify-between">
+                        <span>Redeem Poin</span>
+                        <span>-{formatPrice(loyaltyDiscount)}</span>
+                    </div>
+                )}
+                {shipping > 0 && (
+                    <div className="flex justify-between">
+                        <span>Ongkir</span>
+                        <span>{formatPrice(shipping)}</span>
                     </div>
                 )}
                 <div className="flex justify-between font-bold text-sm">
@@ -223,6 +275,14 @@ export function ThermalReceipt58mm({
     };
 
     const items = transaction?.details ?? [];
+    const promoDiscount = items.reduce(
+        (sum, item) => sum + Number(item.discount_total || 0),
+        0
+    );
+    const loyaltyDiscount = Number(transaction?.loyalty_discount_total || 0);
+    const voucherDiscount = Number(
+        transaction?.customer_voucher_discount || 0
+    );
     const line = "-".repeat(24);
 
     const SimpleBarcode = ({ value }) => {
@@ -261,17 +321,78 @@ export function ThermalReceipt58mm({
             <p>{formatTime(transaction?.created_at)}</p>
             <pre>{line}</pre>
 
-            {items.map((item, i) => (
-                <div key={i} className="mb-1">
-                    <p className="truncate">{item.product?.title}</p>
-                    <div className="flex justify-between">
-                        <span>{item.qty}x</span>
-                        <span>{formatPrice(item.price)}</span>
+            {items.map((item, i) => {
+                const qty = Number(item.qty) || 1;
+                const unitPrice =
+                    Number(item.unit_price || 0) ||
+                    Number(item.price || 0) / qty;
+                const baseUnitPrice =
+                    Number(item.base_unit_price || 0) || unitPrice;
+
+                return (
+                    <div key={i} className="mb-1">
+                        <p className="truncate">{item.product?.title}</p>
+                        {Number(item.discount_total || 0) > 0 &&
+                            baseUnitPrice > unitPrice && (
+                                <div className="flex justify-between text-[9px] text-slate-500">
+                                    <span>Promo</span>
+                                    <span>{formatPrice(baseUnitPrice)}</span>
+                                </div>
+                            )}
+                        <div className="flex justify-between">
+                            <span>
+                                {item.qty}x @ {formatPrice(unitPrice)}
+                            </span>
+                            <span>{formatPrice(item.price)}</span>
+                        </div>
                     </div>
-                </div>
-            ))}
+                );
+            })}
 
             <pre>{line}</pre>
+            <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>
+                    {formatPrice(
+                        (transaction?.grand_total || 0) +
+                            (transaction?.discount || 0) -
+                            (transaction?.shipping_cost || 0) +
+                            promoDiscount +
+                            loyaltyDiscount +
+                            voucherDiscount
+                    )}
+                </span>
+            </div>
+            {promoDiscount > 0 && (
+                <div className="flex justify-between">
+                    <span>Promo</span>
+                    <span>-{formatPrice(promoDiscount)}</span>
+                </div>
+            )}
+            {Number(transaction?.discount || 0) > 0 && (
+                <div className="flex justify-between">
+                    <span>Disc</span>
+                    <span>-{formatPrice(transaction?.discount)}</span>
+                </div>
+            )}
+            {voucherDiscount > 0 && (
+                <div className="flex justify-between">
+                    <span>Voucher</span>
+                    <span>-{formatPrice(voucherDiscount)}</span>
+                </div>
+            )}
+            {loyaltyDiscount > 0 && (
+                <div className="flex justify-between">
+                    <span>Poin</span>
+                    <span>-{formatPrice(loyaltyDiscount)}</span>
+                </div>
+            )}
+            {Number(transaction?.shipping_cost || 0) > 0 && (
+                <div className="flex justify-between">
+                    <span>Ongkir</span>
+                    <span>{formatPrice(transaction?.shipping_cost)}</span>
+                </div>
+            )}
             <div className="flex justify-between font-bold">
                 <span>TOTAL</span>
                 <span>{formatPrice(transaction?.grand_total)}</span>
