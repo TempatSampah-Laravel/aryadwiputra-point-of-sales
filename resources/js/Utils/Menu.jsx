@@ -244,6 +244,13 @@ export default function Menu() {
                     icon: <IconChartBarPopular size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["profits-access"]),
                 },
+                {
+                    title: "Advanced Insights",
+                    href: route("reports.insights.index"),
+                    active: url.startsWith("/dashboard/reports/insights"),
+                    icon: <IconChartBar size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["reports-access"]),
+                },
             ],
         },
         {
