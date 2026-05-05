@@ -18,6 +18,7 @@ Dokumentasi ini ditujukan untuk developer yang ingin setup, memahami alur modul,
 
 - `docs/features/pos-transactions.md`
 - `docs/features/customers-regions.md`
+- `docs/features/member-management.md`
 - `docs/features/sales-returns.md`
 - `docs/features/cashier-shifts.md`
 
