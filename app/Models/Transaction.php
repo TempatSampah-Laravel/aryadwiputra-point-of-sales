@@ -125,6 +125,11 @@ class Transaction extends Model
         return $this->hasOne(CustomerVoucher::class, 'used_transaction_id');
     }
 
+    public function campaignLogs()
+    {
+        return $this->hasMany(CustomerCampaignLog::class);
+    }
+
     /**
      * createdAt
      */

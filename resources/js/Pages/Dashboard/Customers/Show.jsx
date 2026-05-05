@@ -1,6 +1,6 @@
 import React from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, useForm } from "@inertiajs/react";
 import {
     IconArrowLeft,
     IconCoins,
@@ -8,6 +8,7 @@ import {
     IconDatabaseOff,
     IconGift,
     IconReceipt,
+    IconTags,
 } from "@tabler/icons-react";
 
 const formatPrice = (value = 0) =>
@@ -27,22 +28,36 @@ const formatDateTime = (value) =>
 
 export default function Show({
     customer,
+    segments = [],
+    manualSegmentIds = [],
+    manualSegmentOptions = [],
     stats,
     recentTransactions,
     frequentProducts,
     rewardHistory,
     vouchers,
 }) {
+    const segmentForm = useForm({
+        segment_ids: manualSegmentIds,
+    });
     const hasRecentTransactions = recentTransactions.length > 0;
     const hasRewardHistory = rewardHistory.length > 0;
     const hasFrequentProducts = frequentProducts.length > 0;
     const hasVouchers = vouchers.length > 0;
+    const hasSegments = segments.length > 0;
+
+    const submitSegments = (event) => {
+        event.preventDefault();
+        segmentForm.put(route("customers.segments.sync", customer.id), {
+            preserveScroll: true,
+        });
+    };
 
     return (
         <>
             <Head title={`Pelanggan - ${customer.name}`} />
 
-            <div className="max-w-7xl">
+            <div className="w-full">
                 <div className="mb-6">
                     <Link
                         href={route("customers.index")}
@@ -132,6 +147,44 @@ export default function Show({
                                     </p>
                                 </div>
                             </div>
+                        </section>
+
+                        <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+                            <div className="mb-4 flex items-center gap-2">
+                                <IconTags size={18} className="text-primary-500" />
+                                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                                    Segment Customer
+                                </h2>
+                            </div>
+                            {hasSegments ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {segments.map((segment) => (
+                                        <span
+                                            key={segment.id}
+                                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
+                                                segment.source === "manual"
+                                                    ? "bg-primary-100 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300"
+                                                    : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                            }`}
+                                        >
+                                            {segment.name}
+                                            <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] uppercase tracking-wide dark:bg-slate-900/40">
+                                                {segment.source}
+                                            </span>
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="rounded-2xl bg-slate-50 px-4 py-8 text-center dark:bg-slate-800/50">
+                                    <IconDatabaseOff
+                                        size={28}
+                                        className="mx-auto mb-3 text-slate-400"
+                                    />
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        Customer belum memiliki segment.
+                                    </p>
+                                </div>
+                            )}
                         </section>
 
                         <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
@@ -270,6 +323,86 @@ export default function Show({
                                     </p>
                                 </div>
                             </div>
+                        </section>
+
+                        <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+                            <div className="mb-4 flex items-center gap-2">
+                                <IconTags size={18} className="text-primary-500" />
+                                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                                    Tag Manual
+                                </h2>
+                            </div>
+                            {manualSegmentOptions.length > 0 ? (
+                                <form onSubmit={submitSegments} className="space-y-4">
+                                    <div className="space-y-3">
+                                        {manualSegmentOptions.map((segment) => (
+                                            <label
+                                                key={segment.value}
+                                                className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={segmentForm.data.segment_ids.includes(
+                                                        segment.value
+                                                    )}
+                                                    onChange={(event) => {
+                                                        const nextIds = event.target.checked
+                                                            ? [
+                                                                  ...segmentForm.data
+                                                                      .segment_ids,
+                                                                  segment.value,
+                                                              ]
+                                                            : segmentForm.data.segment_ids.filter(
+                                                                  (value) =>
+                                                                      value !==
+                                                                      segment.value
+                                                              );
+                                                        segmentForm.setData(
+                                                            "segment_ids",
+                                                            nextIds
+                                                        );
+                                                    }}
+                                                    className="mt-0.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                                />
+                                                <div>
+                                                    <p className="font-medium text-slate-900 dark:text-white">
+                                                        {segment.label}
+                                                    </p>
+                                                    {segment.description ? (
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {segment.description}
+                                                        </p>
+                                                    ) : null}
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                    {segmentForm.errors.segment_ids && (
+                                        <p className="text-sm text-rose-600">
+                                            {segmentForm.errors.segment_ids}
+                                        </p>
+                                    )}
+                                    <button
+                                        type="submit"
+                                        disabled={segmentForm.processing}
+                                        className="inline-flex items-center justify-center rounded-xl bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        {segmentForm.processing
+                                            ? "Menyimpan..."
+                                            : "Simpan Segment"}
+                                    </button>
+                                </form>
+                            ) : (
+                                <div className="rounded-2xl bg-slate-50 px-4 py-8 text-center dark:bg-slate-800/50">
+                                    <IconDatabaseOff
+                                        size={28}
+                                        className="mx-auto mb-3 text-slate-400"
+                                    />
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        Belum ada segment manual yang tersedia.
+                                    </p>
+                                </div>
+                            )}
                         </section>
 
                         <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">

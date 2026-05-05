@@ -47,6 +47,11 @@ class Receivable extends Model
         return $this->hasMany(ReceivablePayment::class);
     }
 
+    public function campaignLogs()
+    {
+        return $this->hasMany(CustomerCampaignLog::class);
+    }
+
     public function getRemainingAttribute(): float
     {
         return max(0, ($this->total ?? 0) - ($this->paid ?? 0));

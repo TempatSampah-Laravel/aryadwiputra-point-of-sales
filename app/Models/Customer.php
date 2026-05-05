@@ -69,4 +69,21 @@ class Customer extends Model
     {
         return $this->hasMany(CustomerVoucher::class);
     }
+
+    public function receivables()
+    {
+        return $this->hasMany(Receivable::class);
+    }
+
+    public function segmentMemberships()
+    {
+        return $this->hasMany(CustomerSegmentMembership::class);
+    }
+
+    public function segments()
+    {
+        return $this->belongsToMany(CustomerSegment::class, 'customer_segment_memberships')
+            ->withPivot(['source', 'matched_at'])
+            ->withTimestamps();
+    }
 }

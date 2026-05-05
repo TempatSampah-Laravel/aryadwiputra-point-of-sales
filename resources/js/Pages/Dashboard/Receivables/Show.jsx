@@ -35,6 +35,7 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
         collection_notes: receivable.collection_notes || "",
     });
     const canPayReceivable = can("receivables-pay");
+    const canCreateCrmCampaign = can("crm-campaigns-create");
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -135,6 +136,20 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        {canCreateCrmCampaign && (
+                            <Link
+                                href={route(
+                                    "receivables.share-campaign",
+                                    receivable.id
+                                )}
+                                method="post"
+                                as="button"
+                                className="inline-flex items-center gap-2 rounded-xl bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-600"
+                            >
+                                <IconBrandWhatsapp size={18} />
+                                Campaign WA
+                            </Link>
+                        )}
                         <a
                             href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
                             target="_blank"

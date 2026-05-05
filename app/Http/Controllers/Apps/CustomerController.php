@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerVoucher;
 use App\Models\Transaction;
+use App\Services\CustomerSegmentationService;
 use App\Services\LoyaltyService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,7 +19,8 @@ use Laravolt\Indonesia\Models\Village;
 class CustomerController extends Controller
 {
     public function __construct(
-        private readonly LoyaltyService $loyaltyService
+        private readonly LoyaltyService $loyaltyService,
+        private readonly CustomerSegmentationService $segmentationService
     ) {}
 
     /**
@@ -241,6 +243,7 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
+        $customer->load('segments');
         $stats = $this->buildStats($customer);
         $recentTransactions = $this->recentTransactions($customer);
         $frequentProducts = $this->frequentProducts($customer);
@@ -269,12 +272,31 @@ class CustomerController extends Controller
 
         return Inertia::render('Dashboard/Customers/Show', [
             'customer' => $customer,
+            'segments' => $this->segmentationService->serializeCustomerSegments($customer),
+            'manualSegmentIds' => $customer->segmentMemberships()
+                ->where('source', 'manual')
+                ->pluck('customer_segment_id')
+                ->values()
+                ->all(),
+            'manualSegmentOptions' => $this->segmentationService->segmentOptions(\App\Models\CustomerSegment::TYPE_MANUAL),
             'stats' => $stats,
             'recentTransactions' => $recentTransactions,
             'frequentProducts' => $frequentProducts,
             'rewardHistory' => $rewardHistory,
             'vouchers' => $vouchers,
         ]);
+    }
+
+    public function syncSegments(Request $request, Customer $customer)
+    {
+        $validated = $request->validate([
+            'segment_ids' => ['nullable', 'array'],
+            'segment_ids.*' => ['integer', 'exists:customer_segments,id'],
+        ]);
+
+        $this->segmentationService->syncManualSegments($customer, $validated['segment_ids'] ?? []);
+
+        return back()->with('success', 'Segment manual customer berhasil diperbarui.');
     }
 
     /**
