@@ -32,7 +32,12 @@ class CustomerController extends Controller
     {
         // get customers
         $customers = Customer::when(request()->search, function ($customers) {
-            $customers = $customers->where('name', 'like', '%'.request()->search.'%');
+            $search = request()->search;
+            $customers = $customers->where(function ($query) use ($search) {
+                $query
+                    ->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('member_code', 'like', '%'.$search.'%');
+            });
         })->latest()->paginate(5);
 
         // return inertia
@@ -114,6 +119,8 @@ class CustomerController extends Controller
             'name' => 'required|string|max:255',
             'no_telp' => 'required|string|unique:customers,no_telp',
             'address' => 'required|string',
+            'is_loyalty_member' => 'nullable|boolean',
+            'loyalty_tier' => ['nullable', 'string', Rule::in(array_keys($this->loyaltyService->tiers()))],
             'province_id' => 'nullable|string',
             'regency_id' => 'nullable|string',
             'district_id' => 'nullable|string',
@@ -121,24 +128,28 @@ class CustomerController extends Controller
         ]);
 
         try {
-            $province = $validated['province_id'] ? Province::where('code', $validated['province_id'])->first() : null;
-            $regency = $validated['regency_id'] ? City::where('code', $validated['regency_id'])->first() : null;
-            $district = $validated['district_id'] ? District::where('code', $validated['district_id'])->first() : null;
-            $village = $validated['village_id'] ? Village::where('code', $validated['village_id'])->first() : null;
+            $provinceCode = $validated['province_id'] ?? null;
+            $regencyCode = $validated['regency_id'] ?? null;
+            $districtCode = $validated['district_id'] ?? null;
+            $villageCode = $validated['village_id'] ?? null;
+
+            $province = $provinceCode ? Province::where('code', $provinceCode)->first() : null;
+            $regency = $regencyCode ? City::where('code', $regencyCode)->first() : null;
+            $district = $districtCode ? District::where('code', $districtCode)->first() : null;
+            $village = $villageCode ? Village::where('code', $villageCode)->first() : null;
 
             $customer = Customer::create([
-                'is_loyalty_member' => false,
-                'loyalty_tier' => LoyaltyService::TIER_REGULAR,
+                ...$this->resolveLoyaltyPayload($request),
                 'name' => $validated['name'],
                 'no_telp' => $validated['no_telp'],
                 'address' => $validated['address'],
-                'province_id' => $validated['province_id'] ?? null,
+                'province_id' => $provinceCode,
                 'province_name' => $province?->name,
-                'regency_id' => $validated['regency_id'] ?? null,
+                'regency_id' => $regencyCode,
                 'regency_name' => $regency?->name,
-                'district_id' => $validated['district_id'] ?? null,
+                'district_id' => $districtCode,
                 'district_name' => $district?->name,
-                'village_id' => $validated['village_id'] ?? null,
+                'village_id' => $villageCode,
                 'village_name' => $village?->name,
             ]);
 
@@ -151,6 +162,7 @@ class CustomerController extends Controller
                     'no_telp' => $customer->no_telp,
                     'address' => $customer->address,
                     'is_loyalty_member' => (bool) $customer->is_loyalty_member,
+                    'member_code' => $customer->member_code,
                     'loyalty_tier' => $customer->loyalty_tier,
                     'loyalty_points' => (int) $customer->loyalty_points,
                 ],
@@ -375,6 +387,39 @@ class CustomerController extends Controller
         ]);
     }
 
+    public function upgradeToMember(Request $request, Customer $customer)
+    {
+        $validated = $request->validate([
+            'loyalty_tier' => ['nullable', 'string', Rule::in(array_keys($this->loyaltyService->tiers()))],
+        ]);
+
+        $customer->update([
+            'is_loyalty_member' => true,
+            'member_code' => $customer->member_code ?? $this->loyaltyService->issueMemberCode(),
+            'loyalty_tier' => $validated['loyalty_tier'] ?? $customer->loyalty_tier ?? LoyaltyService::TIER_REGULAR,
+            'loyalty_member_since' => $customer->loyalty_member_since ?? now(),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Pelanggan berhasil di-upgrade menjadi member.',
+                'customer' => [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'no_telp' => $customer->no_telp,
+                    'address' => $customer->address,
+                    'is_loyalty_member' => (bool) $customer->is_loyalty_member,
+                    'member_code' => $customer->member_code,
+                    'loyalty_tier' => $customer->loyalty_tier,
+                    'loyalty_points' => (int) $customer->loyalty_points,
+                ],
+            ]);
+        }
+
+        return back()->with('success', 'Pelanggan berhasil di-upgrade menjadi member.');
+    }
+
     private function resolveLoyaltyPayload(Request $request, ?Customer $customer = null): array
     {
         $isMember = $request->boolean('is_loyalty_member');
@@ -383,11 +428,15 @@ class CustomerController extends Controller
 
         return [
             'is_loyalty_member' => $isMember,
-            'member_code' => $isMember ? ($customer?->member_code ?? $this->loyaltyService->issueMemberCode()) : null,
-            'loyalty_tier' => $isMember ? $requestedTier : LoyaltyService::TIER_REGULAR,
+            'member_code' => $isMember
+                ? ($customer?->member_code ?? $this->loyaltyService->issueMemberCode())
+                : $customer?->member_code,
+            'loyalty_tier' => $isMember
+                ? $requestedTier
+                : ($customer?->loyalty_tier ?? LoyaltyService::TIER_REGULAR),
             'loyalty_member_since' => $isMember
                 ? ($customer?->loyalty_member_since ?? now())
-                : null,
+                : $customer?->loyalty_member_since,
         ];
     }
 

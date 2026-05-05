@@ -95,6 +95,20 @@ export default function Show({
                                 <IconCoins size={14} />
                                 {customer.loyalty_points} poin
                             </span>
+                            {!customer.is_loyalty_member ? (
+                                <Link
+                                    href={route(
+                                        "customers.upgrade-member",
+                                        customer.id
+                                    )}
+                                    method="post"
+                                    as="button"
+                                    className="inline-flex items-center gap-2 rounded-full bg-primary-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-primary-600"
+                                >
+                                    <IconCrown size={14} />
+                                    Jadikan Member
+                                </Link>
+                            ) : null}
                         </div>
                     </div>
                 </div>

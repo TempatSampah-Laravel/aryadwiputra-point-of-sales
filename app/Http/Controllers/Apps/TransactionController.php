@@ -134,6 +134,7 @@ class TransactionController extends Controller
             'defaultPaymentGateway' => $defaultGateway,
             'bankAccounts' => $bankAccounts,
             'shiftSummary' => $this->cashierShiftService->summarizeForDisplay($activeShift),
+            'loyaltyTierOptions' => $this->loyaltyService->tierOptions(),
         ]);
     }
 

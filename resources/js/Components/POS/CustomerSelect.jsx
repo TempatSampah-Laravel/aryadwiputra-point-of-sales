@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { router } from "@inertiajs/react";
+import axios from "axios";
 import {
+    IconCrown,
     IconUser,
     IconSearch,
     IconCheck,
@@ -18,6 +20,7 @@ export default function CustomerSelect({
     error,
     label,
     onCustomerAdded,
+    tierOptions = [],
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
@@ -29,7 +32,8 @@ export default function CustomerSelect({
     const filteredCustomers = customers.filter(
         (customer) =>
             customer.name.toLowerCase().includes(search.toLowerCase()) ||
-            customer.no_telp?.toLowerCase().includes(search.toLowerCase())
+            customer.no_telp?.toLowerCase().includes(search.toLowerCase()) ||
+            customer.member_code?.toLowerCase().includes(search.toLowerCase())
     );
 
     // Close on click outside
@@ -65,6 +69,29 @@ export default function CustomerSelect({
         // Reload page data to get updated customer list
         router.reload({ only: ["customers"] });
         onCustomerAdded?.(newCustomer);
+        onSelect?.(newCustomer);
+    };
+
+    const handleUpgradeMember = async () => {
+        if (!selected || selected.is_loyalty_member) {
+            return;
+        }
+
+        try {
+            const response = await axios.post(
+                route("customers.upgrade-member", selected.id),
+                {
+                    loyalty_tier: tierOptions[0]?.value || "regular",
+                }
+            );
+
+            if (response.data.success) {
+                onSelect?.(response.data.customer);
+                router.reload({ only: ["customers"] });
+            }
+        } catch (error) {
+            console.error("Upgrade member error:", error);
+        }
     };
 
     return (
@@ -126,6 +153,11 @@ export default function CustomerSelect({
                                             {selected.no_telp}
                                         </p>
                                     )}
+                                    {selected.member_code ? (
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                            {selected.member_code}
+                                        </p>
+                                    ) : null}
                                     <p className="text-[11px] text-primary-500 dark:text-primary-300 truncate">
                                         {selected.is_loyalty_member
                                             ? `${selected.loyalty_tier} • ${selected.loyalty_points || 0} poin`
@@ -153,6 +185,23 @@ export default function CustomerSelect({
                             customerName={selected.name}
                         />
                     )}
+
+                    {selected && !selected.is_loyalty_member ? (
+                        <button
+                            type="button"
+                            onClick={handleUpgradeMember}
+                            className="h-12 px-3 rounded-xl border border-primary-200 bg-primary-50 text-primary-600 hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/30 dark:text-primary-300"
+                            title="Upgrade pelanggan menjadi member"
+                        >
+                            <span className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold">
+                                <IconCrown size={16} />
+                                Upgrade
+                            </span>
+                            <span className="inline-flex sm:hidden">
+                                <IconCrown size={18} />
+                            </span>
+                        </button>
+                    ) : null}
 
                     {/* Add Customer Button */}
                     <button
@@ -187,7 +236,7 @@ export default function CustomerSelect({
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Cari nama/telepon..."
+                                    placeholder="Cari nama/telepon/nomor anggota..."
                                     className="w-full h-10 pl-10 pr-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                                 />
                             </div>
@@ -245,6 +294,11 @@ export default function CustomerSelect({
                                                         {customer.no_telp ||
                                                             "-"}
                                                     </p>
+                                                    {customer.member_code ? (
+                                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                                            {customer.member_code}
+                                                        </p>
+                                                    ) : null}
                                                     <p className="text-[11px] text-primary-500 dark:text-primary-300 truncate">
                                                         {customer.is_loyalty_member
                                                             ? `${customer.loyalty_tier} • ${customer.loyalty_points || 0} poin`
@@ -282,11 +336,12 @@ export default function CustomerSelect({
             </div>
 
             {/* Add Customer Modal */}
-            <AddCustomerModal
-                isOpen={showAddModal}
-                onClose={() => setShowAddModal(false)}
-                onSuccess={handleAddCustomerSuccess}
-            />
-        </>
-    );
+                <AddCustomerModal
+                    isOpen={showAddModal}
+                    onClose={() => setShowAddModal(false)}
+                    onSuccess={handleAddCustomerSuccess}
+                    tierOptions={tierOptions}
+                />
+            </>
+        );
 }

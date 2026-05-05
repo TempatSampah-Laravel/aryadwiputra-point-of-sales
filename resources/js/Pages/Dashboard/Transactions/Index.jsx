@@ -52,6 +52,7 @@ export default function Index({
     paymentGateways = [],
     defaultPaymentGateway = "cash",
     bankAccounts = [],
+    loyaltyTierOptions = [],
 }) {
     const {
         auth,
@@ -688,6 +689,7 @@ export default function Index({
                             placeholder="Pilih pelanggan..."
                             error={errors?.customer_id}
                             label="Pelanggan"
+                            tierOptions={loyaltyTierOptions}
                         />
                     </div>
 
