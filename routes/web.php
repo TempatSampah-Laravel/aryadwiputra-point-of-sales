@@ -3,7 +3,10 @@
 use App\Http\Controllers\Apps\AuditLogController;
 use App\Http\Controllers\Apps\CashierShiftController;
 use App\Http\Controllers\Apps\CategoryController;
+use App\Http\Controllers\Apps\CrmCampaignController;
+use App\Http\Controllers\Apps\CrmReminderController;
 use App\Http\Controllers\Apps\CustomerController;
+use App\Http\Controllers\Apps\CustomerSegmentController;
 use App\Http\Controllers\Apps\CustomerVoucherController;
 use App\Http\Controllers\Apps\GoodsReceivingController;
 use App\Http\Controllers\Apps\PaymentSettingController;
@@ -114,9 +117,41 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth', 'verified']], fu
         ->middlewareFor(['create', 'store'], 'permission:customer-vouchers-create')
         ->middlewareFor(['edit', 'update'], 'permission:customer-vouchers-update')
         ->middlewareFor('destroy', 'permission:customer-vouchers-delete');
+    Route::resource('customer-segments', CustomerSegmentController::class)
+        ->middlewareFor(['index', 'show'], 'permission:customer-segments-access')
+        ->middlewareFor(['create', 'store'], 'permission:customer-segments-create')
+        ->middlewareFor(['edit', 'update'], 'permission:customer-segments-update')
+        ->middlewareFor('destroy', 'permission:customer-segments-delete');
+    Route::post('customer-segments/{customerSegment}/members', [CustomerSegmentController::class, 'storeMember'])
+        ->middleware('permission:customer-segments-update')
+        ->name('customer-segments.members.store');
+    Route::delete('customer-segments/{customerSegment}/members/{customer}', [CustomerSegmentController::class, 'destroyMember'])
+        ->middleware('permission:customer-segments-update')
+        ->name('customer-segments.members.destroy');
+    Route::resource('crm-campaigns', CrmCampaignController::class)
+        ->middlewareFor(['index', 'show'], 'permission:crm-campaigns-access')
+        ->middlewareFor(['create', 'store'], 'permission:crm-campaigns-create')
+        ->middlewareFor(['edit', 'update'], 'permission:crm-campaigns-update')
+        ->middlewareFor('destroy', 'permission:crm-campaigns-delete');
+    Route::post('crm-campaigns/{crmCampaign}/process', [CrmCampaignController::class, 'process'])
+        ->middleware('permission:crm-campaigns-update')
+        ->name('crm-campaigns.process');
+    Route::post('crm-campaigns/{crmCampaign}/cancel', [CrmCampaignController::class, 'cancel'])
+        ->middleware('permission:crm-campaigns-update')
+        ->name('crm-campaigns.cancel');
+    Route::post('crm-campaign-logs/{log}/mark-sent', [CrmCampaignController::class, 'markLogSent'])
+        ->middleware('permission:crm-campaigns-update')
+        ->name('crm-campaign-logs.mark-sent');
+    Route::post('crm-campaign-logs/{log}/skip', [CrmCampaignController::class, 'markLogSkipped'])
+        ->middleware('permission:crm-campaigns-update')
+        ->name('crm-campaign-logs.skip');
+    Route::get('crm-reminders', [CrmReminderController::class, 'index'])
+        ->middleware('permission:crm-reminders-access')
+        ->name('crm-reminders.index');
 
     // route customer history
     Route::get('/customers/{customer}/history', [CustomerController::class, 'getHistory'])->middleware('permission:transactions-access')->name('customers.history');
+    Route::put('/customers/{customer}/segments', [CustomerController::class, 'syncSegments'])->middleware('permission:customers-edit')->name('customers.segments.sync');
 
     // route customer store via AJAX (no redirect)
     Route::post('/customers/store-ajax', [CustomerController::class, 'storeAjax'])->middleware('permission:customers-create')->name('customers.storeAjax');
@@ -147,6 +182,7 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth', 'verified']], fu
     Route::post('/transactions/store', [TransactionController::class, 'store'])->middleware(['permission:transactions-access', 'active_shift'])->name('transactions.store');
     Route::get('/transactions/{invoice}/print', [TransactionController::class, 'print'])->middleware('permission:transactions-access')->name('transactions.print');
     Route::get('/transactions/history', [TransactionController::class, 'history'])->middleware('permission:transactions-access')->name('transactions.history');
+    Route::post('/transactions/{transaction}/share-campaign', [CrmCampaignController::class, 'shareTransaction'])->middleware('permission:crm-campaigns-create')->name('transactions.share-campaign');
     Route::get('/transactions/history/{transaction}/sales-return/create', [SalesReturnController::class, 'create'])->middleware('permission:sales-returns-create')->name('sales-returns.create');
     Route::post('/transactions/history/{transaction}/sales-return', [SalesReturnController::class, 'store'])->middleware('permission:sales-returns-create')->name('sales-returns.store');
     Route::get('/sales-returns', [SalesReturnController::class, 'index'])->middleware('permission:sales-returns-access')->name('sales-returns.index');
@@ -182,6 +218,7 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth', 'verified']], fu
     Route::get('/receivables/{receivable}', [\App\Http\Controllers\Apps\ReceivableController::class, 'show'])->middleware('permission:receivables-access')->name('receivables.show');
     Route::patch('/receivables/{receivable}/collection-notes', [\App\Http\Controllers\Apps\ReceivableController::class, 'updateCollectionNotes'])->middleware('permission:receivables-access')->name('receivables.collection-notes');
     Route::post('/receivables/{receivable}/pay', [\App\Http\Controllers\Apps\ReceivableController::class, 'pay'])->middleware('permission:receivables-pay')->name('receivables.pay');
+    Route::post('/receivables/{receivable}/share-campaign', [CrmCampaignController::class, 'shareReceivable'])->middleware('permission:crm-campaigns-create')->name('receivables.share-campaign');
     // suppliers & payables
     Route::get('/suppliers', [\App\Http\Controllers\Apps\SupplierController::class, 'index'])->middleware('permission:suppliers-access')->name('suppliers.index');
     Route::post('/suppliers', [\App\Http\Controllers\Apps\SupplierController::class, 'store'])->middleware('permission:suppliers-access')->name('suppliers.store');

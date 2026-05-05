@@ -28,6 +28,9 @@ class RoleSeeder extends Seeder
         $this->createRoleWithPermissions('pricing-rules-access', '%pricing-rules%');
         $this->createRoleWithPermissions('customers-access', '%customers%');
         $this->createRoleWithPermissions('customer-vouchers-access', '%customer-vouchers%');
+        $this->createRoleWithPermissions('customer-segments-access', '%customer-segments%');
+        $this->createRoleWithPermissions('crm-campaigns-access', '%crm-campaigns%');
+        $this->createRoleWithPermissions('crm-reminders-access', '%crm-reminders%');
         $this->createRoleWithPermissions('transactions-access', '%transactions%');
         $this->createRoleWithPermissions('transactions-confirm-payment', 'transactions-confirm-payment');
         $this->createRoleWithPermissions('receivables-access', '%receivables%');

@@ -63,6 +63,15 @@ class PermissionSeeder extends Seeder
         $create('customer-vouchers-create');
         $create('customer-vouchers-update');
         $create('customer-vouchers-delete');
+        $create('customer-segments-access');
+        $create('customer-segments-create');
+        $create('customer-segments-update');
+        $create('customer-segments-delete');
+        $create('crm-campaigns-access');
+        $create('crm-campaigns-create');
+        $create('crm-campaigns-update');
+        $create('crm-campaigns-delete');
+        $create('crm-reminders-access');
 
         // permission transactions
         $create('transactions-access');
