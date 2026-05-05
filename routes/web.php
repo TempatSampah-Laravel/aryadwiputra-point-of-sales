@@ -9,6 +9,7 @@ use App\Http\Controllers\Apps\CustomerController;
 use App\Http\Controllers\Apps\CustomerSegmentController;
 use App\Http\Controllers\Apps\CustomerVoucherController;
 use App\Http\Controllers\Apps\GoodsReceivingController;
+use App\Http\Controllers\Apps\MemberController;
 use App\Http\Controllers\Apps\PaymentSettingController;
 use App\Http\Controllers\Apps\PricingRuleController;
 use App\Http\Controllers\Apps\ProductController;
@@ -112,6 +113,12 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth', 'verified']], fu
         ->middlewareFor(['create', 'store'], 'permission:customers-create')
         ->middlewareFor(['edit', 'update'], 'permission:customers-edit')
         ->middlewareFor('destroy', 'permission:customers-delete');
+    Route::resource('members', MemberController::class)
+        ->parameters(['members' => 'member'])
+        ->except(['destroy'])
+        ->middlewareFor(['index', 'show'], 'permission:customers-access')
+        ->middlewareFor(['create', 'store'], 'permission:customers-create')
+        ->middlewareFor(['edit', 'update'], 'permission:customers-edit');
     Route::resource('customer-vouchers', CustomerVoucherController::class)
         ->except(['show'])
         ->middlewareFor('index', 'permission:customer-vouchers-access')

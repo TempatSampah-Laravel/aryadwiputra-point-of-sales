@@ -11,6 +11,7 @@ import {
     IconClockHour6,
     IconClipboardCheck,
     IconCreditCard,
+    IconCrown,
     IconFileCertificate,
     IconFileDescription,
     IconFolder,
@@ -188,6 +189,13 @@ export default function Menu() {
         {
             title: "CRM & Pricing",
             details: [
+                {
+                    title: "Member",
+                    href: route("members.index"),
+                    active: url.startsWith("/dashboard/members"),
+                    icon: <IconCrown size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["customers-access"]),
+                },
                 {
                     title: "Promo Harga",
                     href: route("pricing-rules.index"),
