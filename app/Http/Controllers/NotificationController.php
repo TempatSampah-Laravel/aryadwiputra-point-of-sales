@@ -19,7 +19,7 @@ class NotificationController extends Controller
 
         ProductNotificationRead::updateOrCreate(
             [
-                'user_id'    => $request->user()->id,
+                'user_id' => $request->user()->id,
                 'product_id' => $request->product_id,
             ],
             []
@@ -41,7 +41,7 @@ class NotificationController extends Controller
 
         $payload = collect($productIds)->map(function ($productId) use ($request) {
             return [
-                'user_id'    => $request->user()->id,
+                'user_id' => $request->user()->id,
                 'product_id' => $productId,
                 'created_at' => now(),
                 'updated_at' => now(),

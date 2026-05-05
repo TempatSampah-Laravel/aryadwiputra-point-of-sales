@@ -9,6 +9,7 @@ import {
     IconPrinter,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
+import { useAuthorization } from "@/Utils/authorization";
 
 const formatCurrency = (value = 0) =>
     new Intl.NumberFormat("id-ID", {
@@ -19,6 +20,7 @@ const formatCurrency = (value = 0) =>
 
 export default function ReceivableShow({ receivable, bankAccounts = [] }) {
     const { flash, storeProfile } = usePage().props;
+    const { can } = useAuthorization();
     const [showForm, setShowForm] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const printRef = useRef(null);
@@ -29,6 +31,11 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
         bank_account_id: "",
         note: "",
     });
+    const collectionNotesForm = useForm({
+        collection_notes: receivable.collection_notes || "",
+    });
+    const canPayReceivable = can("receivables-pay");
+    const canCreateCrmCampaign = can("crm-campaigns-create");
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -91,6 +98,18 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
         });
     };
 
+    const submitCollectionNotes = (e) => {
+        e.preventDefault();
+        collectionNotesForm.patch(
+            route("receivables.collection-notes", receivable.id),
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success("Catatan penagihan berhasil disimpan"),
+                onError: () => toast.error("Gagal menyimpan catatan penagihan"),
+            }
+        );
+    };
+
     const handlePrint = () => {
         if (!printRef.current) return;
         window.print();
@@ -117,6 +136,20 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        {canCreateCrmCampaign && (
+                            <Link
+                                href={route(
+                                    "receivables.share-campaign",
+                                    receivable.id
+                                )}
+                                method="post"
+                                as="button"
+                                className="inline-flex items-center gap-2 rounded-xl bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-600"
+                            >
+                                <IconBrandWhatsapp size={18} />
+                                Campaign WA
+                            </Link>
+                        )}
                         <a
                             href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
                             target="_blank"
@@ -178,7 +211,7 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                                 Riwayat Pembayaran
                             </p>
-                            {receivable.status !== "paid" && (
+                            {receivable.status !== "paid" && canPayReceivable && (
                                 <button
                                     onClick={() => setShowForm(!showForm)}
                                     className="px-3 py-2 rounded-xl text-sm font-semibold bg-primary-500 hover:bg-primary-600 text-white transition-colors"
@@ -254,7 +287,37 @@ export default function ReceivableShow({ receivable, bankAccounts = [] }) {
                             )}
                         </div>
 
-                        {showForm && (
+                        <form onSubmit={submitCollectionNotes} className="mt-4 space-y-3">
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                Catatan Penagihan
+                            </label>
+                            <textarea
+                                rows={3}
+                                value={collectionNotesForm.data.collection_notes}
+                                onChange={(e) =>
+                                    collectionNotesForm.setData("collection_notes", e.target.value)
+                                }
+                                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-200 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                                placeholder="Catatan proses penagihan..."
+                            />
+                            {collectionNotesForm.errors.collection_notes && (
+                                <p className="text-xs text-danger-500">
+                                    {collectionNotesForm.errors.collection_notes}
+                                </p>
+                            )}
+                            {collectionNotesForm.wasSuccessful && (
+                                <p className="text-xs text-success-500">Tersimpan!</p>
+                            )}
+                            <button
+                                type="submit"
+                                disabled={collectionNotesForm.processing}
+                                className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                            >
+                                {collectionNotesForm.processing ? "Menyimpan..." : "Simpan Catatan"}
+                            </button>
+                        </form>
+
+                        {showForm && canPayReceivable && (
                             <form onSubmit={submitPayment} className="mt-4 space-y-3">
                                 <div>
                                     <label className="text-sm font-medium text-slate-700 dark:text-slate-200">

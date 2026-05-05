@@ -1,19 +1,21 @@
 <?php
+
 namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\AuditLogService;
+use App\Services\LoyaltyService;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class SettingController extends Controller
 {
     public function __construct(
-        private readonly AuditLogService $auditLogService
-    ) {
-    }
+        private readonly AuditLogService $auditLogService,
+        private readonly LoyaltyService $loyaltyService
+    ) {}
 
     /**
      * Show the target settings page
@@ -53,13 +55,13 @@ class SettingController extends Controller
     public function storeProfile()
     {
         $settings = [
-            'store_name'    => Setting::get('store_name', ''),
-            'store_logo'    => Setting::get('store_logo', ''),
+            'store_name' => Setting::get('store_name', ''),
+            'store_logo' => Setting::get('store_logo', ''),
             'store_address' => Setting::get('store_address', ''),
-            'store_phone'   => Setting::get('store_phone', ''),
-            'store_email'   => Setting::get('store_email', ''),
+            'store_phone' => Setting::get('store_phone', ''),
+            'store_email' => Setting::get('store_email', ''),
             'store_website' => Setting::get('store_website', ''),
-            'store_city'    => Setting::get('store_city', ''),
+            'store_city' => Setting::get('store_city', ''),
         ];
 
         return Inertia::render('Dashboard/Settings/Store', [
@@ -73,13 +75,13 @@ class SettingController extends Controller
     public function updateStoreProfile(Request $request)
     {
         $request->validate([
-            'store_name'    => 'required|string|max:255',
+            'store_name' => 'required|string|max:255',
             'store_address' => 'required|string|max:500',
-            'store_phone'   => 'nullable|string|max:50',
-            'store_email'   => 'nullable|email|max:255',
+            'store_phone' => 'nullable|string|max:50',
+            'store_email' => 'nullable|email|max:255',
             'store_website' => 'nullable|string|max:255',
-            'store_city'    => 'nullable|string|max:255',
-            'store_logo'    => 'nullable|image|max:2048',
+            'store_city' => 'nullable|string|max:255',
+            'store_logo' => 'nullable|image|max:2048',
         ]);
 
         $before = [
@@ -129,5 +131,64 @@ class SettingController extends Controller
         );
 
         return back()->with('success', 'Profil toko berhasil diperbarui');
+    }
+
+    public function loyalty()
+    {
+        return Inertia::render('Dashboard/Settings/Loyalty', [
+            'settings' => $this->loyaltyService->settingsPayload(),
+        ]);
+    }
+
+    public function updateLoyalty(Request $request)
+    {
+        $validated = $request->validate([
+            'enable_earn' => ['required', 'boolean'],
+            'enable_redeem' => ['required', 'boolean'],
+            'earn_rate_amount' => ['required', 'integer', 'min:1'],
+            'redeem_point_value' => ['required', 'integer', 'min:1'],
+            'tiers' => ['required', 'array'],
+            'tiers.regular' => ['required', 'integer', 'min:0'],
+            'tiers.silver' => ['required', 'integer', 'min:0'],
+            'tiers.gold' => ['required', 'integer', 'min:0'],
+            'tiers.platinum' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $orderedThresholds = [
+            'regular' => (int) $validated['tiers']['regular'],
+            'silver' => (int) $validated['tiers']['silver'],
+            'gold' => (int) $validated['tiers']['gold'],
+            'platinum' => (int) $validated['tiers']['platinum'],
+        ];
+
+        if (
+            $orderedThresholds['silver'] < $orderedThresholds['regular']
+            || $orderedThresholds['gold'] < $orderedThresholds['silver']
+            || $orderedThresholds['platinum'] < $orderedThresholds['gold']
+        ) {
+            return back()
+                ->withErrors([
+                    'tiers' => 'Threshold tier harus berurutan dari Regular ke Platinum.',
+                ])
+                ->withInput();
+        }
+
+        $before = $this->loyaltyService->settingsPayload();
+        $this->loyaltyService->updateSettings([
+            ...$validated,
+            'tiers' => $orderedThresholds,
+        ]);
+        $this->loyaltyService->syncAllMemberTiers();
+
+        $this->auditLogService->log(
+            event: 'loyalty.setting.updated',
+            module: 'loyalty_settings',
+            auditable: ['target_label' => 'Loyalty Settings'],
+            description: 'Pengaturan loyalty diperbarui.',
+            before: $before,
+            after: $this->loyaltyService->settingsPayload()
+        );
+
+        return back()->with('success', 'Pengaturan loyalty berhasil disimpan');
     }
 }

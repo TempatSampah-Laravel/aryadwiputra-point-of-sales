@@ -242,9 +242,23 @@
         <tbody>
             @foreach ($transaction->details as $index => $detail)
                 <tr style="background: {{ $index % 2 === 0 ? '#f8fafc' : '#fff' }};">
-                    <td>{{ $detail->product->title ?? 'Produk' }}</td>
+                    <td>
+                        {{ $detail->product->title ?? 'Produk' }}
+                        @if ($detail->discount_total > 0 && ($detail->pricing_group_label || $detail->pricing_rule_name))
+                            <div style="font-size:11px;color:#e11d48; margin-top:2px;">
+                                Promo: {{ $detail->pricing_group_label ?: $detail->pricing_rule_name }}
+                            </div>
+                        @endif
+                    </td>
                     <td class="qty">{{ $detail->qty }}</td>
-                    <td class="right">{{ number_format($detail->price / max(1, $detail->qty), 0, ',', '.') }}</td>
+                    <td class="right">
+                        @if ($detail->discount_total > 0 && $detail->base_unit_price > $detail->unit_price)
+                            <div style="font-size:11px;color:#94a3b8;text-decoration:line-through;">
+                                {{ number_format($detail->base_unit_price, 0, ',', '.') }}
+                            </div>
+                        @endif
+                        {{ number_format($detail->unit_price ?: ($detail->price / max(1, $detail->qty)), 0, ',', '.') }}
+                    </td>
                     <td class="right">{{ number_format($detail->price, 0, ',', '.') }}</td>
                 </tr>
             @endforeach
@@ -252,10 +266,13 @@
     </table>
 
     @php
+        $promoDiscount = $transaction->details->sum('discount_total');
         $discount = $transaction->discount ?? 0;
+        $voucherDiscount = $transaction->customer_voucher_discount ?? 0;
+        $loyaltyDiscount = $transaction->loyalty_discount_total ?? 0;
         $shipping = $transaction->shipping_cost ?? 0;
         $grandTotal = $transaction->grand_total ?? 0;
-        $subtotal = $grandTotal + $discount - $shipping;
+        $subtotal = $grandTotal + $discount - $shipping + $promoDiscount + $voucherDiscount + $loyaltyDiscount;
     @endphp
 
     <table style="width:100%; margin-top:8px;">
@@ -264,11 +281,39 @@
             <td style="width:45%;">
                 <table style="width:100%; border-collapse:separate; border-spacing:0 6px; font-size:12px;">
                     <tr>
-                        <td style="color:#475569;">Diskon</td>
+                        <td style="color:#475569;">Subtotal</td>
+                        <td class="right" style="font-weight:600;">
+                            {{ number_format($subtotal, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color:#475569;">Promo Otomatis</td>
+                        <td class="right" style="font-weight:600;">
+                            - {{ number_format($promoDiscount, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color:#475569;">Diskon Manual</td>
                         <td class="right" style="font-weight:600;">
                             - {{ number_format($discount, 0, ',', '.') }}
                         </td>
                     </tr>
+                    @if ($voucherDiscount > 0)
+                        <tr>
+                            <td style="color:#475569;">Voucher Customer</td>
+                            <td class="right" style="font-weight:600;">
+                                - {{ number_format($voucherDiscount, 0, ',', '.') }}
+                            </td>
+                        </tr>
+                    @endif
+                    @if ($loyaltyDiscount > 0)
+                        <tr>
+                            <td style="color:#475569;">Redeem Poin</td>
+                            <td class="right" style="font-weight:600;">
+                                - {{ number_format($loyaltyDiscount, 0, ',', '.') }}
+                            </td>
+                        </tr>
+                    @endif
                     <tr>
                         <td style="color:#475569;">Ongkir</td>
                         <td class="right" style="font-weight:600;">

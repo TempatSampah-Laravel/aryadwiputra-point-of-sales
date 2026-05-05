@@ -10,7 +10,7 @@ class XenditGateway
 {
     public function createInvoice(Transaction $transaction, array $config): array
     {
-        if (!($config['enabled'] ?? false)) {
+        if (! ($config['enabled'] ?? false)) {
             throw new PaymentGatewayException('Xendit tidak aktif atau belum dikonfigurasi.');
         }
 
@@ -20,7 +20,7 @@ class XenditGateway
             ->post('https://api.xendit.co/v2/invoices', [
                 'external_id' => $transaction->invoice,
                 'amount' => (int) $transaction->grand_total,
-                'description' => 'Pembayaran transaksi #' . $transaction->invoice,
+                'description' => 'Pembayaran transaksi #'.$transaction->invoice,
                 'customer' => [
                     'given_names' => optional($customer)->name ?? 'Customer',
                     'email' => optional($customer)->email ?? config('mail.from.address'),
@@ -31,7 +31,7 @@ class XenditGateway
 
         if ($response->failed()) {
             throw new PaymentGatewayException(
-                'Xendit error: ' . $response->json('message', $response->body())
+                'Xendit error: '.$response->json('message', $response->body())
             );
         }
 

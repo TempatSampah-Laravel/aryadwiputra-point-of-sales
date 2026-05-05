@@ -15,9 +15,10 @@ import {
 import Search from "@/Components/Dashboard/Search";
 import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
+import { useAuthorization } from "@/Utils/authorization";
 
 // Category Card for Grid View
-function CategoryCard({ category }) {
+function CategoryCard({ category, canUpdate, canDelete }) {
     return (
         <div className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200">
             {/* Category Image */}
@@ -40,22 +41,28 @@ function CategoryCard({ category }) {
                 )}
 
                 {/* Action Buttons Overlay */}
-                <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                    <Link
-                        href={route("categories.edit", category.id)}
-                        className="p-2.5 rounded-xl bg-white text-warning-600 hover:bg-warning-50 shadow-lg transition-colors"
-                    >
-                        <IconPencilCog size={18} />
-                    </Link>
-                    <Button
-                        type={"delete"}
-                        icon={<IconTrash size={18} />}
-                        className={
-                            "p-2.5 rounded-xl bg-white text-danger-600 hover:bg-danger-50 shadow-lg"
-                        }
-                        url={route("categories.destroy", category.id)}
-                    />
-                </div>
+                {(canUpdate || canDelete) && (
+                    <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                        {canUpdate && (
+                            <Link
+                                href={route("categories.edit", category.id)}
+                                className="p-2.5 rounded-xl bg-white text-warning-600 hover:bg-warning-50 shadow-lg transition-colors"
+                            >
+                                <IconPencilCog size={18} />
+                            </Link>
+                        )}
+                        {canDelete && (
+                            <Button
+                                type={"delete"}
+                                icon={<IconTrash size={18} />}
+                                className={
+                                    "p-2.5 rounded-xl bg-white text-danger-600 hover:bg-danger-50 shadow-lg"
+                                }
+                                url={route("categories.destroy", category.id)}
+                            />
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Category Info */}
@@ -74,8 +81,11 @@ function CategoryCard({ category }) {
 }
 
 export default function Index({ categories }) {
-    const { roles, permissions, errors } = usePage().props;
+    const { can } = useAuthorization();
     const [viewMode, setViewMode] = useState("grid");
+    const canCreateCategories = can("categories-create");
+    const canEditCategories = can("categories-edit");
+    const canDeleteCategories = can("categories-delete");
 
     return (
         <>
@@ -93,15 +103,22 @@ export default function Index({ categories }) {
                             kategori terdaftar
                         </p>
                     </div>
-                    <Button
-                        type={"link"}
-                        icon={<IconCirclePlus size={18} strokeWidth={1.5} />}
-                        className={
-                            "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
-                        }
-                        label={"Tambah Kategori"}
-                        href={route("categories.create")}
-                    />
+                    {canCreateCategories && (
+                        <Button
+                            type={"link"}
+                            icon={
+                                <IconCirclePlus
+                                    size={18}
+                                    strokeWidth={1.5}
+                                />
+                            }
+                            className={
+                                "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
+                            }
+                            label={"Tambah Kategori"}
+                            href={route("categories.create")}
+                        />
+                    )}
                 </div>
             </div>
 
@@ -148,6 +165,8 @@ export default function Index({ categories }) {
                             <CategoryCard
                                 key={category.id}
                                 category={category}
+                                canUpdate={canEditCategories}
+                                canDelete={canDeleteCategories}
                             />
                         ))}
                     </div>
@@ -204,38 +223,46 @@ export default function Index({ categories }) {
                                         </Table.Td>
                                         <Table.Td>
                                             <div className="flex gap-2">
-                                                <Button
-                                                    type={"edit"}
-                                                    icon={
-                                                        <IconPencilCog
-                                                            size={16}
-                                                            strokeWidth={1.5}
-                                                        />
-                                                    }
-                                                    className={
-                                                        "border bg-warning-100 border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400"
-                                                    }
-                                                    href={route(
-                                                        "categories.edit",
-                                                        category.id
-                                                    )}
-                                                />
-                                                <Button
-                                                    type={"delete"}
-                                                    icon={
-                                                        <IconTrash
-                                                            size={16}
-                                                            strokeWidth={1.5}
-                                                        />
-                                                    }
-                                                    className={
-                                                        "border bg-danger-100 border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400"
-                                                    }
-                                                    url={route(
-                                                        "categories.destroy",
-                                                        category.id
-                                                    )}
-                                                />
+                                                {canEditCategories && (
+                                                    <Button
+                                                        type={"edit"}
+                                                        icon={
+                                                            <IconPencilCog
+                                                                size={16}
+                                                                strokeWidth={
+                                                                    1.5
+                                                                }
+                                                            />
+                                                        }
+                                                        className={
+                                                            "border bg-warning-100 border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400"
+                                                        }
+                                                        href={route(
+                                                            "categories.edit",
+                                                            category.id
+                                                        )}
+                                                    />
+                                                )}
+                                                {canDeleteCategories && (
+                                                    <Button
+                                                        type={"delete"}
+                                                        icon={
+                                                            <IconTrash
+                                                                size={16}
+                                                                strokeWidth={
+                                                                    1.5
+                                                                }
+                                                            />
+                                                        }
+                                                        className={
+                                                            "border bg-danger-100 border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400"
+                                                        }
+                                                        url={route(
+                                                            "categories.destroy",
+                                                            category.id
+                                                        )}
+                                                    />
+                                                )}
                                             </div>
                                         </Table.Td>
                                     </tr>

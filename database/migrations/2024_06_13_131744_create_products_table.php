@@ -25,7 +25,7 @@ return new class extends Migration
             $table->integer('stock');
             $table->timestamps();
 
-            //relationship categories
+            // relationship categories
             $table->foreign('category_id')->references('id')->on('categories');
         });
     }

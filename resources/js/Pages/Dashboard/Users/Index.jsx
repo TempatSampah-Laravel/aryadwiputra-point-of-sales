@@ -17,10 +17,18 @@ import Search from "@/Components/Dashboard/Search";
 import Table from "@/Components/Dashboard/Table";
 import Checkbox from "@/Components/Dashboard/Checkbox";
 import Pagination from "@/Components/Dashboard/Pagination";
+import { useAuthorization } from "@/Utils/authorization";
 import Swal from "sweetalert2";
 
 // User Card for Grid View
-function UserCard({ user, isSelected, onSelect, onDelete }) {
+function UserCard({
+    user,
+    isSelected,
+    onSelect,
+    onDelete,
+    canUpdate,
+    canDelete,
+}) {
     const avatarUrl = user.avatar;
     const initial =
         user.name?.charAt(0)?.toUpperCase() ||
@@ -63,11 +71,13 @@ function UserCard({ user, isSelected, onSelect, onDelete }) {
                         </p>
                     </div>
                 </div>
-                <Checkbox
-                    value={user.id}
-                    onChange={onSelect}
-                    checked={isSelected}
-                />
+                {canDelete && (
+                    <Checkbox
+                        value={user.id}
+                        onChange={onSelect}
+                        checked={isSelected}
+                    />
+                )}
             </div>
 
             {/* Roles */}
@@ -86,30 +96,42 @@ function UserCard({ user, isSelected, onSelect, onDelete }) {
             </div>
 
             {/* Actions */}
-            <div className="flex border-t border-slate-100 dark:border-slate-800">
-                <Link
-                    href={route("users.edit", user.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-warning-600 hover:bg-warning-50 dark:hover:bg-warning-950/50 text-sm font-medium transition-colors"
-                >
-                    <IconPencilCog size={16} />
-                    <span>Edit</span>
-                </Link>
-                <div className="w-px bg-slate-100 dark:bg-slate-800" />
-                <button
-                    onClick={() => onDelete(user.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/50 text-sm font-medium transition-colors"
-                >
-                    <IconTrash size={16} />
-                    <span>Hapus</span>
-                </button>
-            </div>
+            {(canUpdate || canDelete) && (
+                <div className="flex border-t border-slate-100 dark:border-slate-800">
+                    {canUpdate && (
+                        <Link
+                            href={route("users.edit", user.id)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-3 text-warning-600 hover:bg-warning-50 dark:hover:bg-warning-950/50 text-sm font-medium transition-colors"
+                        >
+                            <IconPencilCog size={16} />
+                            <span>Edit</span>
+                        </Link>
+                    )}
+                    {canUpdate && canDelete && (
+                        <div className="w-px bg-slate-100 dark:bg-slate-800" />
+                    )}
+                    {canDelete && (
+                        <button
+                            onClick={() => onDelete(user.id)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-3 text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/50 text-sm font-medium transition-colors"
+                        >
+                            <IconTrash size={16} />
+                            <span>Hapus</span>
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
 
 export default function Index() {
     const { users } = usePage().props;
+    const { can } = useAuthorization();
     const [viewMode, setViewMode] = useState("grid");
+    const canCreateUsers = can("users-create");
+    const canUpdateUsers = can("users-update");
+    const canDeleteUsers = can("users-delete");
 
     const {
         data,
@@ -170,7 +192,7 @@ export default function Index() {
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        {data.selectedUser.length > 0 && (
+                        {canDeleteUsers && data.selectedUser.length > 0 && (
                             <Button
                                 type={"bulk"}
                                 icon={<IconTrash size={18} />}
@@ -181,17 +203,22 @@ export default function Index() {
                                 onClick={() => deleteData(data.selectedUser)}
                             />
                         )}
-                        <Button
-                            type={"link"}
-                            href={route("users.create")}
-                            icon={
-                                <IconCirclePlus size={18} strokeWidth={1.5} />
-                            }
-                            className={
-                                "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
-                            }
-                            label={"Tambah Pengguna"}
-                        />
+                        {canCreateUsers && (
+                            <Button
+                                type={"link"}
+                                href={route("users.create")}
+                                icon={
+                                    <IconCirclePlus
+                                        size={18}
+                                        strokeWidth={1.5}
+                                    />
+                                }
+                                className={
+                                    "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
+                                }
+                                label={"Tambah Pengguna"}
+                            />
+                        )}
                     </div>
                 </div>
             </div>
@@ -241,6 +268,8 @@ export default function Index() {
                                 )}
                                 onSelect={setSelectedUser}
                                 onDelete={deleteData}
+                                canUpdate={canUpdateUsers}
+                                canDelete={canDeleteUsers}
                             />
                         ))}
                     </div>
@@ -250,24 +279,26 @@ export default function Index() {
                             <Table.Thead>
                                 <tr>
                                     <Table.Th className={"w-10"}>
-                                        <Checkbox
-                                            onChange={(e) => {
-                                                const allUserIds =
-                                                    users.data.map((user) =>
-                                                        user.id.toString()
+                                        {canDeleteUsers && (
+                                            <Checkbox
+                                                onChange={(e) => {
+                                                    const allUserIds =
+                                                        users.data.map((user) =>
+                                                            user.id.toString()
+                                                        );
+                                                    setData(
+                                                        "selectedUser",
+                                                        e.target.checked
+                                                            ? allUserIds
+                                                            : []
                                                     );
-                                                setData(
-                                                    "selectedUser",
-                                                    e.target.checked
-                                                        ? allUserIds
-                                                        : []
-                                                );
-                                            }}
-                                            checked={
-                                                data.selectedUser.length ===
-                                                users.data.length
-                                            }
-                                        />
+                                                }}
+                                                checked={
+                                                    data.selectedUser.length ===
+                                                    users.data.length
+                                                }
+                                            />
+                                        )}
                                     </Table.Th>
                                     <Table.Th className={"w-10"}>No</Table.Th>
                                     <Table.Th>Pengguna</Table.Th>
@@ -282,13 +313,15 @@ export default function Index() {
                                         key={user.id}
                                     >
                                         <Table.Td>
-                                            <Checkbox
-                                                value={user.id}
-                                                onChange={setSelectedUser}
-                                                checked={data.selectedUser.includes(
-                                                    user.id.toString()
-                                                )}
-                                            />
+                                            {canDeleteUsers && (
+                                                <Checkbox
+                                                    value={user.id}
+                                                    onChange={setSelectedUser}
+                                                    checked={data.selectedUser.includes(
+                                                        user.id.toString()
+                                                    )}
+                                                />
+                                            )}
                                         </Table.Td>
                                         <Table.Td className={"text-center"}>
                                             {++i +
@@ -336,38 +369,46 @@ export default function Index() {
                                         </Table.Td>
                                         <Table.Td>
                                             <div className="flex gap-2">
-                                                <Button
-                                                    type={"edit"}
-                                                    icon={
-                                                        <IconPencilCog
-                                                            size={16}
-                                                            strokeWidth={1.5}
-                                                        />
-                                                    }
-                                                    className={
-                                                        "border bg-warning-100 border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400"
-                                                    }
-                                                    href={route(
-                                                        "users.edit",
-                                                        user.id
-                                                    )}
-                                                />
-                                                <Button
-                                                    type={"delete"}
-                                                    icon={
-                                                        <IconTrash
-                                                            size={16}
-                                                            strokeWidth={1.5}
-                                                        />
-                                                    }
-                                                    className={
-                                                        "border bg-danger-100 border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400"
-                                                    }
-                                                    url={route(
-                                                        "users.destroy",
-                                                        user.id
-                                                    )}
-                                                />
+                                                {canUpdateUsers && (
+                                                    <Button
+                                                        type={"edit"}
+                                                        icon={
+                                                            <IconPencilCog
+                                                                size={16}
+                                                                strokeWidth={
+                                                                    1.5
+                                                                }
+                                                            />
+                                                        }
+                                                        className={
+                                                            "border bg-warning-100 border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400"
+                                                        }
+                                                        href={route(
+                                                            "users.edit",
+                                                            user.id
+                                                        )}
+                                                    />
+                                                )}
+                                                {canDeleteUsers && (
+                                                    <Button
+                                                        type={"delete"}
+                                                        icon={
+                                                            <IconTrash
+                                                                size={16}
+                                                                strokeWidth={
+                                                                    1.5
+                                                                }
+                                                            />
+                                                        }
+                                                        className={
+                                                            "border bg-danger-100 border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400"
+                                                        }
+                                                        url={route(
+                                                            "users.destroy",
+                                                            user.id
+                                                        )}
+                                                    />
+                                                )}
                                             </div>
                                         </Table.Td>
                                     </tr>
@@ -391,15 +432,17 @@ export default function Index() {
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                         Tambahkan pengguna pertama Anda.
                     </p>
-                    <Button
-                        type={"link"}
-                        icon={<IconCirclePlus size={18} />}
-                        className={
-                            "bg-primary-500 hover:bg-primary-600 text-white"
-                        }
-                        label={"Tambah Pengguna"}
-                        href={route("users.create")}
-                    />
+                    {canCreateUsers && (
+                        <Button
+                            type={"link"}
+                            icon={<IconCirclePlus size={18} />}
+                            className={
+                                "bg-primary-500 hover:bg-primary-600 text-white"
+                            }
+                            label={"Tambah Pengguna"}
+                            href={route("users.create")}
+                        />
+                    )}
                 </div>
             )}
 

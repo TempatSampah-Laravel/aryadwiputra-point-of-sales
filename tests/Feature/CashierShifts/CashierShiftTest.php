@@ -144,8 +144,8 @@ class CashierShiftTest extends TestCase
         $product = Product::create([
             'category_id' => $category->id,
             'image' => 'shift-product.png',
-            'barcode' => 'BRCD-' . Str::upper(Str::random(8)),
-            'sku' => 'SKU-' . Str::upper(Str::random(8)),
+            'barcode' => 'BRCD-'.Str::upper(Str::random(8)),
+            'sku' => 'SKU-'.Str::upper(Str::random(8)),
             'title' => 'Produk Shift',
             'description' => 'Produk Shift',
             'buy_price' => 40000,
@@ -157,7 +157,7 @@ class CashierShiftTest extends TestCase
             'cashier_id' => $cashier->id,
             'cashier_shift_id' => $shift->id,
             'customer_id' => $customer->id,
-            'invoice' => 'TRX-' . Str::upper(Str::random(8)),
+            'invoice' => 'TRX-'.Str::upper(Str::random(8)),
             'cash' => 60000,
             'change' => 0,
             'discount' => 0,
@@ -175,7 +175,7 @@ class CashierShiftTest extends TestCase
             'cashier_id' => $cashier->id,
             'cashier_shift_id' => $shift->id,
             'customer_id' => $customer->id,
-            'invoice' => 'TRX-' . Str::upper(Str::random(8)),
+            'invoice' => 'TRX-'.Str::upper(Str::random(8)),
             'cash' => 0,
             'change' => 0,
             'discount' => 0,
@@ -186,7 +186,7 @@ class CashierShiftTest extends TestCase
         ]);
 
         SalesReturn::create([
-            'code' => 'SR-' . Str::upper(Str::random(6)),
+            'code' => 'SR-'.Str::upper(Str::random(6)),
             'transaction_id' => Transaction::first()->id,
             'customer_id' => $customer->id,
             'cashier_id' => $cashier->id,
@@ -240,6 +240,7 @@ class CashierShiftTest extends TestCase
         ]);
 
         $response = $this
+            ->withSession($this->recentlyConfirmedSession())
             ->actingAs($admin)
             ->post(route('cashier-shifts.close', $shift), [
                 'actual_cash' => 80000,
@@ -251,6 +252,32 @@ class CashierShiftTest extends TestCase
             'closed_by' => $admin->id,
             'status' => CashierShift::STATUS_FORCE_CLOSED,
         ]);
+    }
+
+    public function test_force_close_redirects_to_confirm_password_when_confirmation_is_stale(): void
+    {
+        $cashier = $this->createUserWithPermissions(['cashier-shifts-access']);
+        $admin = $this->createUserWithPermissions([
+            'cashier-shifts-access',
+            'cashier-shifts-close',
+            'cashier-shifts-force-close',
+        ]);
+
+        $shift = CashierShift::create([
+            'user_id' => $cashier->id,
+            'opened_by' => $cashier->id,
+            'opened_at' => now(),
+            'opening_cash' => 80000,
+            'expected_cash' => 80000,
+            'status' => CashierShift::STATUS_OPEN,
+        ]);
+
+        $this->actingAs($admin)
+            ->from(route('cashier-shifts.show', $shift))
+            ->post(route('cashier-shifts.close', $shift), [
+                'actual_cash' => 80000,
+            ])
+            ->assertRedirect(route('password.confirm'));
     }
 
     private function createUserWithPermissions(array $permissions): User

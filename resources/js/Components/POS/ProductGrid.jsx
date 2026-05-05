@@ -18,6 +18,11 @@ const formatPrice = (value = 0) =>
 function ProductCard({ product, onAddToCart, isAdding }) {
     const hasStock = product.stock > 0;
     const lowStock = product.stock > 0 && product.stock <= 5;
+    const promoBadge = product.pricing_badge;
+    const promoPrice = Number(promoBadge?.promo_price || 0);
+    const basePrice = Number(promoBadge?.base_price || product.sell_price || 0);
+    const showPromo = promoBadge && promoPrice > 0 && promoPrice < basePrice;
+    const showBadge = Boolean(promoBadge?.label);
 
     return (
         <button
@@ -59,6 +64,12 @@ function ProductCard({ product, onAddToCart, isAdding }) {
                     </span>
                 )}
 
+                {showBadge && (
+                    <span className="absolute left-2 top-2 max-w-[70%] truncate rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-lg">
+                        {promoBadge.label}
+                    </span>
+                )}
+
                 {/* Out of Stock Overlay */}
                 {!hasStock && (
                     <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center">
@@ -83,9 +94,21 @@ function ProductCard({ product, onAddToCart, isAdding }) {
                 <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight">
                     {product.title}
                 </h3>
-                <p className="mt-2 text-base font-bold text-primary-600 dark:text-primary-400">
-                    {formatPrice(product.sell_price)}
-                </p>
+                <div className="mt-2">
+                    {showPromo && (
+                        <p className="text-xs text-slate-400 line-through">
+                            {formatPrice(basePrice)}
+                        </p>
+                    )}
+                    <p className="text-base font-bold text-primary-600 dark:text-primary-400">
+                        {formatPrice(showPromo ? promoPrice : product.sell_price)}
+                    </p>
+                    {showBadge && !showPromo && (
+                        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            Promo tersedia
+                        </p>
+                    )}
+                </div>
             </div>
 
         </button>

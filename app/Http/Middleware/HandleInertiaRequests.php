@@ -3,52 +3,46 @@
 namespace App\Http\Middleware;
 
 use App\Models\CashierShift;
+use App\Models\Payable;
 use App\Models\Product;
 use App\Models\Receivable;
-use App\Models\Payable;
 use App\Services\CashierShiftService;
+use App\Services\PayableAgingService;
+use App\Services\ReceivableService;
+use App\Support\ProductionSecurityBaseline;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that is loaded on the first page visit.
-     *
-     * @var string
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determine the current asset version.
-     */
-    public function version(Request $request): string|null
+    public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @return array<string, mixed>
-     */
     public function share(Request $request): array
     {
-        $lowStockNotifications    = [];
-        $receivableNotifications  = [];
-        $payableNotifications     = [];
-        $activeCashierShift       = null;
+        $lowStockNotifications = [];
+        $receivableNotifications = [];
+        $payableNotifications = [];
+        $activeCashierShift = null;
+        $securityWarnings = [];
+        $stepUpFreshUntil = null;
+        $payableAgingSummary = null;
+        $receivableAgingSummary = null;
 
         if ($request->user()) {
             $userId = $request->user()->id;
+
             $lowStockNotifications = Product::where('stock', '<=', 0)
                 ->whereNotExists(function ($query) use ($userId) {
-                    $query->selectRaw(1)
+                    $query->selectRaw('1')
                         ->from('product_notification_reads as pr')
                         ->whereColumn('pr.product_id', 'products.id')
                         ->where('pr.user_id', $userId)
-                        // Only hide if the notification was read after the last product update
                         ->whereColumn('pr.updated_at', '>=', 'products.updated_at');
                 })
                 ->orderByDesc('updated_at')
@@ -56,12 +50,18 @@ class HandleInertiaRequests extends Middleware
                 ->get(['id', 'title', 'stock', 'updated_at'])
                 ->map(function ($product) {
                     return [
-                        'id'    => $product->id,
+                        'id' => $product->id,
                         'title' => $product->title,
                         'stock' => (int) $product->stock,
-                        'time'  => optional($product->updated_at)->diffForHumans(),
+                        'time' => optional($product->updated_at)->diffForHumans(),
                     ];
                 });
+
+            $payableAgingService = new PayableAgingService;
+            $receivableService = new ReceivableService;
+
+            $payableAgingSummary = $payableAgingService->getAgingSummary();
+            $receivableAgingSummary = $receivableService->getAgingSummary();
 
             $receivableNotifications = Receivable::whereNot('status', 'paid')
                 ->whereNotNull('due_date')
@@ -71,12 +71,14 @@ class HandleInertiaRequests extends Middleware
                 ->get(['id', 'invoice', 'customer_id', 'due_date', 'total', 'paid', 'status'])
                 ->map(function ($item) {
                     $remaining = max(0, ($item->total ?? 0) - ($item->paid ?? 0));
+
                     return [
-                        'id'       => $item->id,
-                        'title'    => "Piutang: {$item->invoice}",
-                        'subtitle' => 'Sisa ' . number_format($remaining, 0, ',', '.'),
-                        'time'     => optional($item->due_date)->diffForHumans(),
-                        'status'   => $item->status,
+                        'id' => $item->id,
+                        'title' => "Piutang: {$item->invoice}",
+                        'subtitle' => 'Sisa '.number_format($remaining, 0, ',', '.'),
+                        'time' => optional($item->due_date)->diffForHumans(),
+                        'status' => $item->status,
+                        'aging_bucket' => $item->aging_bucket,
                     ];
                 });
 
@@ -88,12 +90,14 @@ class HandleInertiaRequests extends Middleware
                 ->get(['id', 'document_number', 'due_date', 'total', 'paid', 'status'])
                 ->map(function ($item) {
                     $remaining = max(0, ($item->total ?? 0) - ($item->paid ?? 0));
+
                     return [
-                        'id'       => $item->id,
-                        'title'    => "Hutang: {$item->document_number}",
-                        'subtitle' => 'Sisa ' . number_format($remaining, 0, ',', '.'),
-                        'time'     => optional($item->due_date)->diffForHumans(),
-                        'status'   => $item->status,
+                        'id' => $item->id,
+                        'title' => "Hutang: {$item->document_number}",
+                        'subtitle' => 'Sisa '.number_format($remaining, 0, ',', '.'),
+                        'time' => optional($item->due_date)->diffForHumans(),
+                        'status' => $item->status,
+                        'aging_bucket' => $item->aging_bucket,
                     ];
                 });
 
@@ -107,32 +111,41 @@ class HandleInertiaRequests extends Middleware
             if ($activeShift) {
                 $activeCashierShift = app(CashierShiftService::class)->summarizeForDisplay($activeShift);
             }
+
+            $securityWarnings = ProductionSecurityBaseline::issues();
+
+            $confirmedAt = (int) $request->session()->get('auth.password_confirmed_at', 0);
+            if ($confirmedAt > 0) {
+                $stepUpFreshUntil = now()
+                    ->setTimestamp($confirmedAt + (int) config('auth.password_timeout', 900))
+                    ->toISOString();
+            }
         }
 
         $storeProfile = [
-            'name'    => 'Toko Anda',
-            'logo'    => null,
+            'name' => 'Toko Anda',
+            'logo' => null,
             'address' => '',
-            'phone'   => '',
-            'email'   => '',
+            'phone' => '',
+            'email' => '',
             'website' => '',
-            'city'    => '',
+            'city' => '',
         ];
 
         if (Schema::hasTable('settings')) {
             $logo = \App\Models\Setting::get('store_logo');
-            if ($logo && !str_starts_with($logo, 'http') && !str_starts_with($logo, '/storage')) {
-                $logo = asset('storage/' . ltrim($logo, '/'));
+            if ($logo && ! str_starts_with($logo, 'http') && ! str_starts_with($logo, '/storage')) {
+                $logo = asset('storage/'.ltrim($logo, '/'));
             }
 
             $storeProfile = [
-                'name'    => \App\Models\Setting::get('store_name', 'Toko Anda'),
-                'logo'    => $logo,
+                'name' => \App\Models\Setting::get('store_name', 'Toko Anda'),
+                'logo' => $logo,
                 'address' => \App\Models\Setting::get('store_address', ''),
-                'phone'   => \App\Models\Setting::get('store_phone', ''),
-                'email'   => \App\Models\Setting::get('store_email', ''),
+                'phone' => \App\Models\Setting::get('store_phone', ''),
+                'email' => \App\Models\Setting::get('store_email', ''),
                 'website' => \App\Models\Setting::get('store_website', ''),
-                'city'    => \App\Models\Setting::get('store_city', ''),
+                'city' => \App\Models\Setting::get('store_city', ''),
             ];
         }
 
@@ -143,11 +156,18 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => $request->user() ? $request->user()->getPermissions() : [],
                 'super' => $request->user() ? $request->user()->isSuperAdmin() : false,
             ],
-            'lowStockNotifications'   => $lowStockNotifications,
+            'lowStockNotifications' => $lowStockNotifications,
             'receivableNotifications' => $receivableNotifications,
-            'payableNotifications'    => $payableNotifications,
-            'activeCashierShift'      => $activeCashierShift,
-            'storeProfile'            => $storeProfile,
+            'payableNotifications' => $payableNotifications,
+            'payableAgingSummary' => $payableAgingSummary,
+            'receivableAgingSummary' => $receivableAgingSummary,
+            'activeCashierShift' => $activeCashierShift,
+            'storeProfile' => $storeProfile,
+            'security' => [
+                'warnings' => $securityWarnings,
+                'publicRegistrationEnabled' => config('security.auth.public_registration'),
+                'stepUpFreshUntil' => $stepUpFreshUntil,
+            ],
         ];
     }
 }

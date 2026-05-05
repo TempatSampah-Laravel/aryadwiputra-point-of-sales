@@ -16,9 +16,10 @@ import {
 import Search from "@/Components/Dashboard/Search";
 import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
+import { useAuthorization } from "@/Utils/authorization";
 
 // Customer Card for Grid View
-function CustomerCard({ customer }) {
+function CustomerCard({ customer, canUpdate, canDelete }) {
     return (
         <div className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200">
             {/* Avatar & Name */}
@@ -37,8 +38,23 @@ function CustomerCard({ customer }) {
                     )}
                     <div>
                         <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">
-                            {customer.name}
+                            <Link
+                                href={route("customers.show", customer.id)}
+                                className="hover:text-primary-600"
+                            >
+                                {customer.name}
+                            </Link>
                         </h3>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                            <span className="inline-flex rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-semibold text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">
+                                {customer.is_loyalty_member
+                                    ? customer.loyalty_tier
+                                    : "non-member"}
+                            </span>
+                            <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                {customer.loyalty_points || 0} poin
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -63,31 +79,40 @@ function CustomerCard({ customer }) {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <Link
-                    href={route("customers.edit", customer.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-warning-100 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:text-warning-400 text-sm font-medium transition-colors"
-                >
-                    <IconPencilCog size={16} />
-                    <span>Edit</span>
-                </Link>
-                <Button
-                    type={"delete"}
-                    icon={<IconTrash size={16} />}
-                    className={
-                        "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-danger-100 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:text-danger-400 text-sm font-medium"
-                    }
-                    url={route("customers.destroy", customer.id)}
-                    label="Hapus"
-                />
-            </div>
+            {(canUpdate || canDelete) && (
+                <div className="flex gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    {canUpdate && (
+                        <Link
+                            href={route("customers.edit", customer.id)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-warning-100 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:text-warning-400 text-sm font-medium transition-colors"
+                        >
+                            <IconPencilCog size={16} />
+                            <span>Edit</span>
+                        </Link>
+                    )}
+                    {canDelete && (
+                        <Button
+                            type={"delete"}
+                            icon={<IconTrash size={16} />}
+                            className={
+                                "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-danger-100 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:text-danger-400 text-sm font-medium"
+                            }
+                            url={route("customers.destroy", customer.id)}
+                            label="Hapus"
+                        />
+                    )}
+                </div>
+            )}
         </div>
     );
 }
 
 export default function Index({ customers }) {
-    const { roles, permissions, errors } = usePage().props;
+    const { can } = useAuthorization();
     const [viewMode, setViewMode] = useState("grid");
+    const canCreateCustomers = can("customers-create");
+    const canEditCustomers = can("customers-edit");
+    const canDeleteCustomers = can("customers-delete");
 
     return (
         <>
@@ -105,15 +130,22 @@ export default function Index({ customers }) {
                             pelanggan terdaftar
                         </p>
                     </div>
-                    <Button
-                        type={"link"}
-                        icon={<IconCirclePlus size={18} strokeWidth={1.5} />}
-                        className={
-                            "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
-                        }
-                        label={"Tambah Pelanggan"}
-                        href={route("customers.create")}
-                    />
+                    {canCreateCustomers && (
+                        <Button
+                            type={"link"}
+                            icon={
+                                <IconCirclePlus
+                                    size={18}
+                                    strokeWidth={1.5}
+                                />
+                            }
+                            className={
+                                "bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
+                            }
+                            label={"Tambah Pelanggan"}
+                            href={route("customers.create")}
+                        />
+                    )}
                 </div>
             </div>
 
@@ -160,6 +192,8 @@ export default function Index({ customers }) {
                             <CustomerCard
                                 key={customer.id}
                                 customer={customer}
+                                canUpdate={canEditCustomers}
+                                canDelete={canDeleteCustomers}
                             />
                         ))}
                     </div>
@@ -171,6 +205,7 @@ export default function Index({ customers }) {
                                 <tr>
                                     <Table.Th className="w-10">No</Table.Th>
                                     <Table.Th>Pelanggan</Table.Th>
+                                    <Table.Th>Loyalty</Table.Th>
                                     <Table.Th>No. Telepon</Table.Th>
                                     <Table.Th>Alamat</Table.Th>
                                     <Table.Th></Table.Th>
@@ -203,8 +238,30 @@ export default function Index({ customers }) {
                                                     </div>
                                                 )}
                                                 <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                                                    {customer.name}
+                                                    <Link
+                                                        href={route(
+                                                            "customers.show",
+                                                            customer.id
+                                                        )}
+                                                        className="hover:text-primary-600"
+                                                    >
+                                                        {customer.name}
+                                                    </Link>
                                                 </p>
+                                            </div>
+                                        </Table.Td>
+                                        <Table.Td>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-semibold text-primary-600 dark:text-primary-300">
+                                                    {customer.is_loyalty_member
+                                                        ? customer.loyalty_tier
+                                                        : "non-member"}
+                                                </span>
+                                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                    {customer.loyalty_points ||
+                                                        0}{" "}
+                                                    poin
+                                                </span>
                                             </div>
                                         </Table.Td>
                                         <Table.Td>
@@ -219,38 +276,46 @@ export default function Index({ customers }) {
                                         </Table.Td>
                                         <Table.Td>
                                             <div className="flex gap-2">
-                                                <Button
-                                                    type={"edit"}
-                                                    icon={
-                                                        <IconPencilCog
-                                                            size={16}
-                                                            strokeWidth={1.5}
-                                                        />
-                                                    }
-                                                    className={
-                                                        "border bg-warning-100 border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400"
-                                                    }
-                                                    href={route(
-                                                        "customers.edit",
-                                                        customer.id
-                                                    )}
-                                                />
-                                                <Button
-                                                    type={"delete"}
-                                                    icon={
-                                                        <IconTrash
-                                                            size={16}
-                                                            strokeWidth={1.5}
-                                                        />
-                                                    }
-                                                    className={
-                                                        "border bg-danger-100 border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400"
-                                                    }
-                                                    url={route(
-                                                        "customers.destroy",
-                                                        customer.id
-                                                    )}
-                                                />
+                                                {canEditCustomers && (
+                                                    <Button
+                                                        type={"edit"}
+                                                        icon={
+                                                            <IconPencilCog
+                                                                size={16}
+                                                                strokeWidth={
+                                                                    1.5
+                                                                }
+                                                            />
+                                                        }
+                                                        className={
+                                                            "border bg-warning-100 border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400"
+                                                        }
+                                                        href={route(
+                                                            "customers.edit",
+                                                            customer.id
+                                                        )}
+                                                    />
+                                                )}
+                                                {canDeleteCustomers && (
+                                                    <Button
+                                                        type={"delete"}
+                                                        icon={
+                                                            <IconTrash
+                                                                size={16}
+                                                                strokeWidth={
+                                                                    1.5
+                                                                }
+                                                            />
+                                                        }
+                                                        className={
+                                                            "border bg-danger-100 border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400"
+                                                        }
+                                                        url={route(
+                                                            "customers.destroy",
+                                                            customer.id
+                                                        )}
+                                                    />
+                                                )}
                                             </div>
                                         </Table.Td>
                                     </tr>

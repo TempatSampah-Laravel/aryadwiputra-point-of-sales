@@ -15,12 +15,15 @@ import ThermalReceipt, {
     ThermalReceipt58mm,
 } from "@/Components/Receipt/ThermalReceipt";
 import ShippingLabel from "@/Components/Receipt/ShippingLabel";
+import { useAuthorization } from "@/Utils/authorization";
 
 export default function Print({ transaction }) {
     const { storeProfile } = usePage().props;
+    const { can } = useAuthorization();
     const [printMode, setPrintMode] = useState("invoice"); // 'invoice' | 'thermal80' | 'thermal58'
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isConfirming, setIsConfirming] = useState(false);
+    const canConfirmPayment = can("transactions-confirm-payment");
 
     const formatPrice = (price = 0) =>
         Number(price || 0).toLocaleString("id-ID", {
@@ -39,6 +42,27 @@ export default function Print({ transaction }) {
         });
 
     const items = transaction?.details ?? [];
+    const promoDiscountTotal = useMemo(
+        () =>
+            items.reduce(
+                (sum, item) => sum + Number(item.discount_total || 0),
+                0
+            ),
+        [items]
+    );
+    const loyaltyDiscountTotal = Number(
+        transaction?.loyalty_discount_total || 0
+    );
+    const voucherDiscountTotal = Number(
+        transaction?.customer_voucher_discount || 0
+    );
+    const baseSubtotal =
+        (transaction?.grand_total || 0) +
+        (transaction?.discount || 0) -
+        (transaction?.shipping_cost || 0) +
+        promoDiscountTotal +
+        loyaltyDiscountTotal +
+        voucherDiscountTotal;
 
     const store = useMemo(
         () => ({
@@ -215,7 +239,8 @@ export default function Print({ transaction }) {
 
                             {/* Confirm Payment Button - Only for pending bank_transfer */}
                             {paymentMethodKey === "bank_transfer" &&
-                                paymentStatusKey === "pending" && (
+                                paymentStatusKey === "pending" &&
+                                canConfirmPayment && (
                                     <button
                                         onClick={() =>
                                             setShowConfirmModal(true)
@@ -482,7 +507,18 @@ export default function Print({ transaction }) {
                                                 const subtotal =
                                                     Number(item.price) || 0;
                                                 const unitPrice =
-                                                    subtotal / quantity;
+                                                    Number(
+                                                        item.unit_price || 0
+                                                    ) || subtotal / quantity;
+                                                const baseUnitPrice =
+                                                    Number(
+                                                        item.base_unit_price || 0
+                                                    ) || unitPrice;
+                                                const hasPromo =
+                                                    Number(
+                                                        item.discount_total || 0
+                                                    ) > 0 &&
+                                                    baseUnitPrice > unitPrice;
 
                                                 return (
                                                     <tr
@@ -500,6 +536,13 @@ export default function Print({ transaction }) {
                                                                         ?.title
                                                                 }
                                                             </p>
+                                                            {hasPromo && (
+                                                                <p className="text-xs font-medium text-rose-500 dark:text-rose-400">
+                                                                    {item.pricing_group_label ||
+                                                                        item.pricing_rule_name ||
+                                                                        "Promo aktif"}
+                                                                </p>
+                                                            )}
                                                             {item.product
                                                                 ?.barcode && (
                                                                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -511,9 +554,20 @@ export default function Print({ transaction }) {
                                                             )}
                                                         </td>
                                                         <td className="py-3 text-right text-slate-600 dark:text-slate-400">
-                                                            {formatPrice(
-                                                                unitPrice
-                                                            )}
+                                                            <div>
+                                                                {hasPromo && (
+                                                                    <p className="text-xs text-slate-400 line-through">
+                                                                        {formatPrice(
+                                                                            baseUnitPrice
+                                                                        )}
+                                                                    </p>
+                                                                )}
+                                                                <p>
+                                                                    {formatPrice(
+                                                                        unitPrice
+                                                                    )}
+                                                                </p>
+                                                            </div>
                                                         </td>
                                                         <td className="py-3 text-center text-slate-600 dark:text-slate-400">
                                                             {quantity}
@@ -536,18 +590,21 @@ export default function Print({ transaction }) {
                                 <div className="max-w-xs ml-auto space-y-2 text-sm">
                                     <div className="flex justify-between text-slate-600 dark:text-slate-400">
                                         <span>Subtotal</span>
-                                        <span>
-                                            {formatPrice(
-                                                transaction.grand_total +
-                                                    (transaction.discount ||
-                                                        0) -
-                                                    (transaction.shipping_cost ||
-                                                        0)
-                                            )}
-                                        </span>
+                                        <span>{formatPrice(baseSubtotal)}</span>
                                     </div>
+                                    {promoDiscountTotal > 0 && (
+                                        <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                                            <span>Promo Otomatis</span>
+                                            <span>
+                                                -{" "}
+                                                {formatPrice(
+                                                    promoDiscountTotal
+                                                )}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                                        <span>Diskon</span>
+                                        <span>Diskon Manual</span>
                                         <span>
                                             -{" "}
                                             {formatPrice(transaction.discount)}
@@ -613,7 +670,7 @@ export default function Print({ transaction }) {
             </div>
 
             {/* Confirmation Modal */}
-            {showConfirmModal && (
+            {showConfirmModal && canConfirmPayment && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 print:hidden">
                     {/* Backdrop */}
                     <div

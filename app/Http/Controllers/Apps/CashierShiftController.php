@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CloseCashierShiftRequest;
+use App\Http\Requests\ConfirmPasswordForForceCloseRequest;
 use App\Http\Requests\StoreCashierShiftRequest;
 use App\Models\CashierShift;
 use App\Models\User;
@@ -20,8 +21,7 @@ class CashierShiftController extends Controller
     public function __construct(
         private readonly CashierShiftService $cashierShiftService,
         private readonly AuditLogService $auditLogService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -97,7 +97,7 @@ class CashierShiftController extends Controller
         return redirect($target)->with('success', 'Shift kasir berhasil dibuka.');
     }
 
-    public function close(CloseCashierShiftRequest $request, CashierShift $cashierShift): RedirectResponse
+    public function close(CloseCashierShiftRequest $request, CashierShift $cashierShift, ConfirmPasswordForForceCloseRequest $confirmPasswordRequest): RedirectResponse
     {
         $cashierShift = $this->resolveVisibleShift($request, $cashierShift);
         $before = $this->shiftAuditPayload($cashierShift);
@@ -105,6 +105,29 @@ class CashierShiftController extends Controller
 
         if ($forceClose && ! ($request->user()->isSuperAdmin() || $request->user()->can('cashier-shifts-force-close'))) {
             abort(403);
+        }
+
+        if ($forceClose && ! $confirmPasswordRequest->recentlyConfirmed()) {
+            $request->session()->put('url.intended', $request->headers->get('referer') ?: route('cashier-shifts.show', $cashierShift));
+            $request->session()->put('security.step_up_context', [
+                'route' => $request->route()?->getName(),
+                'method' => $request->method(),
+                'intended' => $request->headers->get('referer') ?: route('cashier-shifts.show', $cashierShift),
+                'target' => $cashierShift->id,
+            ]);
+
+            $this->auditLogService->log(
+                event: 'security.privileged_action_challenged',
+                module: 'security',
+                auditable: $cashierShift,
+                description: 'Force close shift memerlukan konfirmasi password ulang.',
+                meta: [
+                    'severity' => 'high',
+                    'route' => $request->route()?->getName(),
+                ],
+            );
+
+            return redirect()->route('password.confirm');
         }
 
         $closedShift = $this->cashierShiftService->closeShift(

@@ -33,8 +33,8 @@ class AuditLogController extends Controller
             ->when($filters['search'], function (Builder $query, $search) {
                 $query->where(function (Builder $builder) use ($search) {
                     $builder
-                        ->where('target_label', 'like', '%' . $search . '%')
-                        ->orWhere('description', 'like', '%' . $search . '%');
+                        ->where('target_label', 'like', '%'.$search.'%')
+                        ->orWhere('description', 'like', '%'.$search.'%');
                 });
             })
             ->latest('created_at')

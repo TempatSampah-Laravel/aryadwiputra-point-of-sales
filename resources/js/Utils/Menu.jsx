@@ -4,14 +4,18 @@ import {
     IconBox,
     IconCategory,
     IconChartArrowsVertical,
+    IconChartBar,
     IconChartBarPopular,
     IconChartInfographic,
     IconCirclePlus,
     IconClockHour6,
+    IconClipboardCheck,
     IconCreditCard,
+    IconCrown,
     IconFileCertificate,
     IconFileDescription,
     IconFolder,
+    IconGift,
     IconLayout2,
     IconBuildingStore,
     IconSchool,
@@ -27,6 +31,9 @@ import {
     IconCurrencyDollar,
     IconWallet,
     IconFileSearch,
+    IconTruckDelivery,
+    IconTruckReturn,
+    IconSpeakerphone,
 } from "@tabler/icons-react";
 import hasAnyPermission from "./Permission";
 import React from "react";
@@ -50,7 +57,7 @@ export default function Menu() {
             ],
         },
         {
-            title: "Data Management",
+            title: "Master Data",
             details: [
                 {
                     title: "Kategori",
@@ -67,49 +74,23 @@ export default function Menu() {
                     permissions: hasAnyPermission(["products-access"]),
                 },
                 {
-                    title: "Stock Opname",
-                    href: route("stock-opnames.index"),
-                    active: url.startsWith("/dashboard/stock-opnames"),
-                    icon: <IconFileDescription size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["stock-opnames-access"]),
-                },
-                {
-                    title: "Mutasi Stok",
-                    href: route("stock-mutations.index"),
-                    active: url.startsWith("/dashboard/stock-mutations"),
-                    icon: (
-                        <IconChartArrowsVertical
-                            size={20}
-                            strokeWidth={1.5}
-                        />
-                    ),
-                    permissions: hasAnyPermission(["stock-mutations-access"]),
-                },
-                {
-                    title: "Audit Log",
-                    href: route("audit-logs.index"),
-                    active: url.startsWith("/dashboard/audit-logs"),
-                    icon: <IconFileSearch size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["audit-logs-access"]),
-                },
-                {
-                    title: "Shift Kasir",
-                    href: route("cashier-shifts.index"),
-                    active: url.startsWith("/dashboard/cashier-shifts"),
-                    icon: <IconWallet size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["cashier-shifts-access"]),
-                },
-                {
                     title: "Pelanggan",
                     href: route("customers.index"),
                     active: url === "/dashboard/customers" ? true : false, // Update comparison here
                     icon: <IconUsersPlus size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["customers-access"]),
                 },
+                {
+                    title: "Supplier",
+                    href: route("suppliers.index"),
+                    active: url.startsWith("/dashboard/suppliers"),
+                    icon: <IconBuildingWarehouse size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["suppliers-access"]),
+                },
             ],
         },
         {
-            title: "Transaksi",
+            title: "Sales",
             details: [
                 {
                     title: "Transaksi",
@@ -136,18 +117,65 @@ export default function Menu() {
                     permissions: hasAnyPermission(["sales-returns-access"]),
                 },
                 {
-                    title: "Nota Barang (Piutang)",
+                    title: "Piutang",
                     href: route("receivables.index"),
                     active: url.startsWith("/dashboard/receivables"),
                     icon: <IconFileInvoice size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["receivables-access"]),
                 },
                 {
-                    title: "Supplier",
-                    href: route("suppliers.index"),
-                    active: url.startsWith("/dashboard/suppliers"),
-                    icon: <IconBuildingWarehouse size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["suppliers-access"]),
+                    title: "Aging & Pengingat",
+                    href: route("aging.index"),
+                    active: url.startsWith("/dashboard/aging"),
+                    icon: <IconChartBar size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["receivables-access"]),
+                },
+            ],
+        },
+        {
+            title: "Inventory",
+            details: [
+                {
+                    title: "Stock Opname",
+                    href: route("stock-opnames.index"),
+                    active: url.startsWith("/dashboard/stock-opnames"),
+                    icon: <IconFileDescription size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["stock-opnames-access"]),
+                },
+                {
+                    title: "Mutasi Stok",
+                    href: route("stock-mutations.index"),
+                    active: url.startsWith("/dashboard/stock-mutations"),
+                    icon: (
+                        <IconChartArrowsVertical size={20} strokeWidth={1.5} />
+                    ),
+                    permissions: hasAnyPermission(["stock-mutations-access"]),
+                },
+            ],
+        },
+        {
+            title: "Procurement",
+            details: [
+                {
+                    title: "Purchase Order",
+                    href: route("purchase-orders.index"),
+                    active: url.startsWith("/dashboard/purchase-orders"),
+                    icon: <IconClipboardCheck size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["purchase-orders-access"]),
+                },
+                {
+                    title: "Penerimaan Barang",
+                    href: route("goods-receivings.index"),
+                    active: url.startsWith("/dashboard/goods-receivings"),
+                    icon: <IconTruckDelivery size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["goods-receivings-access"]),
+                },
+                {
+                    title: "Retur Supplier",
+                    href: route("supplier-returns.index"),
+                    active: url.startsWith("/dashboard/supplier-returns"),
+                    icon: <IconTruckReturn size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["supplier-returns-access"]),
                 },
                 {
                     title: "Hutang Supplier",
@@ -159,7 +187,54 @@ export default function Menu() {
             ],
         },
         {
-            title: "Laporan",
+            title: "CRM & Pricing",
+            details: [
+                {
+                    title: "Member",
+                    href: route("members.index"),
+                    active: url.startsWith("/dashboard/members"),
+                    icon: <IconCrown size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["customers-access"]),
+                },
+                {
+                    title: "Promo Harga",
+                    href: route("pricing-rules.index"),
+                    active: url.startsWith("/dashboard/pricing-rules"),
+                    icon: <IconChartInfographic size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["pricing-rules-access"]),
+                },
+                {
+                    title: "Voucher Customer",
+                    href: route("customer-vouchers.index"),
+                    active: url.startsWith("/dashboard/customer-vouchers"),
+                    icon: <IconCreditCard size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["customer-vouchers-access"]),
+                },
+                {
+                    title: "Segment Customer",
+                    href: route("customer-segments.index"),
+                    active: url.startsWith("/dashboard/customer-segments"),
+                    icon: <IconUsers size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["customer-segments-access"]),
+                },
+                {
+                    title: "Campaign CRM",
+                    href: route("crm-campaigns.index"),
+                    active: url.startsWith("/dashboard/crm-campaigns"),
+                    icon: <IconSpeakerphone size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["crm-campaigns-access"]),
+                },
+                {
+                    title: "Reminder CRM",
+                    href: route("crm-reminders.index"),
+                    active: url.startsWith("/dashboard/crm-reminders"),
+                    icon: <IconClockHour6 size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["crm-reminders-access"]),
+                },
+            ],
+        },
+        {
+            title: "Reports",
             details: [
                 {
                     title: "Laporan Penjualan",
@@ -176,6 +251,32 @@ export default function Menu() {
                     active: url.startsWith("/dashboard/reports/profits"),
                     icon: <IconChartBarPopular size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["profits-access"]),
+                },
+                {
+                    title: "Advanced Insights",
+                    href: route("reports.insights.index"),
+                    active: url.startsWith("/dashboard/reports/insights"),
+                    icon: <IconChartBar size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["reports-access"]),
+                },
+            ],
+        },
+        {
+            title: "Operations & Control",
+            details: [
+                {
+                    title: "Shift Kasir",
+                    href: route("cashier-shifts.index"),
+                    active: url.startsWith("/dashboard/cashier-shifts"),
+                    icon: <IconWallet size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["cashier-shifts-access"]),
+                },
+                {
+                    title: "Audit Log",
+                    href: route("audit-logs.index"),
+                    active: url.startsWith("/dashboard/audit-logs"),
+                    icon: <IconFileSearch size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["audit-logs-access"]),
                 },
             ],
         },
@@ -247,6 +348,13 @@ export default function Menu() {
                     active: url === "/dashboard/settings/bank-accounts",
                     icon: <IconCreditCard size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["payment-settings-access"]),
+                },
+                {
+                    title: "Loyalty",
+                    href: route("settings.loyalty"),
+                    active: url === "/dashboard/settings/loyalty",
+                    icon: <IconGift size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["dashboard-access"]),
                 },
                 {
                     title: "Target Penjualan",

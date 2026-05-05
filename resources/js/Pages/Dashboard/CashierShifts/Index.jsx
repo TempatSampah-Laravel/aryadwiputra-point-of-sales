@@ -3,6 +3,7 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
+import { useAuthorization } from "@/Utils/authorization";
 import {
     IconCashBanknote,
     IconClockHour4,
@@ -34,9 +35,10 @@ export default function Index({
     activeShift = null,
 }) {
     const { auth, errors } = usePage().props;
+    const { can } = useAuthorization();
     const [openingCash, setOpeningCash] = useState("");
     const [notes, setNotes] = useState("");
-    const canOpenShift = auth?.super || auth?.permissions?.["cashier-shifts-open"];
+    const canOpenShift = can("cashier-shifts-open");
 
     const currentFilters = useMemo(
         () => ({

@@ -8,14 +8,35 @@ use Illuminate\Database\Eloquent\Model;
 class TransactionDetail extends Model
 {
     use HasFactory;
-    
+
     /**
      * fillable
      *
      * @var array
      */
     protected $fillable = [
-        'transaction_id', 'product_id', 'qty', 'price'
+        'transaction_id',
+        'product_id',
+        'qty',
+        'base_unit_price',
+        'unit_price',
+        'price',
+        'discount_total',
+        'pricing_rule_id',
+        'pricing_rule_name',
+        'pricing_rule_kind',
+        'pricing_group_key',
+        'pricing_group_label',
+    ];
+
+    protected $casts = [
+        'qty' => 'integer',
+        'base_unit_price' => 'integer',
+        'unit_price' => 'integer',
+        'price' => 'integer',
+        'discount_total' => 'integer',
+        'pricing_rule_id' => 'integer',
+        'pricing_rule_kind' => 'string',
     ];
 
     /**
@@ -36,6 +57,11 @@ class TransactionDetail extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function pricingRule()
+    {
+        return $this->belongsTo(PricingRule::class);
     }
 
     public function salesReturnItems()

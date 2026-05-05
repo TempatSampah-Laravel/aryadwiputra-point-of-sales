@@ -4,6 +4,7 @@ import { Head, Link, router } from "@inertiajs/react";
 import Button from "@/Components/Dashboard/Button";
 import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
+import { useAuthorization } from "@/Utils/authorization";
 import {
     IconCirclePlus,
     IconClipboardCheck,
@@ -21,6 +22,9 @@ function formatDateTime(value) {
 }
 
 export default function Index({ stockOpnames, filters }) {
+    const { can } = useAuthorization();
+    const canCreateStockOpnames = can("stock-opnames-create");
+
     const handleFilterChange = (key, value) => {
         router.get(
             route("stock-opnames.index"),
@@ -48,13 +52,15 @@ export default function Index({ stockOpnames, filters }) {
                         Kelola sesi audit stok fisik dan finalisasi adjustment stok.
                     </p>
                 </div>
-                <Button
-                    type="link"
-                    href={route("stock-opnames.create")}
-                    icon={<IconCirclePlus size={18} strokeWidth={1.5} />}
-                    className="bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
-                    label="Buat Sesi Opname"
-                />
+                {canCreateStockOpnames && (
+                    <Button
+                        type="link"
+                        href={route("stock-opnames.create")}
+                        icon={<IconCirclePlus size={18} strokeWidth={1.5} />}
+                        className="bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/30"
+                        label="Buat Sesi Opname"
+                    />
+                )}
             </div>
 
             <div className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 md:grid-cols-4">

@@ -38,7 +38,7 @@ class EmailVerificationTest extends TestCase
 
         Event::assertDispatched(Verified::class);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
-        $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+        $response->assertRedirect(route('dashboard.access', absolute: false).'?verified=1');
     }
 
     public function test_email_is_not_verified_with_invalid_hash(): void
@@ -54,5 +54,20 @@ class EmailVerificationTest extends TestCase
         $this->actingAs($user)->get($verificationUrl);
 
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_verification_resend_requires_valid_bot_guard(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/verify-email')
+            ->post('/email/verification-notification', [
+                config('security.bot_guard.honeypot_field') => '',
+                config('security.bot_guard.token_field') => 'invalid-token',
+            ]);
+
+        $response->assertSessionHasErrors('human');
     }
 }

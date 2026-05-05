@@ -314,7 +314,7 @@ class OperationalCoreSeeder extends Seeder
                 'sales_return_id' => $salesReturn->id,
                 'amount' => $subtotal,
                 'balance' => $subtotal,
-                'notes' => 'Saldo toko sample dari retur ' . $salesReturn->code,
+                'notes' => 'Saldo toko sample dari retur '.$salesReturn->code,
                 'created_at' => $completedAt,
                 'updated_at' => $completedAt,
             ]);
@@ -354,7 +354,7 @@ class OperationalCoreSeeder extends Seeder
     private function generateSalesReturnCode(): string
     {
         do {
-            $code = 'SR-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4));
+            $code = 'SR-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4));
         } while (SalesReturn::where('code', $code)->exists());
 
         return $code;

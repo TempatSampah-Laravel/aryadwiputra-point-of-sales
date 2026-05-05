@@ -1,10 +1,14 @@
 <?php
+
 namespace Database\Seeders;
 
 use App\Models\Cart;
+use App\Models\CashierShift;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\CustomerCredit;
+use App\Models\CustomerVoucher;
+use App\Models\LoyaltyPointHistory;
 use App\Models\Payable;
 use App\Models\PayablePayment;
 use App\Models\Product;
@@ -13,12 +17,11 @@ use App\Models\Receivable;
 use App\Models\ReceivablePayment;
 use App\Models\SalesReturn;
 use App\Models\SalesReturnItem;
+use App\Models\StockMutation;
 use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
-use App\Models\CashierShift;
-use App\Models\StockMutation;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -36,6 +39,8 @@ class SampleDataSeeder extends Seeder
         Schema::disableForeignKeyConstraints();
 
         Cart::truncate();
+        LoyaltyPointHistory::truncate();
+        CustomerVoucher::truncate();
         CustomerCredit::truncate();
         SalesReturnItem::truncate();
         SalesReturn::truncate();
@@ -77,6 +82,9 @@ class SampleDataSeeder extends Seeder
         $this->command->info('Seeding receivables...');
         $this->seedReceivables($customers);
 
+        $this->command->info('Seeding loyalty vouchers...');
+        $this->seedCustomerVouchers($customers);
+
         $this->command->info('Seeding payables...');
         $this->seedPayables($suppliers);
 
@@ -94,18 +102,18 @@ class SampleDataSeeder extends Seeder
             $response = Http::timeout(30)->get($url);
 
             if ($response->successful()) {
-                $extension    = 'jpg';
-                $fullFilename = $filename . '.' . $extension;
+                $extension = 'jpg';
+                $fullFilename = $filename.'.'.$extension;
 
                 Storage::disk('public')->put(
-                    $folder . '/' . $fullFilename,
+                    $folder.'/'.$fullFilename,
                     $response->body()
                 );
 
                 return $fullFilename;
             }
         } catch (\Exception $e) {
-            $this->command->warn("  Failed to download {$filename}: " . $e->getMessage());
+            $this->command->warn("  Failed to download {$filename}: ".$e->getMessage());
         }
 
         return null;
@@ -117,19 +125,69 @@ class SampleDataSeeder extends Seeder
     private function seedCustomers(): Collection
     {
         $customers = collect([
-            ['name' => 'Andi Nugraha', 'no_telp' => '6281211111111', 'address' => 'Jl. Melati No. 21, Bandung'],
-            ['name' => 'Bunga Maharani', 'no_telp' => '6281312345678', 'address' => 'Jl. Mawar No. 5, Jakarta'],
+            ['name' => 'Andi Nugraha', 'no_telp' => '6281211111111', 'address' => 'Jl. Melati No. 21, Bandung', 'is_loyalty_member' => true, 'member_code' => 'MEM-ANDI001', 'loyalty_tier' => 'gold', 'loyalty_points' => 180, 'loyalty_total_spent' => 1800000, 'loyalty_transaction_count' => 12, 'loyalty_member_since' => now()->subMonths(8)],
+            ['name' => 'Bunga Maharani', 'no_telp' => '6281312345678', 'address' => 'Jl. Mawar No. 5, Jakarta', 'is_loyalty_member' => true, 'member_code' => 'MEM-BUNGA01', 'loyalty_tier' => 'silver', 'loyalty_points' => 60, 'loyalty_total_spent' => 780000, 'loyalty_transaction_count' => 6, 'loyalty_member_since' => now()->subMonths(4)],
             ['name' => 'Cici Amelia', 'no_telp' => '6281512340000', 'address' => 'Jl. Anggrek No. 17, Surabaya'],
             ['name' => 'Davin Pradipta', 'no_telp' => '6285612349911', 'address' => 'Jl. Kenanga No. 2, Yogyakarta'],
-            ['name' => 'Eko Saputra', 'no_telp' => '6287712348822', 'address' => 'Jl. Cemara No. 45, Semarang'],
+            ['name' => 'Eko Saputra', 'no_telp' => '6287712348822', 'address' => 'Jl. Cemara No. 45, Semarang', 'is_loyalty_member' => true, 'member_code' => 'MEM-EKO0001', 'loyalty_tier' => 'platinum', 'loyalty_points' => 420, 'loyalty_total_spent' => 3600000, 'loyalty_transaction_count' => 21, 'loyalty_member_since' => now()->subYear()],
             ['name' => 'Fitri Lestari', 'no_telp' => '6282213345566', 'address' => 'Jl. Sakura No. 7, Medan'],
             ['name' => 'Gina Putri', 'no_telp' => '6281399887766', 'address' => 'Jl. Dahlia No. 12, Malang'],
             ['name' => 'Hendra Wijaya', 'no_telp' => '6285544332211', 'address' => 'Jl. Flamboyan No. 8, Denpasar'],
         ]);
 
         return $customers
-            ->map(fn($customer) => Customer::create($customer))
+            ->map(fn ($customer) => Customer::create($customer))
             ->keyBy('name');
+    }
+
+    private function seedCustomerVouchers(Collection $customers): void
+    {
+        $blueprints = [
+            [
+                'customer' => 'Andi Nugraha',
+                'code' => 'VCR-ANDI10',
+                'name' => 'Voucher Loyal Gold',
+                'discount_type' => 'fixed_amount',
+                'discount_value' => 10000,
+                'minimum_order' => 75000,
+            ],
+            [
+                'customer' => 'Bunga Maharani',
+                'code' => 'VCR-BUNGA5',
+                'name' => 'Voucher Repeat Order',
+                'discount_type' => 'percentage',
+                'discount_value' => 5,
+                'minimum_order' => 50000,
+            ],
+            [
+                'customer' => 'Eko Saputra',
+                'code' => 'VCR-EKO25',
+                'name' => 'Voucher Platinum',
+                'discount_type' => 'fixed_amount',
+                'discount_value' => 25000,
+                'minimum_order' => 150000,
+            ],
+        ];
+
+        foreach ($blueprints as $blueprint) {
+            $customer = $customers->get($blueprint['customer']);
+
+            if (! $customer) {
+                continue;
+            }
+
+            CustomerVoucher::create([
+                'customer_id' => $customer->id,
+                'code' => $blueprint['code'],
+                'name' => $blueprint['name'],
+                'discount_type' => $blueprint['discount_type'],
+                'discount_value' => $blueprint['discount_value'],
+                'minimum_order' => $blueprint['minimum_order'],
+                'is_active' => true,
+                'starts_at' => now()->subDays(7),
+                'expires_at' => now()->addDays(30),
+            ]);
+        }
     }
 
     /**
@@ -145,7 +203,7 @@ class SampleDataSeeder extends Seeder
         ]);
 
         return $suppliers
-            ->map(fn($supplier) => Supplier::create($supplier))
+            ->map(fn ($supplier) => Supplier::create($supplier))
             ->keyBy('name');
     }
 
@@ -157,59 +215,59 @@ class SampleDataSeeder extends Seeder
         // Categories with Unsplash image URLs (direct download links)
         $categories = collect([
             [
-                'name'        => 'Minuman',
+                'name' => 'Minuman',
                 'description' => 'Aneka minuman segar dan kemasan',
-                'image_url'   => 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=400&fit=crop',
+                'image_url' => 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=400&fit=crop',
             ],
             [
-                'name'        => 'Makanan Ringan',
+                'name' => 'Makanan Ringan',
                 'description' => 'Camilan dan snack kemasan',
-                'image_url'   => 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=400&h=400&fit=crop',
+                'image_url' => 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=400&h=400&fit=crop',
             ],
             [
-                'name'        => 'Makanan Berat',
+                'name' => 'Makanan Berat',
                 'description' => 'Makanan siap saji dan frozen food',
-                'image_url'   => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop',
+                'image_url' => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop',
             ],
             [
-                'name'        => 'Produk Susu',
+                'name' => 'Produk Susu',
                 'description' => 'Susu, yogurt, dan produk olahan susu',
-                'image_url'   => 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&h=400&fit=crop',
+                'image_url' => 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&h=400&fit=crop',
             ],
             [
-                'name'        => 'Roti & Kue',
+                'name' => 'Roti & Kue',
                 'description' => 'Roti segar dan aneka kue',
-                'image_url'   => 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=400&fit=crop',
+                'image_url' => 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=400&fit=crop',
             ],
             [
-                'name'        => 'Bumbu & Rempah',
+                'name' => 'Bumbu & Rempah',
                 'description' => 'Bumbu masak dan rempah-rempah',
-                'image_url'   => 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=400&fit=crop',
+                'image_url' => 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=400&fit=crop',
             ],
             [
-                'name'        => 'Perawatan Tubuh',
+                'name' => 'Perawatan Tubuh',
                 'description' => 'Sabun, shampoo, dan perawatan diri',
-                'image_url'   => 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop',
+                'image_url' => 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop',
             ],
             [
-                'name'        => 'Kebutuhan Rumah',
+                'name' => 'Kebutuhan Rumah',
                 'description' => 'Perlengkapan rumah tangga',
-                'image_url'   => 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=400&h=400&fit=crop',
+                'image_url' => 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=400&h=400&fit=crop',
             ],
         ]);
 
         return $categories->map(function ($category) {
-            $slug  = Str::slug($category['name']);
+            $slug = Str::slug($category['name']);
             $image = $this->downloadImage(
                 $category['image_url'],
                 'category',
-                'cat-' . $slug
+                'cat-'.$slug
             );
 
             return Category::create([
-                'name'        => $category['name'],
+                'name' => $category['name'],
                 'description' => $category['description'],
-                'image'       => $image ?? 'default.jpg',
+                'image' => $image ?? 'default.jpg',
             ]);
         })->keyBy('name');
     }
@@ -268,22 +326,22 @@ class SampleDataSeeder extends Seeder
             $category = $categories->get($product['category']);
 
             // Download product image
-            $slug  = Str::slug($product['title']);
+            $slug = Str::slug($product['title']);
             $image = $this->downloadImage(
                 $product['image_url'],
                 'products',
-                'prod-' . $slug
+                'prod-'.$slug
             );
 
             return Product::create([
                 'category_id' => $category?->id,
-                'image'       => $image ?? 'default.jpg',
-                'barcode'     => $product['barcode'],
-                'title'       => $product['title'],
+                'image' => $image ?? 'default.jpg',
+                'barcode' => $product['barcode'],
+                'title' => $product['title'],
                 'description' => $product['description'],
-                'buy_price'   => $product['buy_price'],
-                'sell_price'  => $product['sell_price'],
-                'stock'       => $product['stock'],
+                'buy_price' => $product['buy_price'],
+                'sell_price' => $product['sell_price'],
+                'stock' => $product['stock'],
             ]);
         })->keyBy('barcode');
     }
@@ -303,8 +361,8 @@ class SampleDataSeeder extends Seeder
             [
                 'customer' => 'Andi Nugraha',
                 'discount' => 5000,
-                'cash'     => 100000,
-                'items'    => [
+                'cash' => 100000,
+                'items' => [
                     ['barcode' => 'MNM-0001', 'qty' => 3],
                     ['barcode' => 'SNK-0001', 'qty' => 2],
                     ['barcode' => 'RTI-0001', 'qty' => 1],
@@ -313,8 +371,8 @@ class SampleDataSeeder extends Seeder
             [
                 'customer' => 'Bunga Maharani',
                 'discount' => 0,
-                'cash'     => 150000,
-                'items'    => [
+                'cash' => 150000,
+                'items' => [
                     ['barcode' => 'SSU-0001', 'qty' => 2],
                     ['barcode' => 'RTI-0002', 'qty' => 3],
                     ['barcode' => 'PRW-0001', 'qty' => 2],
@@ -323,8 +381,8 @@ class SampleDataSeeder extends Seeder
             [
                 'customer' => 'Cici Amelia',
                 'discount' => 10000,
-                'cash'     => 200000,
-                'items'    => [
+                'cash' => 200000,
+                'items' => [
                     ['barcode' => 'MKN-0002', 'qty' => 2],
                     ['barcode' => 'BMB-0002', 'qty' => 1],
                     ['barcode' => 'RMH-0001', 'qty' => 2],
@@ -333,8 +391,8 @@ class SampleDataSeeder extends Seeder
             [
                 'customer' => 'Davin Pradipta',
                 'discount' => 0,
-                'cash'     => 80000,
-                'items'    => [
+                'cash' => 80000,
+                'items' => [
                     ['barcode' => 'MNM-0003', 'qty' => 2],
                     ['barcode' => 'SNK-0003', 'qty' => 5],
                     ['barcode' => 'SSU-0002', 'qty' => 2],
@@ -343,8 +401,8 @@ class SampleDataSeeder extends Seeder
             [
                 'customer' => 'Fitri Lestari',
                 'discount' => 15000,
-                'cash'     => 250000,
-                'items'    => [
+                'cash' => 250000,
+                'items' => [
                     ['barcode' => 'PRW-0002', 'qty' => 1],
                     ['barcode' => 'BMB-0001', 'qty' => 2],
                     ['barcode' => 'MKN-0003', 'qty' => 2],
@@ -354,8 +412,8 @@ class SampleDataSeeder extends Seeder
             [
                 'customer' => null,
                 'discount' => 0,
-                'cash'     => 50000,
-                'items'    => [
+                'cash' => 50000,
+                'items' => [
                     ['barcode' => 'MNM-0002', 'qty' => 2],
                     ['barcode' => 'SNK-0002', 'qty' => 1],
                 ],
@@ -378,10 +436,10 @@ class SampleDataSeeder extends Seeder
                     $lineTotal = $product->sell_price * $item['qty'];
 
                     return [
-                        'product'    => $product,
-                        'qty'        => $item['qty'],
+                        'product' => $product,
+                        'qty' => $item['qty'],
                         'line_total' => $lineTotal,
-                        'profit'     => ($product->sell_price - $product->buy_price) * $item['qty'],
+                        'profit' => ($product->sell_price - $product->buy_price) * $item['qty'],
                     ];
                 })
                 ->filter();
@@ -390,27 +448,27 @@ class SampleDataSeeder extends Seeder
                 continue;
             }
 
-            $discount   = max(0, $blueprint['discount']);
-            $gross      = $items->sum('line_total');
+            $discount = max(0, $blueprint['discount']);
+            $gross = $items->sum('line_total');
             $grandTotal = max(0, $gross - $discount);
-            $cashPaid   = max($grandTotal, $blueprint['cash']);
-            $change     = $cashPaid - $grandTotal;
+            $cashPaid = max($grandTotal, $blueprint['cash']);
+            $change = $cashPaid - $grandTotal;
 
             $transaction = Transaction::create([
-                'cashier_id'  => $cashier->id,
+                'cashier_id' => $cashier->id,
                 'customer_id' => $customer?->id,
-                'invoice'     => 'TRX-' . Str::upper(Str::random(8)),
-                'cash'        => $cashPaid,
-                'change'      => $change,
-                'discount'    => $discount,
+                'invoice' => 'TRX-'.Str::upper(Str::random(8)),
+                'cash' => $cashPaid,
+                'change' => $change,
+                'discount' => $discount,
                 'grand_total' => $grandTotal,
             ]);
 
             foreach ($items as $item) {
                 $transaction->details()->create([
                     'product_id' => $item['product']->id,
-                    'qty'        => $item['qty'],
-                    'price'      => $item['line_total'],
+                    'qty' => $item['qty'],
+                    'price' => $item['line_total'],
                 ]);
 
                 $transaction->profits()->create([
@@ -446,53 +504,53 @@ class SampleDataSeeder extends Seeder
                 : ($paid >= $transaction->grand_total ? 'paid' : 'partial');
 
             $receivable = Receivable::create([
-                'customer_id'    => $transaction->customer_id,
+                'customer_id' => $transaction->customer_id,
                 'transaction_id' => $transaction->id,
-                'invoice'        => 'RCV-' . $transaction->invoice,
-                'total'          => $transaction->grand_total,
-                'paid'           => $paid,
-                'due_date'       => now()->addDays(($index + 1) * 7)->toDateString(),
-                'status'         => $status,
-                'note'           => 'Piutang dari transaksi penjualan ' . $transaction->invoice,
+                'invoice' => 'RCV-'.$transaction->invoice,
+                'total' => $transaction->grand_total,
+                'paid' => $paid,
+                'due_date' => now()->addDays(($index + 1) * 7)->toDateString(),
+                'status' => $status,
+                'note' => 'Piutang dari transaksi penjualan '.$transaction->invoice,
             ]);
 
             if ($paid > 0) {
                 ReceivablePayment::create([
                     'receivable_id' => $receivable->id,
-                    'paid_at'       => now()->subDays(2 + $index)->toDateString(),
-                    'amount'        => $paid,
-                    'method'        => 'cash',
-                    'user_id'       => $cashier?->id,
-                    'note'          => 'Pembayaran awal piutang',
+                    'paid_at' => now()->subDays(2 + $index)->toDateString(),
+                    'amount' => $paid,
+                    'method' => 'cash',
+                    'user_id' => $cashier?->id,
+                    'note' => 'Pembayaran awal piutang',
                 ]);
             }
 
             $transaction->update([
                 'payment_method' => 'credit',
                 'payment_status' => $status === 'paid' ? 'paid' : 'unpaid',
-                'cash'           => (int) $paid,
-                'change'         => 0,
+                'cash' => (int) $paid,
+                'change' => 0,
             ]);
         }
 
         $manualReceivables = [
             [
                 'customer' => 'Gina Putri',
-                'invoice'  => 'RCV-MANUAL-001',
-                'total'    => 185000,
-                'paid'     => 50000,
+                'invoice' => 'RCV-MANUAL-001',
+                'total' => 185000,
+                'paid' => 50000,
                 'due_date' => now()->addDays(10)->toDateString(),
-                'status'   => 'partial',
-                'note'     => 'Piutang manual untuk pembelian grosir bulanan',
+                'status' => 'partial',
+                'note' => 'Piutang manual untuk pembelian grosir bulanan',
             ],
             [
                 'customer' => 'Hendra Wijaya',
-                'invoice'  => 'RCV-MANUAL-002',
-                'total'    => 275000,
-                'paid'     => 0,
+                'invoice' => 'RCV-MANUAL-002',
+                'total' => 275000,
+                'paid' => 0,
                 'due_date' => now()->subDays(3)->toDateString(),
-                'status'   => 'overdue',
-                'note'     => 'Piutang manual yang sudah melewati jatuh tempo',
+                'status' => 'overdue',
+                'note' => 'Piutang manual yang sudah melewati jatuh tempo',
             ],
         ];
 
@@ -505,22 +563,22 @@ class SampleDataSeeder extends Seeder
 
             $receivable = Receivable::create([
                 'customer_id' => $customer->id,
-                'invoice'     => $item['invoice'],
-                'total'       => $item['total'],
-                'paid'        => $item['paid'],
-                'due_date'    => $item['due_date'],
-                'status'      => $item['status'],
-                'note'        => $item['note'],
+                'invoice' => $item['invoice'],
+                'total' => $item['total'],
+                'paid' => $item['paid'],
+                'due_date' => $item['due_date'],
+                'status' => $item['status'],
+                'note' => $item['note'],
             ]);
 
             if ($item['paid'] > 0) {
                 ReceivablePayment::create([
                     'receivable_id' => $receivable->id,
-                    'paid_at'       => now()->subDays(1)->toDateString(),
-                    'amount'        => $item['paid'],
-                    'method'        => 'bank_transfer',
-                    'user_id'       => $cashier?->id,
-                    'note'          => 'Pembayaran sebagian piutang manual',
+                    'paid_at' => now()->subDays(1)->toDateString(),
+                    'amount' => $item['paid'],
+                    'method' => 'bank_transfer',
+                    'user_id' => $cashier?->id,
+                    'note' => 'Pembayaran sebagian piutang manual',
                 ]);
             }
         }
@@ -535,40 +593,40 @@ class SampleDataSeeder extends Seeder
 
         $blueprints = [
             [
-                'supplier'        => 'PT Sumber Pangan Nusantara',
+                'supplier' => 'PT Sumber Pangan Nusantara',
                 'document_number' => 'PYB-0001',
-                'total'           => 450000,
-                'paid'            => 150000,
-                'due_date'        => now()->addDays(14)->toDateString(),
-                'status'          => 'partial',
-                'note'            => 'Pengadaan stok minuman dan snack',
+                'total' => 450000,
+                'paid' => 150000,
+                'due_date' => now()->addDays(14)->toDateString(),
+                'status' => 'partial',
+                'note' => 'Pengadaan stok minuman dan snack',
             ],
             [
-                'supplier'        => 'CV Makmur Jaya Distribusi',
+                'supplier' => 'CV Makmur Jaya Distribusi',
                 'document_number' => 'PYB-0002',
-                'total'           => 720000,
-                'paid'            => 0,
-                'due_date'        => now()->addDays(21)->toDateString(),
-                'status'          => 'unpaid',
-                'note'            => 'Pengadaan produk rumah tangga',
+                'total' => 720000,
+                'paid' => 0,
+                'due_date' => now()->addDays(21)->toDateString(),
+                'status' => 'unpaid',
+                'note' => 'Pengadaan produk rumah tangga',
             ],
             [
-                'supplier'        => 'PT Segar Sentosa Abadi',
+                'supplier' => 'PT Segar Sentosa Abadi',
                 'document_number' => 'PYB-0003',
-                'total'           => 390000,
-                'paid'            => 390000,
-                'due_date'        => now()->subDays(2)->toDateString(),
-                'status'          => 'paid',
-                'note'            => 'Pembelian produk susu dan frozen food',
+                'total' => 390000,
+                'paid' => 390000,
+                'due_date' => now()->subDays(2)->toDateString(),
+                'status' => 'paid',
+                'note' => 'Pembelian produk susu dan frozen food',
             ],
             [
-                'supplier'        => 'UD Berkah Retail Grosir',
+                'supplier' => 'UD Berkah Retail Grosir',
                 'document_number' => 'PYB-0004',
-                'total'           => 510000,
-                'paid'            => 100000,
-                'due_date'        => now()->subDays(5)->toDateString(),
-                'status'          => 'overdue',
-                'note'            => 'Pengadaan barang campuran jatuh tempo',
+                'total' => 510000,
+                'paid' => 100000,
+                'due_date' => now()->subDays(5)->toDateString(),
+                'status' => 'overdue',
+                'note' => 'Pengadaan barang campuran jatuh tempo',
             ],
         ];
 
@@ -580,23 +638,23 @@ class SampleDataSeeder extends Seeder
             }
 
             $payable = Payable::create([
-                'supplier_id'      => $supplier->id,
-                'document_number'  => $item['document_number'],
-                'total'            => $item['total'],
-                'paid'             => $item['paid'],
-                'due_date'         => $item['due_date'],
-                'status'           => $item['status'],
-                'note'             => $item['note'],
+                'supplier_id' => $supplier->id,
+                'document_number' => $item['document_number'],
+                'total' => $item['total'],
+                'paid' => $item['paid'],
+                'due_date' => $item['due_date'],
+                'status' => $item['status'],
+                'note' => $item['note'],
             ]);
 
             if ($item['paid'] > 0) {
                 PayablePayment::create([
                     'payable_id' => $payable->id,
-                    'paid_at'    => now()->subDays(3)->toDateString(),
-                    'amount'     => $item['paid'],
-                    'method'     => 'bank_transfer',
-                    'user_id'    => $cashier?->id,
-                    'note'       => 'Pembayaran hutang supplier',
+                    'paid_at' => now()->subDays(3)->toDateString(),
+                    'amount' => $item['paid'],
+                    'method' => 'bank_transfer',
+                    'user_id' => $cashier?->id,
+                    'note' => 'Pembayaran hutang supplier',
                 ]);
             }
         }

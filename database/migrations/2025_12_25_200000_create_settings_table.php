@@ -21,11 +21,11 @@ return new class extends Migration
 
         // Insert default monthly target
         DB::table('settings')->insert([
-            'key'         => 'monthly_sales_target',
-            'value'       => '0',
+            'key' => 'monthly_sales_target',
+            'value' => '0',
             'description' => 'Target penjualan bulanan',
-            'created_at'  => now(),
-            'updated_at'  => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 

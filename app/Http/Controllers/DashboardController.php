@@ -1,30 +1,31 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\CashierShift;
 use App\Models\Category;
 use App\Models\Customer;
-use App\Models\Profit;
 use App\Models\Product;
+use App\Models\Profit;
+use App\Models\Setting;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
-use App\Models\Setting;
+use App\Services\CashierShiftService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use App\Services\CashierShiftService;
 
 class DashboardController extends Controller
 {
     public function index(CashierShiftService $cashierShiftService)
     {
-        $totalCategories   = Category::count();
-        $totalProducts     = Product::count();
+        $totalCategories = Category::count();
+        $totalProducts = Product::count();
         $totalTransactions = Transaction::count();
-        $totalCustomers    = Customer::count();
-        $totalRevenue      = Transaction::sum('grand_total');
-        $totalProfit       = Profit::sum('total');
-        $averageOrder      = Transaction::avg('grand_total') ?? 0;
+        $totalCustomers = Customer::count();
+        $totalRevenue = Transaction::sum('grand_total');
+        $totalProfit = Profit::sum('total');
+        $averageOrder = Transaction::avg('grand_total') ?? 0;
         $todayTransactions = Transaction::whereDate('created_at', Carbon::today())->count();
 
         // New: Today's Sales and Profit
@@ -37,14 +38,14 @@ class DashboardController extends Controller
             ->whereYear('created_at', Carbon::now()->year)
             ->sum('grand_total');
 
-        $revenueTrend      = Transaction::selectRaw('DATE(created_at) as date, SUM(grand_total) as total')
+        $revenueTrend = Transaction::selectRaw('DATE(created_at) as date, SUM(grand_total) as total')
             ->groupBy('date')
             ->orderBy('date', 'desc')
             ->take(12)
             ->get()
             ->map(function ($row) {
                 return [
-                    'date'  => $row->date,
+                    'date' => $row->date,
                     'label' => Carbon::parse($row->date)->format('d M'),
                     'total' => (int) $row->total,
                 ];
@@ -60,9 +61,9 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($detail) {
                 return [
-                    'name'  => $detail->product?->title ?? 'Produk terhapus',
-                    'sku'   => $detail->product?->sku ?? '-',
-                    'qty'   => (int) $detail->qty,
+                    'name' => $detail->product?->title ?? 'Produk terhapus',
+                    'sku' => $detail->product?->sku ?? '-',
+                    'qty' => (int) $detail->qty,
                     'total' => (int) $detail->total,
                 ];
             });
@@ -74,7 +75,7 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($product) {
                 return [
-                    'name'  => $product->title,
+                    'name' => $product->title,
                     'stock' => (int) $product->stock,
                     'image' => $product->image,
                 ];
@@ -92,7 +93,7 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($product) {
                 return [
-                    'name'  => $product->title,
+                    'name' => $product->title,
                     'stock' => (int) $product->stock,
                     'image' => $product->image,
                 ];
@@ -104,11 +105,11 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($transaction) {
                 return [
-                    'invoice'  => $transaction->invoice,
-                    'date'     => Carbon::parse($transaction->created_at)->format('d M Y'),
+                    'invoice' => $transaction->invoice,
+                    'date' => Carbon::parse($transaction->created_at)->format('d M Y'),
                     'customer' => $transaction->customer?->name ?? '-',
-                    'cashier'  => $transaction->cashier?->name ?? '-',
-                    'total'    => (int) $transaction->grand_total,
+                    'cashier' => $transaction->cashier?->name ?? '-',
+                    'total' => (int) $transaction->grand_total,
                 ];
             });
 
@@ -121,9 +122,9 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($row) {
                 return [
-                    'name'   => $row->customer?->name ?? 'Pelanggan',
+                    'name' => $row->customer?->name ?? 'Pelanggan',
                     'orders' => (int) $row->orders,
-                    'total'  => (int) $row->total,
+                    'total' => (int) $row->total,
                 ];
             });
 
@@ -136,7 +137,7 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($row) {
                 return [
-                    'name'   => $row->village_name ?? 'Lainnya',
+                    'name' => $row->village_name ?? 'Lainnya',
                     'orders' => (int) $row->orders,
                 ];
             });
@@ -166,26 +167,26 @@ class DashboardController extends Controller
             ->values();
 
         return Inertia::render('Dashboard/Index', [
-            'totalCategories'     => $totalCategories,
-            'totalProducts'       => $totalProducts,
-            'totalTransactions'   => $totalTransactions,
-            'totalCustomers'      => $totalCustomers,
-            'revenueTrend'        => $revenueTrend,
-            'totalRevenue'        => (int) $totalRevenue,
-            'totalProfit'         => (int) $totalProfit,
-            'averageOrder'        => (int) round($averageOrder),
-            'todayTransactions'   => (int) $todayTransactions,
-            'todaySales'          => (int) $todaySales,
-            'todayProfit'         => (int) $todayProfit,
-            'monthlyTarget'       => (int) $monthlyTarget,
-            'currentMonthSales'   => (int) $currentMonthSales,
-            'topProducts'         => $topProducts,
-            'lowStockProducts'    => $lowStockProducts,
-            'slowMovingProducts'  => $slowMovingProducts,
-            'recentTransactions'  => $recentTransactions,
-            'topCustomers'        => $topCustomers,
-            'topLocations'        => $topLocations,
-            'activeShifts'        => $activeShifts,
+            'totalCategories' => $totalCategories,
+            'totalProducts' => $totalProducts,
+            'totalTransactions' => $totalTransactions,
+            'totalCustomers' => $totalCustomers,
+            'revenueTrend' => $revenueTrend,
+            'totalRevenue' => (int) $totalRevenue,
+            'totalProfit' => (int) $totalProfit,
+            'averageOrder' => (int) round($averageOrder),
+            'todayTransactions' => (int) $todayTransactions,
+            'todaySales' => (int) $todaySales,
+            'todayProfit' => (int) $todayProfit,
+            'monthlyTarget' => (int) $monthlyTarget,
+            'currentMonthSales' => (int) $currentMonthSales,
+            'topProducts' => $topProducts,
+            'lowStockProducts' => $lowStockProducts,
+            'slowMovingProducts' => $slowMovingProducts,
+            'recentTransactions' => $recentTransactions,
+            'topCustomers' => $topCustomers,
+            'topLocations' => $topLocations,
+            'activeShifts' => $activeShifts,
         ]);
     }
 }

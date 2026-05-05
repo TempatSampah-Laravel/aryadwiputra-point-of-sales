@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -39,26 +38,44 @@ class PermissionSeeder extends Seeder
         $create('permissions-update');
         $create('permissions-delete');
 
-        //permission categories
+        // permission categories
         $create('categories-access');
         $create('categories-create');
         $create('categories-edit');
         $create('categories-delete');
 
-        //permission products
+        // permission products
         $create('products-access');
         $create('products-create');
         $create('products-edit');
         $create('products-delete');
+        $create('pricing-rules-access');
+        $create('pricing-rules-create');
+        $create('pricing-rules-update');
+        $create('pricing-rules-delete');
 
-        //permission customers
+        // permission customers
         $create('customers-access');
         $create('customers-create');
         $create('customers-edit');
         $create('customers-delete');
+        $create('customer-vouchers-access');
+        $create('customer-vouchers-create');
+        $create('customer-vouchers-update');
+        $create('customer-vouchers-delete');
+        $create('customer-segments-access');
+        $create('customer-segments-create');
+        $create('customer-segments-update');
+        $create('customer-segments-delete');
+        $create('crm-campaigns-access');
+        $create('crm-campaigns-create');
+        $create('crm-campaigns-update');
+        $create('crm-campaigns-delete');
+        $create('crm-reminders-access');
 
-        //permission transactions
+        // permission transactions
         $create('transactions-access');
+        $create('transactions-confirm-payment');
 
         // permission receivables & payables
         $create('receivables-access');
@@ -73,6 +90,7 @@ class PermissionSeeder extends Seeder
 
         // payment settings
         $create('payment-settings-access');
+        $create('payment-settings-update');
 
         // stock opnames
         $create('stock-opnames-access');
@@ -93,6 +111,21 @@ class PermissionSeeder extends Seeder
 
         // audit logs
         $create('audit-logs-access');
+
+        // purchase orders
+        $create('purchase-orders-access');
+        $create('purchase-orders-create');
+        $create('purchase-orders-update');
+        $create('purchase-orders-delete');
+
+        // goods receivings
+        $create('goods-receivings-access');
+        $create('goods-receivings-create');
+
+        // supplier returns
+        $create('supplier-returns-access');
+        $create('supplier-returns-create');
+        $create('supplier-returns-update');
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

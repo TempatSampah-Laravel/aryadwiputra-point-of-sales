@@ -53,9 +53,15 @@
             @php
                 $qty = max(1, $item->qty);
                 $total = $item->price;
-                $unit = $qty ? $total / $qty : $total;
+                $unit = $item->unit_price ?: ($qty ? $total / $qty : $total);
             @endphp
             <div style="font-weight:600;">{{ $item->product->title ?? 'Produk' }}</div>
+            @if($item->discount_total > 0 && ($item->pricing_group_label || $item->pricing_rule_name))
+                <div style="display:flex; justify-content:space-between; font-size:9px; color:#64748b;">
+                    <span>Promo: {{ $item->pricing_group_label ?: $item->pricing_rule_name }}</span>
+                    <span>{{ $formatPrice($item->base_unit_price) }}</span>
+                </div>
+            @endif
             <div style="display:flex; justify-content:space-between;">
                 <span>{{ $qty }}x @ {{ $formatPrice($unit) }}</span>
                 <span>{{ $formatPrice($total) }}</span>
@@ -66,9 +72,13 @@
     <pre style="margin:3px 0;">{{ $dash }}</pre>
 
     @php
-        $subtotal = ($transaction->grand_total ?? 0) + ($transaction->discount ?? 0);
+        $promoDiscount = $transaction->details->sum('discount_total');
+        $voucherDiscount = $transaction->customer_voucher_discount ?? 0;
+        $loyaltyDiscount = $transaction->loyalty_discount_total ?? 0;
+        $subtotal = ($transaction->grand_total ?? 0) + ($transaction->discount ?? 0) - ($transaction->shipping_cost ?? 0) + $promoDiscount + $voucherDiscount + $loyaltyDiscount;
         $discount = $transaction->discount ?? 0;
         $total = $transaction->grand_total ?? 0;
+        $shipping = $transaction->shipping_cost ?? 0;
         $cash = $transaction->cash ?? 0;
         $change = $transaction->change ?? 0;
         $paymentMethod = strtoupper($transaction->payment_method ?? 'TUNAI');
@@ -79,10 +89,34 @@
             <span>Subtotal</span>
             <span>{{ $formatPrice($subtotal) }}</span>
         </div>
+        @if($promoDiscount > 0)
+            <div style="display:flex; justify-content:space-between;">
+                <span>Promo</span>
+                <span>-{{ $formatPrice($promoDiscount) }}</span>
+            </div>
+        @endif
         @if($discount > 0)
             <div style="display:flex; justify-content:space-between;">
-                <span>Diskon</span>
+                <span>Diskon Manual</span>
                 <span>-{{ $formatPrice($discount) }}</span>
+            </div>
+        @endif
+        @if($voucherDiscount > 0)
+            <div style="display:flex; justify-content:space-between;">
+                <span>Voucher</span>
+                <span>-{{ $formatPrice($voucherDiscount) }}</span>
+            </div>
+        @endif
+        @if($loyaltyDiscount > 0)
+            <div style="display:flex; justify-content:space-between;">
+                <span>Redeem Poin</span>
+                <span>-{{ $formatPrice($loyaltyDiscount) }}</span>
+            </div>
+        @endif
+        @if($shipping > 0)
+            <div style="display:flex; justify-content:space-between;">
+                <span>Ongkir</span>
+                <span>{{ $formatPrice($shipping) }}</span>
             </div>
         @endif
         <div style="display:flex; justify-content:space-between; font-weight:700; font-size:12px;">

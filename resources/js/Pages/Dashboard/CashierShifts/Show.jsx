@@ -8,6 +8,7 @@ import {
     IconRotateClockwise2,
     IconWallet,
 } from "@tabler/icons-react";
+import { useAuthorization } from "@/Utils/authorization";
 
 const formatCurrency = (value = 0) =>
     new Intl.NumberFormat("id-ID", {
@@ -41,6 +42,7 @@ function MetricCard({ title, value, icon: Icon }) {
 
 export default function Show({ cashierShift, canForceClose = false }) {
     const { auth, errors } = usePage().props;
+    const { can } = useAuthorization();
     const [actualCash, setActualCash] = useState(
         cashierShift.actual_cash !== null ? String(cashierShift.actual_cash) : ""
     );
@@ -50,9 +52,19 @@ export default function Show({ cashierShift, canForceClose = false }) {
         if (cashierShift.status !== "open") return false;
 
         return (
-            cashierShift.user?.id === auth?.user?.id || auth?.super || canForceClose
+            can("cashier-shifts-close") &&
+            (cashierShift.user?.id === auth?.user?.id ||
+                auth?.super ||
+                canForceClose)
         );
-    }, [auth?.super, auth?.user?.id, canForceClose, cashierShift.status, cashierShift.user?.id]);
+    }, [
+        auth?.super,
+        auth?.user?.id,
+        can,
+        canForceClose,
+        cashierShift.status,
+        cashierShift.user?.id,
+    ]);
 
     const actualCashNumber = Number(actualCash || 0);
     const difference = actualCash === ""

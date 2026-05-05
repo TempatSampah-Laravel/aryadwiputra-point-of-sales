@@ -4,6 +4,7 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 import Button from "@/Components/Dashboard/Button";
 import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
+import { useAuthorization } from "@/Utils/authorization";
 import {
     IconDatabaseOff,
     IconSearch,
@@ -33,9 +34,10 @@ const formatCurrency = (value = 0) =>
     }).format(value);
 
 const History = ({ transactions, filters }) => {
-    const { auth } = usePage().props;
-    const canCreateSalesReturn =
-        auth?.super || auth?.permissions?.["sales-returns-create"];
+    const { can } = useAuthorization();
+    const canCreateSalesReturn = can("sales-returns-create");
+    const canConfirmPayment = can("transactions-confirm-payment");
+    const canCreateCrmCampaign = can("crm-campaigns-create");
     const [filterData, setFilterData] = useState({
         ...defaultFilters,
         ...filters,
@@ -302,7 +304,8 @@ const History = ({ transactions, filters }) => {
                                                         Lunas
                                                     </span>
                                                 ) : transaction.payment_status ===
-                                                  "pending" ? (
+                                                      "pending" &&
+                                                  canConfirmPayment ? (
                                                     <button
                                                         onClick={() =>
                                                             setConfirmModal({
@@ -358,6 +361,22 @@ const History = ({ transactions, filters }) => {
                                                             size={18}
                                                         />
                                                     </a>
+                                                    {canCreateCrmCampaign && (
+                                                        <Link
+                                                            href={route(
+                                                                "transactions.share-campaign",
+                                                                transaction.id
+                                                            )}
+                                                            method="post"
+                                                            as="button"
+                                                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition-colors hover:bg-primary-100 hover:text-primary-700 dark:bg-primary-950/30 dark:hover:bg-primary-950/50"
+                                                            title="Buat campaign share"
+                                                        >
+                                                            <IconBuildingBank
+                                                                size={18}
+                                                            />
+                                                        </Link>
+                                                    )}
                                                     <Link
                                                         href={route(
                                                             "transactions.print",
@@ -411,7 +430,8 @@ const History = ({ transactions, filters }) => {
                                                         Lunas
                                                     </span>
                                                 ) : transaction.payment_status ===
-                                                  "pending" ? (
+                                                      "pending" &&
+                                                  canConfirmPayment ? (
                                                     <button
                                                         onClick={() =>
                                                             setConfirmModal({
@@ -514,6 +534,19 @@ const History = ({ transactions, filters }) => {
                                         >
                                             Invoice
                                         </a>
+                                        {canCreateCrmCampaign && (
+                                            <Link
+                                                href={route(
+                                                    "transactions.share-campaign",
+                                                    transaction.id
+                                                )}
+                                                method="post"
+                                                as="button"
+                                                className="inline-flex items-center justify-center gap-1 rounded-lg bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                                            >
+                                                Campaign WA
+                                            </Link>
+                                        )}
                                         <a
                                             href={route(
                                                 "pdf.transactions.shipping",

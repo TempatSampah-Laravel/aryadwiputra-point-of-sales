@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
+import AuthBotGuardFields from "@/Components/AuthBotGuardFields";
 import {
     IconShoppingCart,
     IconUser,
@@ -11,12 +12,16 @@ import {
     IconCheck,
 } from "@tabler/icons-react";
 
-export default function Register() {
+export default function Register({ botGuard }) {
+    const honeypotField = botGuard?.honeypot_field || "company_website";
+    const tokenField = botGuard?.token_field || "bot_guard_token";
     const { data, setData, post, processing, errors, reset } = useForm({
         name: "",
         email: "",
         password: "",
         password_confirmation: "",
+        [honeypotField]: "",
+        [tokenField]: botGuard?.token || "",
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -98,6 +103,16 @@ export default function Register() {
 
                         {/* Form */}
                         <form onSubmit={submit} className="space-y-5">
+                            <AuthBotGuardFields
+                                botGuard={botGuard}
+                                data={data}
+                                setData={setData}
+                            />
+                            {errors.human && (
+                                <div className="rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-600 dark:bg-danger-950/40 dark:text-danger-300">
+                                    {errors.human}
+                                </div>
+                            )}
                             {/* Name */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">

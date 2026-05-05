@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -29,6 +30,11 @@ class PasswordUpdateTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'auth.password_changed',
+            'module' => 'auth',
+        ]);
+        $this->assertNotNull(AuditLog::where('event', 'auth.password_changed')->latest('id')->first());
     }
 
     public function test_correct_password_must_be_provided_to_update_password(): void

@@ -24,10 +24,10 @@ return new class extends Migration
             DB::table('settings')->updateOrInsert(
                 ['key' => $row['key']],
                 [
-                    'value'       => $row['value'],
+                    'value' => $row['value'],
                     'description' => $row['description'],
-                    'created_at'  => now(),
-                    'updated_at'  => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]
             );
         }

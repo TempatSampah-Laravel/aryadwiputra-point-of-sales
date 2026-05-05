@@ -3,7 +3,6 @@
 namespace Tests\Feature\AuditLogs;
 
 use App\Models\AuditLog;
-use App\Models\BankAccount;
 use App\Models\CashierShift;
 use App\Models\Category;
 use App\Models\Customer;
@@ -36,7 +35,9 @@ class AuditLogTest extends TestCase
             'products-edit',
             'products-delete',
             'payment-settings-access',
+            'payment-settings-update',
             'transactions-access',
+            'transactions-confirm-payment',
             'stock-opnames-access',
             'stock-opnames-create',
             'stock-opnames-finalize',
@@ -103,8 +104,8 @@ class AuditLogTest extends TestCase
 
         $this->actingAs($user)->post(route('products.store'), [
             'image' => UploadedFile::fake()->image('product.png'),
-            'barcode' => 'BRCD-' . Str::upper(Str::random(6)),
-            'sku' => 'SKU-' . Str::upper(Str::random(6)),
+            'barcode' => 'BRCD-'.Str::upper(Str::random(6)),
+            'sku' => 'SKU-'.Str::upper(Str::random(6)),
             'title' => 'Produk Audit',
             'description' => 'Produk Audit',
             'category_id' => $category->id,
@@ -149,7 +150,7 @@ class AuditLogTest extends TestCase
 
     public function test_payment_setting_update_masks_secrets_in_audit_log(): void
     {
-        $user = $this->createUserWithPermissions(['payment-settings-access']);
+        $user = $this->createUserWithPermissions(['payment-settings-access', 'payment-settings-update']);
 
         PaymentSetting::create([
             'default_gateway' => 'cash',
@@ -157,7 +158,7 @@ class AuditLogTest extends TestCase
             'midtrans_client_key' => 'old-client-key',
         ]);
 
-        $this->actingAs($user)->put(route('settings.payments.update'), [
+        $this->withSession($this->recentlyConfirmedSession())->actingAs($user)->put(route('settings.payments.update'), [
             'default_gateway' => 'cash',
             'bank_transfer_enabled' => true,
             'midtrans_enabled' => true,
@@ -186,12 +187,13 @@ class AuditLogTest extends TestCase
     {
         $user = $this->createUserWithPermissions([
             'payment-settings-access',
+            'payment-settings-update',
             'cashier-shifts-access',
             'cashier-shifts-open',
             'cashier-shifts-close',
         ]);
 
-        $this->actingAs($user)->post(route('settings.bank-accounts.store'), [
+        $this->withSession($this->recentlyConfirmedSession())->actingAs($user)->post(route('settings.bank-accounts.store'), [
             'bank_name' => 'BCA',
             'account_number' => '1234567890',
             'account_name' => 'PT Audit',
@@ -234,6 +236,7 @@ class AuditLogTest extends TestCase
             'stock-opnames-create',
             'stock-opnames-finalize',
             'transactions-access',
+            'transactions-confirm-payment',
         ]);
 
         $product = $this->createProduct(stock: 10);
@@ -269,7 +272,7 @@ class AuditLogTest extends TestCase
         $transaction = Transaction::create([
             'cashier_id' => $user->id,
             'customer_id' => null,
-            'invoice' => 'TRX-' . Str::upper(Str::random(8)),
+            'invoice' => 'TRX-'.Str::upper(Str::random(8)),
             'cash' => 0,
             'change' => 0,
             'discount' => 0,
@@ -279,7 +282,7 @@ class AuditLogTest extends TestCase
             'payment_status' => 'pending',
         ]);
 
-        $this->actingAs($user)
+        $this->withSession($this->recentlyConfirmedSession())->actingAs($user)
             ->patch(route('transactions.confirm-payment', $transaction))
             ->assertRedirect();
 
@@ -320,7 +323,7 @@ class AuditLogTest extends TestCase
             'cashier_id' => $user->id,
             'cashier_shift_id' => $shift->id,
             'customer_id' => $customer->id,
-            'invoice' => 'TRX-' . Str::upper(Str::random(8)),
+            'invoice' => 'TRX-'.Str::upper(Str::random(8)),
             'cash' => 30000,
             'change' => 0,
             'discount' => 0,
@@ -337,7 +340,7 @@ class AuditLogTest extends TestCase
         ]);
 
         $salesReturn = SalesReturn::create([
-            'code' => 'SR-' . Str::upper(Str::random(6)),
+            'code' => 'SR-'.Str::upper(Str::random(6)),
             'transaction_id' => $transaction->id,
             'customer_id' => $customer->id,
             'cashier_id' => $user->id,
@@ -382,7 +385,7 @@ class AuditLogTest extends TestCase
     private function createProduct(int $stock = 10, int $buyPrice = 10000, int $sellPrice = 15000): Product
     {
         $category = Category::create([
-            'name' => 'Kategori Audit ' . Str::random(4),
+            'name' => 'Kategori Audit '.Str::random(4),
             'description' => 'Kategori Audit',
             'image' => 'audit-category.png',
         ]);
@@ -390,9 +393,9 @@ class AuditLogTest extends TestCase
         return Product::create([
             'category_id' => $category->id,
             'image' => 'audit-product.png',
-            'barcode' => 'BRCD-' . Str::upper(Str::random(8)),
-            'sku' => 'SKU-' . Str::upper(Str::random(8)),
-            'title' => 'Produk Audit ' . Str::random(4),
+            'barcode' => 'BRCD-'.Str::upper(Str::random(8)),
+            'sku' => 'SKU-'.Str::upper(Str::random(8)),
+            'title' => 'Produk Audit '.Str::random(4),
             'description' => 'Produk Audit',
             'buy_price' => $buyPrice,
             'sell_price' => $sellPrice,
